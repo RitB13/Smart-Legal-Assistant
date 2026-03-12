@@ -48,15 +48,16 @@ def detect_language(text: str) -> str:
         # Normalize the language code (langdetect may return codes like 'pt-br')
         lang_code = detected_lang.split('-')[0].lower()
         
-        # Check if detected language is in supported list
-        if lang_code in SUPPORTED_LANGUAGES:
-            logger.info(f"Language detected: {lang_code} ({SUPPORTED_LANGUAGES[lang_code]})")
-            return lang_code
-        else:
-            # Language detected but not explicitly supported
-            # Still return the code and let LLM handle it
-            logger.info(f"Language detected: {lang_code} (not in primary support list, but will attempt)")
-            return lang_code
+        # Validate that the detected language is in our supported list
+        if lang_code not in SUPPORTED_LANGUAGES:
+            logger.warning(
+                f"Detected language '{lang_code}' is not in supported languages list. "
+                f"Defaulting to '{DEFAULT_LANGUAGE}'. Supported: {list(SUPPORTED_LANGUAGES.keys())}"
+            )
+            return DEFAULT_LANGUAGE
+        
+        logger.info(f"Language detected: {lang_code} ({SUPPORTED_LANGUAGES.get(lang_code, 'Unknown')})")
+        return lang_code
             
     except LangDetectException as e:
         logger.warning(f"Language detection failed: {str(e)}. Defaulting to English.")

@@ -14,11 +14,11 @@ You have expertise in various areas of law including civil, criminal, employment
 CRITICAL INSTRUCTION: You must respond ONLY in the SAME LANGUAGE as the user's query. If the user writes in Hindi, respond entirely in Hindi. If in English, respond in English. And so on for other languages.
 
 Always structure your responses in this JSON format:
-{{
+{
     "summary": "<detailed explanation of the legal issue>",
     "laws": ["<relevant law or statute 1>", "<relevant law or statute 2>"],
     "suggestions": ["<actionable suggestion 1>", "<actionable suggestion 2>"]
-}}
+}
 
 Guidelines:
 - The "summary" field MUST be in the same language as the user's query
@@ -111,6 +111,8 @@ def get_legal_response(
         }
 
         logger.debug(f"Making request to Groq API with model: {GROQ_MODEL}, language: {language}")
+        logger.debug(f"System prompt length: {len(system_prompt)} chars, first 150 chars: {system_prompt[:150]}...")
+        logger.debug(f"Payload: model={GROQ_MODEL}, temperature={temperature}, max_tokens={max_tokens}")
         response = requests.post(
             BASE_URL,
             headers=headers,
@@ -135,7 +137,14 @@ def get_legal_response(
         raise
     except requests.exceptions.HTTPError as e:
         status_code = e.response.status_code if hasattr(e, 'response') else 'unknown'
+        error_body = "No response body"
+        try:
+            if hasattr(e, 'response') and e.response is not None:
+                error_body = e.response.text[:500]  # First 500 chars of error
+        except:
+            pass
         logger.error(f"LLM API HTTP error (status {status_code}): {str(e)}")
+        logger.error(f"Groq API response body: {error_body}")
         raise
     except (KeyError, IndexError) as e:
         logger.error(f"Unexpected response format from LLM API: {str(e)}")
