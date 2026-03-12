@@ -2,6 +2,7 @@ from fastapi import APIRouter, HTTPException, status
 from models.query_model import QueryRequest, QueryResponse
 from services.llm_service import get_legal_response
 from services.parser import parse_llm_output
+from services.language_service import detect_language, get_language_name
 import logging
 import uuid
 import time
@@ -14,13 +15,13 @@ router = APIRouter()
 @router.post("/query", response_model=QueryResponse, status_code=200)
 def handle_query(req: QueryRequest) -> QueryResponse:
     """
-    Process a legal query and return structured legal information.
+    Process a legal query and return structured legal information with multilingual support.
     
     Args:
-        req: QueryRequest containing the user's legal question
+        req: QueryRequest containing the user's legal question and optional language code
         
     Returns:
-        QueryResponse with summary, relevant laws, and suggestions
+        QueryResponse with summary, relevant laws, suggestions, and detected language
         
     Raises:
         HTTPException: For various error conditions during processing
@@ -31,9 +32,18 @@ def handle_query(req: QueryRequest) -> QueryResponse:
     try:
         logger.info(f"[{request_id}] New legal query received: {req.query[:80]}...")
         
-        # Get response from LLM
-        logger.debug(f"[{request_id}] Calling LLM service...")
-        raw_output = get_legal_response(req.query)
+        # Determine language: use provided language or detect it
+        if req.language:
+            language = req.language.lower()
+            logger.info(f"[{request_id}] Language explicitly provided: {language} ({get_language_name(language)})")
+        else:
+            logger.debug(f"[{request_id}] Detecting language from query...")
+            language = detect_language(req.query)
+            logger.info(f"[{request_id}] Language auto-detected: {language} ({get_language_name(language)})")
+        
+        # Get response from LLM with language parameter
+        logger.debug(f"[{request_id}] Calling LLM service with language: {language}...")
+        raw_output = get_legal_response(req.query, language=language)
         
         # Parse the LLM output
         logger.debug(f"[{request_id}] Parsing LLM response...")
@@ -41,10 +51,11 @@ def handle_query(req: QueryRequest) -> QueryResponse:
         
         # Add metadata to response
         parsed["request_id"] = request_id
+        parsed["language"] = language
         
         # Log successful completion
         elapsed = time.time() - start_time
-        logger.info(f"[{request_id}] Query processed successfully in {elapsed:.2f}s")
+        logger.info(f"[{request_id}] Query processed successfully in {elapsed:.2f}s (language: {language})")
         
         # Create and return response
         response = QueryResponse(**parsed)
