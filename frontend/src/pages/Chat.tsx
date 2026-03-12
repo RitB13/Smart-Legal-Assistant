@@ -7,6 +7,7 @@ interface Message {
   text: string;
   sender: "user" | "bot";
   timestamp: Date;
+  language?: string;
 }
 
 const ChatPage = () => {
@@ -16,6 +17,7 @@ const ChatPage = () => {
       text: "Hello! I'm your Smart Legal Assistant. I can help you understand legal matters, explain your rights, and provide guidance on legal documents. How can I assist you today?",
       sender: "bot",
       timestamp: new Date(),
+      language: "en",
     }
   ]);
   const [inputText, setInputText] = useState("");
@@ -30,29 +32,7 @@ const ChatPage = () => {
     scrollToBottom();
   }, [messages]);
   
-  const generateBotResponse = (userMessage: string): string => {
-    const lowerMessage = userMessage.toLowerCase();
-    
-    if (lowerMessage.includes("rent") || lowerMessage.includes("tenant") || lowerMessage.includes("landlord")) {
-      return "Regarding rental/tenancy matters:\n\n1. **Tenant Rights:** You have the right to a habitable living space, privacy, and return of security deposit.\n\n2. **Landlord Obligations:** Must maintain property, provide proper notice before entry (usually 24-48 hours), and follow legal eviction procedures.\n\n3. **Important:** Always get agreements in writing and keep records of all payments.\n\nWould you like more specific information about any of these points?";
-    }
-    
-    if (lowerMessage.includes("divorce") || lowerMessage.includes("marriage")) {
-      return "For matrimonial matters:\n\n1. **Grounds for Divorce:** Mutual consent, cruelty, desertion, adultery, mental illness, etc.\n\n2. **Rights:** Both parties have rights to property division, child custody consideration, and maintenance.\n\n3. **Process:** Consider mediation first, file petition in family court, attend counseling sessions.\n\nI recommend consulting a family law attorney for personalized advice. Need information on any specific aspect?";
-    }
-    
-    if (lowerMessage.includes("consumer") || lowerMessage.includes("refund") || lowerMessage.includes("product")) {
-      return "Consumer Rights Information:\n\n1. **Right to Safety:** Protection against hazardous goods\n2. **Right to Information:** Full product details must be provided\n3. **Right to Choose:** Freedom to select products\n4. **Right to Redressal:** Compensation for defective products\n\nYou can file complaints at consumer forums. Time limit is usually 2 years from purchase date. What specific issue are you facing?";
-    }
-    
-    if (lowerMessage.includes("employment") || lowerMessage.includes("job") || lowerMessage.includes("salary")) {
-      return "Employment Law Guidance:\n\n1. **Minimum Wages:** Employer must pay at least minimum wage as per state regulations\n2. **Working Hours:** Standard is 8-9 hours per day with overtime pay\n3. **Leave Entitlements:** Casual leave, sick leave, earned leave as per company policy\n4. **Termination:** Proper notice period must be given (usually 30-90 days)\n\nDo you have a specific employment concern I can help with?";
-    }
-    
-    return "I understand your query. Based on my knowledge:\n\n1. **Document everything:** Keep written records of all legal matters\n2. **Know deadlines:** Legal matters often have strict time limits\n3. **Seek professional help:** Complex matters require qualified legal counsel\n\nCould you provide more specific details about your legal question? This will help me give you more targeted guidance.";
-  };
-  
-  const handleSend = () => {
+  const handleSend = async () => {
     if (!inputText.trim()) return;
     
     const userMessage: Message = {
@@ -66,17 +46,60 @@ const ChatPage = () => {
     setInputText("");
     setIsTyping(true);
     
-    // Simulate bot response
-    setTimeout(() => {
+    try {
+      // Call the backend /query endpoint with multilingual support
+      const response = await fetch("http://localhost:8000/query", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          query: inputText,
+          // Language will be auto-detected by the backend
+        }),
+      });
+      
+      if (!response.ok) {
+        throw new Error(`API Error: ${response.status}`);
+      }
+      
+      const data = await response.json();
+      
+      // Format the bot response
+      const suggestions = data.suggestions && data.suggestions.length > 0 
+        ? data.suggestions.join("\n")
+        : "";
+      
+      const laws = data.laws && data.laws.length > 0
+        ? "**Relevant Laws:**\n" + data.laws.join("\n")
+        : "";
+      
+      const botResponseText = `${data.summary}\n\n${laws}${laws ? "\n\n" : ""}${suggestions ? "**Suggestions:**\n" + suggestions : ""}`;
+      
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
-        text: generateBotResponse(inputText),
+        text: botResponseText.trim(),
+        sender: "bot",
+        timestamp: new Date(),
+        language: data.language,
+      };
+      
+      setMessages(prev => [...prev, botResponse]);
+    } catch (error) {
+      console.error("Error calling backend API:", error);
+      
+      // Fallback error message
+      const errorResponse: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "I apologize, but I'm unable to connect to the legal assistant service at the moment. Please ensure the backend server is running on http://localhost:8000 and try again.",
         sender: "bot",
         timestamp: new Date(),
       };
-      setMessages(prev => [...prev, botResponse]);
-      setIsTyping(false);
-    }, 1500);
+      
+      setMessages(prev => [...prev, errorResponse]);
+    }
+    
+    setIsTyping(false);
   };
   
   const handleKeyPress = (e: React.KeyboardEvent) => {
@@ -94,7 +117,7 @@ const ChatPage = () => {
             Legal Assistant Chat
           </h1>
           <p className="text-lg text-muted-foreground">
-            Ask any legal question and get instant guidance
+            Ask any legal question in any language and get instant guidance
           </p>
         </div>
         
@@ -124,11 +147,22 @@ const ChatPage = () => {
                       : "bg-muted text-foreground"
                   }`}>
                     <p className="text-sm whitespace-pre-wrap">{message.text}</p>
-                    <p className={`text-xs mt-1 ${
-                      message.sender === "user" ? "text-primary-foreground/70" : "text-muted-foreground"
-                    }`}>
-                      {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
-                    </p>
+                    <div className="flex items-center justify-between mt-2 gap-4">
+                      <p className={`text-xs ${
+                        message.sender === "user" ? "text-primary-foreground/70" : "text-muted-foreground"
+                      }`}>
+                        {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </p>
+                      {message.language && message.sender === "bot" && (
+                        <p className={`text-xs px-2 py-1 rounded ${
+                          message.sender === "user" 
+                            ? "bg-primary-foreground/20" 
+                            : "bg-primary/10 text-primary"
+                        }`}>
+                          Language: {message.language}
+                        </p>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>
