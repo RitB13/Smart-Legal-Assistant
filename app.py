@@ -5,6 +5,7 @@ from fastapi.responses import JSONResponse
 from routes import query_routes
 from config import CORS_ORIGINS, DEBUG
 
+
 # Configure logging
 logging.basicConfig(
     level=logging.DEBUG if DEBUG else logging.INFO,
