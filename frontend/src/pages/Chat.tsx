@@ -25,6 +25,12 @@ const languageLabels: Record<string, { laws: string; suggestions: string }> = {
 };
 
 const ChatPage = () => {
+  useEffect(() => {
+  window.scrollTo({
+    top: 0,
+    behavior: "auto"
+  });
+}, []);
   const [messages, setMessages] = useState<Message[]>([
     {
       id: "1",
@@ -37,32 +43,46 @@ const ChatPage = () => {
   const [inputText, setInputText] = useState("");
   const [isTyping, setIsTyping] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  
+  const isFirstLoad = useRef(true);
+  const chatContainerRef = useRef<HTMLDivElement>(null);
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   };
-  
+
   useEffect(() => {
+    chatContainerRef.current?.scrollTo({
+      top: 0,
+      behavior: "auto"
+    });
+  }, []);
+
+  useEffect(() => {
+    if (isFirstLoad.current) {
+      isFirstLoad.current = false;
+      return;
+    }
+
     scrollToBottom();
   }, [messages]);
-  
+
   const handleSend = async () => {
     if (!inputText.trim()) return;
-    
+
     // Store the input text before clearing it (since setState is asynchronous)
     const queryText = inputText;
-    
+
     const userMessage: Message = {
       id: Date.now().toString(),
       text: queryText,
       sender: "user",
       timestamp: new Date(),
     };
-    
+
     setMessages(prev => [...prev, userMessage]);
     setInputText("");
     setIsTyping(true);
-    
+
     try {
       // Call the backend /query endpoint with multilingual support
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
@@ -76,11 +96,11 @@ const ChatPage = () => {
           // Language will be auto-detected by the backend
         }),
       });
-      
+
       if (!response.ok) {
         const errorStatus = response.status;
         let errorMessage = "I apologize, but I'm unable to process your request at the moment.";
-        
+
         if (errorStatus === 401 || errorStatus === 403) {
           errorMessage = "Authentication error. Please contact support.";
         } else if (errorStatus === 404) {
@@ -92,32 +112,32 @@ const ChatPage = () => {
         } else if (errorStatus === 504) {
           errorMessage = "The service is taking too long to respond. Please try again.";
         }
-        
+
         throw new Error(`API Error ${errorStatus}: ${errorMessage}`);
       }
-      
+
       const data = await response.json();
-      
+
       // Type validation for response
       if (!data || typeof data.summary !== "string") {
         throw new Error("Invalid response format from backend");
       }
-      
+
       // Get language-specific labels
       const detectedLanguage = typeof data.language === "string" ? data.language : "en";
       const labels = languageLabels[detectedLanguage] || languageLabels["en"];
-      
+
       // Format the bot response with language-aware labels
-      const suggestions = Array.isArray(data.suggestions) && data.suggestions.length > 0 
+      const suggestions = Array.isArray(data.suggestions) && data.suggestions.length > 0
         ? data.suggestions.join("\n")
         : "";
-      
+
       const laws = Array.isArray(data.laws) && data.laws.length > 0
         ? `**${labels.laws}**\n` + data.laws.join("\n")
         : "";
-      
+
       const botResponseText = `${data.summary}\n\n${laws}${laws ? "\n\n" : ""}${suggestions ? `**${labels.suggestions}**\n` + suggestions : ""}`;
-      
+
       const botResponse: Message = {
         id: (Date.now() + 1).toString(),
         text: botResponseText.trim(),
@@ -125,13 +145,13 @@ const ChatPage = () => {
         timestamp: new Date(),
         language: detectedLanguage,
       };
-      
+
       setMessages(prev => [...prev, botResponse]);
     } catch (error) {
       console.error("Error calling backend API:", error);
-      
+
       const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
-      
+
       // Fallback error message
       const errorResponse: Message = {
         id: (Date.now() + 1).toString(),
@@ -139,23 +159,23 @@ const ChatPage = () => {
         sender: "bot",
         timestamp: new Date(),
       };
-      
+
       setMessages(prev => [...prev, errorResponse]);
     }
-    
+
     setIsTyping(false);
   };
-  
+
   const handleKeyPress = (e: React.KeyboardEvent) => {
     if (e.key === "Enter" && !e.shiftKey) {
       e.preventDefault();
       handleSend();
     }
   };
-  
+
   return (
     <Layout>
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
+      <div className="container mx-auto px-4 py-8 max-w-5xl">
         <div className="text-center mb-8 animate-fade-up">
           <h1 className="text-4xl font-bold text-foreground mb-4">
             Legal Assistant Chat
@@ -164,10 +184,13 @@ const ChatPage = () => {
             Ask any legal question in any language and get instant guidance
           </p>
         </div>
-        
-        <div className="border border-border rounded-xl bg-card shadow-lg animate-fade-up" style={{ animationDelay: "0.1s" }}>
+
+        <div className="border-2 border-black rounded-xl bg-card shadow-lg animate-fade-up overflow-hidden">
           {/* Chat Messages */}
-          <div className="h-[500px] overflow-y-auto p-6 space-y-4">
+          <div
+            ref={chatContainerRef}
+            className="h-[350px] overflow-y-auto p-6 space-y-4 scrollbar-thin"
+          >
             {messages.map((message, index) => (
               <div
                 key={message.id}
@@ -175,34 +198,30 @@ const ChatPage = () => {
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
                 <div className={`flex max-w-[80%] ${message.sender === "user" ? "flex-row-reverse" : "flex-row"} items-start space-x-2`}>
-                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
-                    message.sender === "user" ? "gradient-primary ml-2" : "bg-secondary mr-2"
-                  }`}>
+                  <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${message.sender === "user" ? "gradient-primary ml-2" : "bg-secondary mr-2"
+                    }`}>
                     {message.sender === "user" ? (
                       <User className="h-4 w-4 text-primary-foreground" />
                     ) : (
                       <Bot className="h-4 w-4 text-secondary-foreground" />
                     )}
                   </div>
-                  
-                  <div className={`rounded-lg px-4 py-3 ${
-                    message.sender === "user"
+
+                  <div className={`rounded-lg px-4 py-3 ${message.sender === "user"
                       ? "gradient-primary text-primary-foreground"
                       : "bg-muted text-foreground"
-                  }`}>
+                    }`}>
                     <p className="text-sm whitespace-pre-wrap">{message.text}</p>
                     <div className="flex items-center justify-between mt-2 gap-4">
-                      <p className={`text-xs ${
-                        message.sender === "user" ? "text-primary-foreground/70" : "text-muted-foreground"
-                      }`}>
+                      <p className={`text-xs ${message.sender === "user" ? "text-primary-foreground/70" : "text-muted-foreground"
+                        }`}>
                         {message.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </p>
                       {message.language && message.sender === "bot" && (
-                        <p className={`text-xs px-2 py-1 rounded ${
-                          message.sender === "user" 
-                            ? "bg-primary-foreground/20" 
+                        <p className={`text-xs px-2 py-1 rounded ${message.sender === "user"
+                            ? "bg-primary-foreground/20"
                             : "bg-primary/10 text-primary"
-                        }`}>
+                          }`}>
                           Language: {message.language}
                         </p>
                       )}
@@ -211,7 +230,7 @@ const ChatPage = () => {
                 </div>
               </div>
             ))}
-            
+
             {isTyping && (
               <div className="flex justify-start animate-fade-up">
                 <div className="flex items-start space-x-2">
@@ -228,10 +247,10 @@ const ChatPage = () => {
                 </div>
               </div>
             )}
-            
+
             <div ref={messagesEndRef} />
           </div>
-          
+
           {/* Input Section */}
           <div className="border-t border-border p-4">
             <div className="flex space-x-2">
