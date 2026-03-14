@@ -1,0 +1,13 @@
+{
+  "total_feedback_count": 1,
+  "average_user_rating": 4.0,
+  "feedback_by_type": {
+    "accuracy": 1
+  },
+  "score_accuracy": {
+    "overestimated": 0,
+    "underestimated": 0,
+    "accurate": 0
+  },
+  "improvement_areas": []
+}
