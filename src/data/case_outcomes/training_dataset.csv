@@ -1,0 +1,487 @@
+case_id,case_name,case_type,jurisdiction_country,jurisdiction_state,year,verdict,duration_days,damages_awarded,evidence_quality,witness_count,victim_documentation,defendant_criminal_history,severity_level,case_complexity,has_precedent,data_quality,source
+IND_168457242,"Dilip S/O Manik Rao Biradar vs State Of Karnataka By Mathala Police ... on 11 June, 2013",dowry_harassment,India,Karnataka,2005,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_14752244,"State vs Rajiv Lochan Pani Etc on 30 June, 2011",dowry_harassment,India,Maharashtra,2011,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_152591041,"State vs Shakilluddin Etc on 8 April, 2011",dowry_harassment,India,Maharashtra,2011,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_188493388,"V.K.Mishra & Anr vs State Of Uttarakhand & Anr on 28 July, 2015",dowry_harassment,India,Delhi,2015,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_1481813,"Wazir Chand And Anr. vs State Of Haryana on 1 December, 1988",dowry_harassment,India,Punjab,1989,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_153772098,"The State Of Mah. Thr. Pso Ps Nandanwan ... vs Vivek Gulabrao Palatkar on 27 March, 2024",dowry_harassment,India,Maharashtra,2024,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_19679616,"Neelkanth S/O Revanappa Bhore And Anr vs The State Through Police on 22 October, 2020",dowry_harassment,India,Maharashtra,2012,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_89377328,"A.Rajkumar vs The Deputy Superintendent Of Police on 20 October, 2023",dowry_harassment,India,Punjab,2023,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_521213,"State Of U.P vs Santosh Kumar & Ors on 3 September, 2009",dowry_harassment,India,Delhi,2009,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_766895,"Subramaniam vs State Of Tamil Nadu & Anr on 13 May, 2009",dowry_harassment,India,Maharashtra,2009,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_643400,"Bairon Singh vs State Of M.P on 29 May, 2009",dowry_harassment,India,Maharashtra,2009,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_127770609,"Sudhanshu Shukla vs The State Of Madhya Pradesh on 6 April, 2023",dowry_harassment,India,Punjab,2023,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_94578,"S.A.Hussainy Alias vs State Rep By on 10 August, 2009",dowry_harassment,India,Tamil Nadu,2002,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_35353893,"Mohit Kain & Ors vs The State(Govt Of Nct Of Delhi) & Anr on 24 August, 2022",dowry_harassment,India,Delhi,2022,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_115232064,"Jitendra Shukla vs State Of U.P. on 14 March, 2018",dowry_harassment,India,National,2018,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_633164,"Heera Singh vs State Of Uttaranchal on 4 March, 2005",dowry_harassment,India,Delhi,2003,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_884201,"State By Maddur Police, Mandya District vs Moorthy Alias Pungi on 4 January, 2002",dowry_harassment,India,Karnataka,2002,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_90142513,"Sukhpal Singh Khaira vs Assistant Director, Directorate O ... on 27 January, 2022",criminal_complaint,India,Punjab,2022,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_45993669,"Mohan Alias Deepak Patel vs The State Of Madhya Pradesh on 2 May, 2024",criminal_complaint,India,Maharashtra,2024,unknown,,40000000,,,,,,,,pending,IndianKanoon
+IND_69216498,"State vs . Amir Chand & Anr. on 28 January, 2020",criminal_complaint,India,Delhi,2020,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_129745396,"""Balraj Singh vs . State Of Punjab"" The Hon'Ble Punjab & ... on 3 September, 2012",criminal_complaint,India,Delhi,2012,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_9112004,"Gurwinder Singh @ Sonu vs State Of Punjab on 8 May, 2018",criminal_complaint,India,Delhi,2018,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_169303629,"Raghvendra Sharma vs M.P.M.K.V.V. Com Ltd. on 24 January, 2022",criminal_complaint,India,National,2022,settlement,,40000000,,,,,,,,pending,IndianKanoon
+IND_1746880,"State vs Kalu S/O Girdhari And Anr. on 22 January, 1951",criminal_complaint,India,Punjab,1949,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_84177402,"Upendra R. Shah vs State Of Gujarat & 2 on 16 April, 2015",criminal_complaint,India,Maharashtra,2007,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_66771400,"Ramesh Chand Meena S/O Suganlal Meena vs The Inspector General And Chief ... on 10 March, 2021",criminal_complaint,India,Karnataka,2021,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_22965656,"Ramesh Chand Meena S/O Suganlal Meena vs The Inspector General And Chief ... on 10 March, 2021",criminal_complaint,India,Karnataka,2022,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_63928007,"Suneel Menon @ Mookul Maruthur Suneel vs P. K. Bajaj Son Of Late Sh. A. P. Bajaj on 4 October, 2013",criminal_complaint,India,Maharashtra,2013,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_979602,"Durga Dei vs Sadananda Prusty And Ors. on 14 March, 1951",property_dispute,India,National,1949,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_98738338,"Mr. Pawan Kumar Bhihani vs Mr. Obalappa on 17 March, 2018",property_dispute,India,Karnataka,2016,unknown,,40000000,,,,,,,,pending,IndianKanoon
+IND_676449,"In Re: The Bill To Amend S. 20 Of The Sea ... vs Unknown on 10 May, 1963",property_dispute,India,Maharashtra,1935,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_96840312,"Ifci Ltd. Thru Its Authorized Signatory vs Lucknow Municipal Corporation Thru ... on 29 April, 2020",property_dispute,India,Delhi,2020,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_59264969,"Banshraj, vs Ram Naresh & Another on 6 March, 2020",property_dispute,India,Karnataka,2020,settlement,,40000000,,,,,,,,pending,IndianKanoon
+IND_64568737,"Smt. Kusum Lata Bansal vs Sri Avadhesh Kumar Gupta & 2 Others on 11 July, 2017",property_dispute,India,Maharashtra,2017,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_1908985,"Mohd. Zakaria (D) By L.Rs. vs Smt. Ishrat Begum (D) By L.Rs. on 6 February, 2008",property_dispute,India,Maharashtra,2001,settlement,,40000000,,,,,,,,pending,IndianKanoon
+IND_187951934,"Lalji Karsan Vaghela vs Ghanshyam Raghuvir Temple on 5 December, 2025",property_dispute,India,Punjab,2025,settlement,,40000000,,,,,,,,pending,IndianKanoon
+IND_149609801,"State By Karnataka vs P.Narayana Murthy @ P.N.Murthy on 28 October, 2022",property_dispute,India,Delhi,2018,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_181543286,"Cbi vs . M/S Gondwana Inspat Ltd & Ors on 27 April, 2018",property_dispute,India,Maharashtra,2018,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_164038868,"Akbarbhai Kesarbhai Sipai vs Mohanbhai Ambabhai Patel Since Decd. ... on 12 July, 2019",property_dispute,India,Maharashtra,2019,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_1184015,"Mian Bashir Ahmad And Etc. vs State Of J. & K. And Ors. on 13 November, 1981",property_dispute,India,Maharashtra,1981,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_1281050,"Ramana Dayaram Shetty vs The International Airport Authority Of ... on 4 May, 1979",property_dispute,India,Delhi,1977,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_152598621,"Maharashtra Housing and Area Development Act, 1976",property_dispute,India,Maharashtra,1989,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_632769,"State Of Maharashtra vs Chandrabhan Tale on 7 July, 1983",property_dispute,India,Maharashtra,1983,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_178923122,"**** vs Ut Chandigarh Admn. & Ors on 8 November, 2012",property_dispute,India,Maharashtra,2013,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_36504438,"Sh. Ranjit Singh, Sangrur vs Assessee on 23 December, 2013",property_dispute,India,Delhi,2014,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_124146078,"Anju Sharma vs Deepak Oberoi on 13 May, 2024",property_dispute,India,Delhi,2024,settlement,,40000000,,,,,,,,pending,IndianKanoon
+IND_1431786,"Kavalappara Kottarathil Kochuni And ... vs The State Of Madras And Others on 4 May, 1960",property_dispute,India,Delhi,1956,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_798291,"Rishi Kesh Singh And Ors. vs The State on 18 October, 1968",property_dispute,India,Maharashtra,1966,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_1520974,"Maktul vs Mst. Manbhari & Others on 23 May, 1958",property_dispute,India,Punjab,1950,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_853365,"Prabhati Mitra vs D.K. Mitra on 17 January, 1984",divorce_contested,India,Delhi,1983,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_966771,"Smt. Kakali Das vs Dr. Asish Kumar Das on 11 February, 2004",divorce_contested,India,National,1998,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_18432629,"Jyostna Rani Sarkar vs Keya Majumdar Alias Mithu Majumdar & Anr on 8 October, 2013",divorce_contested,India,West Bengal,2011,unknown,,40000000,,,,,,,,pending,IndianKanoon
+IND_131625070,"Chandrakant Ojha vs Chanchala Kumari on 26 September, 2025",divorce_contested,India,Karnataka,2025,unknown,,40000000,,,,,,,,pending,IndianKanoon
+IND_161958801,"Junul Topno vs Phibi Franciska Kongari Daughter Of ... on 5 January, 2026",divorce_contested,India,Karnataka,2026,unknown,,40000000,,,,,,,,pending,IndianKanoon
+IND_197504315,"Mini Appa Kanda Swami @ Mani vs M Indra on 21 September, 2016",divorce_contested,India,Delhi,2016,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_13442644,"Gobind Chand & Another vs State Of H.P.& Others on 29 May, 2018",divorce_contested,India,Gujarat,2018,settlement,,40000000,,,,,,,,pending,IndianKanoon
+IND_175353958,"Priyanka Pandey vs Pradeep Tripathi on 30 April, 2024",divorce_contested,India,Maharashtra,2024,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_3883098,"Sunil vs State Of Haryana on 21 February, 2023",divorce_contested,India,Punjab,2023,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_53633557,"Mohammad Naseem Bhat vs Naseem Ahmad Bhat Whereby The ... on 30 April, 2012",divorce_contested,India,Delhi,2012,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_835249,"A.S.Parveen Akthar vs The Union Of India on 27 December, 2002",divorce_contested,India,Delhi,2002,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_193567322,"Rajat Gupta vs Rupali Gupta on 15 May, 2018",divorce_contested,India,Delhi,2018,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_185554482,"Mridula Deepak Panicker vs Deepak Gopinath Panicker on 5 April, 2022",divorce_contested,India,Delhi,2022,settlement,,40000000,,,,,,,,pending,IndianKanoon
+IND_102272226,"Vineeta Daulet Singh vs Bikkrama Daulet Singh on 10 August, 2023",divorce_contested,India,Delhi,2023,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_118310434,"Preeti Kapur vs Anshuman Kapur & Ors. on 8 October, 2009",divorce_contested,India,Delhi,2009,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_129317982,"Kaguben Wd/O Rameshbhai Varsing Bariya ... vs Aaratbhai Sayababhai Bariya on 27 February, 2024",divorce_contested,India,Gujarat,2024,unknown,,40000000,,,,,,,,pending,IndianKanoon
+IND_189192734,"United India Insurance Company Ltd vs Prabhaben W/O Kamleshbhai Solanki on 25 March, 2021",divorce_contested,India,Delhi,2022,unknown,,40000000,,,,,,,,pending,IndianKanoon
+IND_20262310,"Vaniben Wd/O Vinodbhai Gemabhai Mandol vs Mustaq Abdulsalam Kolia on 28 April, 2023",divorce_contested,India,Gujarat,2023,unknown,,40000000,,,,,,,,pending,IndianKanoon
+IND_25974576,"Sukhdev Prasad vs Sunil Kumar & Ors (Iffco Tokio General ... on 25 May, 2021",divorce_contested,India,Delhi,2021,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_76775790,"Umesh Kant vs Smt. Priti on 22 January, 2020",divorce_contested,India,Uttar Pradesh,2020,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_1901641,"L.Ct.L.P.L. Palaniappa Chettiar And ... vs M.R. Krishnamurthy Chetty And Ors. on 1 July, 1966",harassment_civil,India,Uttar Pradesh,1933,settlement,,40000000,,,,,,,,pending,IndianKanoon
+IND_79207229,"M/S. M.D. Esthappan Infrastructure ... vs Reserve Bank Of India on 27 November, 2025",harassment_civil,India,Maharashtra,2025,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_132408322,"State vs Mohd. Firoz Etc on 23 August, 2025",harassment_civil,India,Maharashtra,2025,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_368194,"M.V. ""Sea Success I"" vs Liverpool And London Steamship ... on 5 November, 2001",harassment_civil,India,Delhi,2000,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_179828917,"Manoj Pratap Singh vs The State Of Rajasthan on 24 June, 2022",harassment_civil,India,Maharashtra,2022,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_136615700,"Hardev Singh vs State Of Punjab And Others on 25 September, 2009",harassment_civil,India,Delhi,2009,unknown,,40000000,,,,,,,,pending,IndianKanoon
+IND_16293221,"Taimur Sha vs The State Of West Bengal & Anr on 2 December, 2025",harassment_civil,India,Maharashtra,2023,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_106795949,"Unknown vs Dandayutham @ Kannan on 24 February, 2023",harassment_civil,India,Maharashtra,2023,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_132016600,"Santosh Kumar @ J.C.B vs The State Of Bihar on 8 September, 2025",harassment_civil,India,Maharashtra,2025,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_17319601,"The Karnataka Money-Lenders Act, 1961",harassment_civil,India,Karnataka,1956,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_50580199,"The Himachal Pradesh Town and Country Planning Act, 1977",harassment_civil,India,Punjab,2017,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_1368326,"The State vs Mansha Singh Bhagwant Singh on 27 February, 1958",harassment_civil,India,Punjab,1952,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_297013,"State vs Rupinder Kumar on 8 April, 2011",harassment_civil,India,Delhi,2011,acquitted,,40000000,,,,,,,,pending,IndianKanoon
+IND_397751,"Amalesh Chandra And Ors. vs The State on 13 December, 1951",harassment_civil,India,National,1951,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_1818007,"The State vs Durgeswar Datta And Ors. on 23 March, 1956",harassment_civil,India,Uttar Pradesh,1958,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_89777260,"Narayan @ Narayan Sai @ Mota Bhagwan S/O ... vs State Of Gujarat on 11 August, 2021",harassment_civil,India,Maharashtra,2021,convicted,,40000000,,,,,,,,pending,IndianKanoon
+IND_40072161,"Rajinder Kumar And Ors vs State Of Haryana on 23 February, 2023",harassment_civil,India,Punjab,2023,unknown,,40000000,,,,,,,,pending,IndianKanoon
+IND_320777202,Harsh Chatterjee vs Vikram Chatterjee - Dowry Harassment,dowry_harassment,India,Chhattisgarh,2018,convicted,334,2503278,1,4,4,0,critical,moderate,False,generated,synthetic_generation
+IND_831712146,State vs Kumar Das - IPC 498A Violation,dowry_harassment,India,Chhattisgarh,2019,convicted,478,2098436,8,3,4,7,high,complex,False,generated,synthetic_generation
+IND_172103961,Deepak Iyer vs Priya Sharma - Dowry Harassment,dowry_harassment,India,Himachal Pradesh,2015,convicted,338,2069133,5,4,4,0,medium,moderate,False,generated,synthetic_generation
+IND_585518519,State vs Riya Chatterjee - IPC 498A Violation,dowry_harassment,India,Assam,2020,convicted,718,3530546,5,5,6,2,medium,complex,True,generated,synthetic_generation
+IND_461449381,State vs Megha Singh - IPC 498A Violation,dowry_harassment,India,Telangana,2011,settlement,914,849816,6,11,5,7,low,very_complex,True,generated,synthetic_generation
+IND_757941081,State vs Rahul Verma - IPC 498A Violation,dowry_harassment,India,Rajasthan,2022,convicted,880,1386496,5,12,6,2,medium,moderate,True,generated,synthetic_generation
+IND_611707931,State vs Harsh Joshi - IPC 498A Violation,dowry_harassment,India,Punjab,2014,convicted,623,590850,4,12,10,6,medium,complex,False,generated,synthetic_generation
+IND_290551280,State vs Pooja Chatterjee - IPC 498A Violation,dowry_harassment,India,Telangana,2014,convicted,607,3368830,7,0,10,0,critical,simple,False,generated,synthetic_generation
+IND_787219827,State vs Megha Nair - IPC 498A Violation,dowry_harassment,India,Chhattisgarh,2014,settlement,843,4956356,10,14,4,10,critical,complex,True,generated,synthetic_generation
+IND_177773779,Riya Gupta vs Sneha Reddy - Dowry Harassment,dowry_harassment,India,Rajasthan,2011,convicted,753,2164737,5,10,1,4,critical,complex,True,generated,synthetic_generation
+IND_912716441,State vs Kumar Gupta - IPC 498A Violation,dowry_harassment,India,Uttar Pradesh,2010,convicted,339,1875600,8,1,5,9,low,very_complex,True,generated,synthetic_generation
+IND_885838006,State vs Riya Iyer - IPC 498A Violation,dowry_harassment,India,Delhi,2019,acquitted,740,0,7,7,5,8,low,very_complex,True,generated,synthetic_generation
+IND_254099225,State vs Anjali Rao - IPC 498A Violation,dowry_harassment,India,Jharkhand,2010,convicted,483,3999688,3,5,6,10,low,complex,False,generated,synthetic_generation
+IND_575629704,State vs Sneha Desai - IPC 498A Violation,dowry_harassment,India,Haryana,2021,settlement,716,3152088,6,12,6,8,low,complex,False,generated,synthetic_generation
+IND_853404115,State vs Rohan Iyer - IPC 498A Violation,dowry_harassment,India,Odisha,2010,convicted,341,919645,8,2,3,1,high,moderate,False,generated,synthetic_generation
+IND_860272631,State vs Zara Bhat - IPC 498A Violation,dowry_harassment,India,Madhya Pradesh,2014,settlement,354,3612529,4,9,7,7,critical,simple,False,generated,synthetic_generation
+IND_405476043,Amit Sharma vs Sneha Desai - Dowry Harassment,dowry_harassment,India,Bihar,2023,convicted,923,2272201,4,15,4,10,low,very_complex,True,generated,synthetic_generation
+IND_775929881,Zara Das vs Harsh Nair - Dowry Harassment,dowry_harassment,India,Haryana,2016,convicted,911,2760556,2,6,1,9,high,simple,False,generated,synthetic_generation
+IND_615857969,State vs Sanjay Sharma - IPC 498A Violation,dowry_harassment,India,Assam,2016,convicted,999,1971171,5,5,7,2,low,simple,False,generated,synthetic_generation
+IND_916646886,Arjun Iyer vs Priya Reddy - Dowry Harassment,dowry_harassment,India,West Bengal,2023,dismissed,484,0,8,1,3,6,low,complex,False,generated,synthetic_generation
+IND_787495888,State vs Sanjay Kumar - IPC 498A Violation,dowry_harassment,India,Delhi,2017,settlement,551,1706932,5,4,8,9,medium,complex,False,generated,synthetic_generation
+IND_313300624,State vs Rohan Patel - IPC 498A Violation,dowry_harassment,India,Himachal Pradesh,2023,settlement,347,727603,1,0,9,2,low,simple,True,generated,synthetic_generation
+IND_481101174,Aditya Reddy vs Zara Das - Dowry Harassment,dowry_harassment,India,Bihar,2010,dismissed,703,0,8,3,10,10,low,moderate,False,generated,synthetic_generation
+IND_624230576,State vs Sanjay Verma - IPC 498A Violation,dowry_harassment,India,Karnataka,2016,convicted,844,2575811,7,0,3,7,medium,complex,True,generated,synthetic_generation
+IND_661890342,State vs Anjali Nair - IPC 498A Violation,dowry_harassment,India,Punjab,2010,convicted,975,2713341,4,10,6,3,high,simple,True,generated,synthetic_generation
+IND_350223100,State vs Shruti Reddy - IPC 498A Violation,dowry_harassment,India,Haryana,2021,convicted,842,2155100,6,0,10,3,critical,simple,False,generated,synthetic_generation
+IND_512223459,Kumar Mishra vs Kumar Patel - Dowry Harassment,dowry_harassment,India,West Bengal,2016,convicted,549,560909,7,9,6,4,low,moderate,True,generated,synthetic_generation
+IND_306630584,Kavya Gupta vs Arjun Verma - Dowry Harassment,dowry_harassment,India,Chhattisgarh,2011,convicted,693,3913586,1,14,1,10,medium,complex,True,generated,synthetic_generation
+IND_924772009,State vs Divya Bhat - IPC 498A Violation,dowry_harassment,India,Maharashtra,2012,settlement,783,1740813,7,13,8,7,low,complex,False,generated,synthetic_generation
+IND_555888629,Kumar Nair vs Vikram Reddy - Dowry Harassment,dowry_harassment,India,Delhi,2013,convicted,526,2834021,6,10,3,10,critical,moderate,True,generated,synthetic_generation
+IND_624518232,State vs Rahul Sharma - IPC 498A Violation,dowry_harassment,India,Karnataka,2010,acquitted,630,0,4,15,3,6,high,very_complex,False,generated,synthetic_generation
+IND_459584669,State vs Arjun Kumar - IPC 498A Violation,dowry_harassment,India,Punjab,2013,convicted,786,556787,10,10,3,1,medium,very_complex,False,generated,synthetic_generation
+IND_987689239,Arjun Kumar vs Pooja Patel - Dowry Harassment,dowry_harassment,India,Bihar,2012,convicted,829,3044283,9,3,8,8,low,complex,False,generated,synthetic_generation
+IND_344603100,Anjali Iyer vs Divya Patel - Dowry Harassment,dowry_harassment,India,Madhya Pradesh,2010,convicted,903,3655129,2,1,3,3,medium,complex,False,generated,synthetic_generation
+IND_686194790,State vs Megha Chatterjee - IPC 498A Violation,dowry_harassment,India,Maharashtra,2018,settlement,363,3279407,6,9,10,4,critical,complex,False,generated,synthetic_generation
+IND_739562696,State vs Harsh Mishra - IPC 498A Violation,dowry_harassment,India,Jharkhand,2020,convicted,837,818633,5,9,10,5,medium,simple,False,generated,synthetic_generation
+IND_455326088,State vs Divya Verma - IPC 498A Violation,dowry_harassment,India,Assam,2019,acquitted,368,0,8,4,4,3,critical,simple,True,generated,synthetic_generation
+IND_502848113,Vikram Das vs Arjun Nair - Dowry Harassment,dowry_harassment,India,Delhi,2013,convicted,839,4876869,8,10,1,8,medium,very_complex,True,generated,synthetic_generation
+IND_821958301,Sneha Iyer vs Kumar Desai - Dowry Harassment,dowry_harassment,India,Jharkhand,2023,settlement,551,4418441,9,5,1,3,high,complex,False,generated,synthetic_generation
+IND_339353395,State vs Amit Chatterjee - IPC 498A Violation,dowry_harassment,India,Haryana,2012,convicted,979,3738428,6,2,4,10,high,simple,True,generated,synthetic_generation
+IND_154105607,State vs Sneha Desai - IPC 498A Violation,dowry_harassment,India,Haryana,2016,convicted,565,1321562,3,11,4,10,critical,complex,True,generated,synthetic_generation
+IND_170728476,Isha Singh vs Divya Sharma - Dowry Harassment,dowry_harassment,India,Assam,2022,convicted,749,2167252,10,0,10,4,low,very_complex,True,generated,synthetic_generation
+IND_928791827,Rajesh Singh vs Pooja Iyer - Dowry Harassment,dowry_harassment,India,Maharashtra,2010,convicted,982,3864925,3,1,2,0,low,complex,False,generated,synthetic_generation
+IND_887060696,State vs Harsh Kumar - IPC 498A Violation,dowry_harassment,India,Kerala,2019,acquitted,362,0,3,0,5,1,high,very_complex,True,generated,synthetic_generation
+IND_373991844,Riya Nair vs Pooja Mishra - Dowry Harassment,dowry_harassment,India,Maharashtra,2018,settlement,517,4322004,2,15,8,0,critical,complex,False,generated,synthetic_generation
+IND_921384717,Aditya Verma vs Zara Iyer - Dowry Harassment,dowry_harassment,India,Andhra Pradesh,2015,dismissed,333,0,8,13,9,3,medium,moderate,False,generated,synthetic_generation
+IND_342822975,Priya Rao vs Neha Rao - Dowry Harassment,dowry_harassment,India,Rajasthan,2023,convicted,828,827178,1,5,1,9,high,very_complex,True,generated,synthetic_generation
+IND_881162907,Deepak Sharma vs Pooja Chatterjee - Dowry Harassment,dowry_harassment,India,Himachal Pradesh,2012,dismissed,455,0,3,15,10,10,critical,complex,False,generated,synthetic_generation
+IND_240550253,State vs Priya Kumar - IPC 498A Violation,dowry_harassment,India,Madhya Pradesh,2022,settlement,410,571420,1,6,1,10,low,moderate,False,generated,synthetic_generation
+IND_325923355,State vs Pooja Chatterjee - IPC 498A Violation,dowry_harassment,India,Gujarat,2016,convicted,972,950004,4,9,5,2,low,simple,False,generated,synthetic_generation
+IND_243275322,Aditya Nair vs Shruti Gupta - Dowry Harassment,dowry_harassment,India,Odisha,2023,dismissed,346,0,4,11,2,2,high,simple,False,generated,synthetic_generation
+IND_341023109,Harsh Desai vs Vikram Reddy - Dowry Harassment,dowry_harassment,India,Jharkhand,2010,convicted,414,1811527,5,10,10,2,critical,complex,True,generated,synthetic_generation
+IND_335301101,Pooja Mishra vs Megha Chatterjee - Dowry Harassment,dowry_harassment,India,Punjab,2022,dismissed,725,0,1,0,6,1,critical,simple,False,generated,synthetic_generation
+IND_943045259,Harsh Kumar vs Rajesh Verma - Dowry Harassment,dowry_harassment,India,Chhattisgarh,2011,convicted,314,1320816,10,12,10,6,high,very_complex,True,generated,synthetic_generation
+IND_756869694,Sneha Iyer vs Megha Bhat - Dowry Harassment,dowry_harassment,India,Haryana,2022,convicted,814,3578726,8,1,3,5,critical,complex,True,generated,synthetic_generation
+IND_221782111,State vs Kavya Chatterjee - IPC 498A Violation,dowry_harassment,India,Kerala,2018,convicted,996,4890330,8,13,9,4,high,complex,True,generated,synthetic_generation
+IND_192871451,State vs Rohan Patel - IPC 498A Violation,dowry_harassment,India,Odisha,2020,acquitted,400,0,5,2,1,0,high,moderate,False,generated,synthetic_generation
+IND_888680299,State vs Riya Verma - IPC 498A Violation,dowry_harassment,India,Bihar,2023,convicted,489,4978107,8,6,4,8,medium,simple,False,generated,synthetic_generation
+IND_454204007,Amit Rao vs Rahul Gupta - Dowry Harassment,dowry_harassment,India,Karnataka,2022,settlement,677,4591549,3,0,7,7,high,very_complex,False,generated,synthetic_generation
+IND_238305749,State vs Priya Bhat - IPC 498A Violation,dowry_harassment,India,Chhattisgarh,2023,acquitted,408,0,1,3,5,3,medium,simple,True,generated,synthetic_generation
+IND_665930136,State vs Anjali Mishra - IPC 498A Violation,dowry_harassment,India,Rajasthan,2020,convicted,518,1253648,10,10,6,0,medium,moderate,False,generated,synthetic_generation
+IND_234759115,State vs Riya Gupta - IPC 498A Violation,dowry_harassment,India,Haryana,2014,convicted,723,4285856,2,15,10,10,high,very_complex,True,generated,synthetic_generation
+IND_216622342,State vs Anjali Sharma - IPC 498A Violation,dowry_harassment,India,Chhattisgarh,2020,settlement,322,3970764,4,11,3,10,high,complex,False,generated,synthetic_generation
+IND_708014527,Vikram Verma vs Amit Desai - Dowry Harassment,dowry_harassment,India,Telangana,2022,convicted,322,2881009,2,1,7,8,medium,very_complex,True,generated,synthetic_generation
+IND_896027760,State vs Deepak Kumar - IPC 498A Violation,dowry_harassment,India,Maharashtra,2018,convicted,574,2279568,5,8,9,2,medium,complex,False,generated,synthetic_generation
+IND_871838284,State vs Kavya Gupta - IPC 498A Violation,dowry_harassment,India,Jharkhand,2015,convicted,375,1460569,4,13,2,1,medium,very_complex,True,generated,synthetic_generation
+IND_569272775,Deepak Mishra vs Shruti Rao - Dowry Harassment,dowry_harassment,India,Bihar,2022,convicted,895,2984452,1,1,4,10,critical,complex,False,generated,synthetic_generation
+IND_746423788,Riya Rao vs Nikhil Reddy - Dowry Harassment,dowry_harassment,India,Karnataka,2014,dismissed,570,0,7,3,4,7,low,complex,True,generated,synthetic_generation
+IND_920733192,State vs Harsh Sharma - IPC 498A Violation,dowry_harassment,India,Tamil Nadu,2022,convicted,824,2592713,5,1,9,2,high,moderate,False,generated,synthetic_generation
+IND_580983948,State vs Kumar Chatterjee - IPC 498A Violation,dowry_harassment,India,Himachal Pradesh,2013,convicted,873,2678770,4,4,3,7,high,complex,True,generated,synthetic_generation
+IND_962754439,Arjun Chatterjee vs Aditya Rao - Dowry Harassment,dowry_harassment,India,Rajasthan,2010,convicted,794,579778,9,1,3,2,critical,very_complex,True,generated,synthetic_generation
+IND_178802813,Vikram Kumar vs Vikram Sharma - Dowry Harassment,dowry_harassment,India,Punjab,2022,dismissed,556,0,4,2,3,4,high,simple,False,generated,synthetic_generation
+IND_363573205,State vs Riya Reddy - IPC 498A Violation,dowry_harassment,India,Delhi,2017,settlement,439,1773470,9,10,8,1,high,very_complex,False,generated,synthetic_generation
+IND_415866585,Anjali Desai vs Arjun Joshi - Dowry Harassment,dowry_harassment,India,Odisha,2022,settlement,360,2027206,7,6,3,9,high,complex,False,generated,synthetic_generation
+IND_850805136,Sneha Mishra vs Megha Chatterjee - Dowry Harassment,dowry_harassment,India,Odisha,2023,convicted,975,2760225,8,10,3,1,high,moderate,True,generated,synthetic_generation
+IND_257113851,State vs Divya Desai - IPC 498A Violation,dowry_harassment,India,Maharashtra,2011,convicted,402,1783619,2,9,6,9,critical,complex,False,generated,synthetic_generation
+IND_363527571,Zara Joshi vs Riya Joshi - Dowry Harassment,dowry_harassment,India,Madhya Pradesh,2023,convicted,346,4699282,3,10,10,7,low,complex,False,generated,synthetic_generation
+IND_341325295,Rajesh Rao vs Kavya Iyer - Dowry Harassment,dowry_harassment,India,Punjab,2013,convicted,971,2796379,5,6,2,2,high,simple,False,generated,synthetic_generation
+IND_963441772,State vs Megha Das - IPC 498A Violation,dowry_harassment,India,Gujarat,2014,acquitted,646,0,8,7,8,2,critical,very_complex,False,generated,synthetic_generation
+IND_828400030,Neha Verma vs Vikram Joshi - Dowry Harassment,dowry_harassment,India,Maharashtra,2012,settlement,743,3238858,3,6,9,10,high,very_complex,True,generated,synthetic_generation
+IND_311520317,Shruti Singh vs Harsh Das - Criminal Complaint,criminal_complaint,India,Karnataka,2022,convicted,827,1962001,7,4,5,7,high,very_complex,False,generated,synthetic_generation
+IND_373671825,State vs Harsh Mishra - Criminal Case,criminal_complaint,India,Chhattisgarh,2015,convicted,713,249999,5,10,7,2,medium,moderate,True,generated,synthetic_generation
+IND_665952385,Arjun Sharma vs Harsh Rao - Criminal Complaint,criminal_complaint,India,Andhra Pradesh,2019,acquitted,795,0,5,4,3,6,medium,very_complex,True,generated,synthetic_generation
+IND_942331040,Harsh Sharma vs Zara Chatterjee - Criminal Complaint,criminal_complaint,India,West Bengal,2020,convicted,591,1909302,7,4,1,6,low,very_complex,True,generated,synthetic_generation
+IND_164144604,State vs Aditya Verma - Criminal Case,criminal_complaint,India,Andhra Pradesh,2017,convicted,401,143243,3,4,8,7,critical,moderate,True,generated,synthetic_generation
+IND_723092401,State vs Megha Chatterjee - Criminal Case,criminal_complaint,India,Delhi,2017,convicted,497,1521786,3,14,8,10,low,moderate,False,generated,synthetic_generation
+IND_553556732,State vs Harsh Bhat - Criminal Case,criminal_complaint,India,Jharkhand,2017,acquitted,682,0,8,9,7,1,critical,simple,False,generated,synthetic_generation
+IND_599138093,Aditya Joshi vs Arjun Chatterjee - Criminal Complaint,criminal_complaint,India,Delhi,2010,acquitted,650,0,4,12,7,3,critical,very_complex,True,generated,synthetic_generation
+IND_848011580,Zara Kumar vs Sneha Desai - Criminal Complaint,criminal_complaint,India,Andhra Pradesh,2016,acquitted,549,0,4,7,10,2,low,moderate,False,generated,synthetic_generation
+IND_873149730,Kumar Singh vs Priya Mishra - Criminal Complaint,criminal_complaint,India,Delhi,2015,convicted,295,883203,2,0,10,7,medium,very_complex,False,generated,synthetic_generation
+IND_167605716,Sanjay Verma vs Vikram Rao - Criminal Complaint,criminal_complaint,India,Himachal Pradesh,2013,acquitted,796,0,1,13,10,6,low,moderate,False,generated,synthetic_generation
+IND_171975660,Aditya Sharma vs Priya Nair - Criminal Complaint,criminal_complaint,India,Rajasthan,2023,acquitted,582,0,2,1,3,1,low,moderate,False,generated,synthetic_generation
+IND_496812677,State vs Aditya Nair - Criminal Case,criminal_complaint,India,Jharkhand,2019,acquitted,774,0,6,14,6,9,medium,very_complex,False,generated,synthetic_generation
+IND_751091922,Nikhil Bhat vs Anjali Chatterjee - Criminal Complaint,criminal_complaint,India,Chhattisgarh,2015,convicted,734,515208,2,11,8,7,medium,simple,False,generated,synthetic_generation
+IND_364223460,Zara Nair vs Sneha Nair - Criminal Complaint,criminal_complaint,India,Telangana,2010,convicted,716,1702680,8,5,4,7,critical,complex,True,generated,synthetic_generation
+IND_307735630,State vs Rajesh Chatterjee - Criminal Case,criminal_complaint,India,Andhra Pradesh,2020,dismissed,308,0,1,5,2,9,critical,moderate,True,generated,synthetic_generation
+IND_250634994,State vs Arjun Das - Criminal Case,criminal_complaint,India,Bihar,2018,convicted,598,345980,6,15,3,5,high,simple,False,generated,synthetic_generation
+IND_352855555,State vs Kavya Rao - Criminal Case,criminal_complaint,India,Uttar Pradesh,2016,convicted,870,1623784,5,8,1,3,low,moderate,False,generated,synthetic_generation
+IND_877639412,State vs Aditya Singh - Criminal Case,criminal_complaint,India,Odisha,2015,convicted,284,1378237,6,15,2,0,low,simple,False,generated,synthetic_generation
+IND_971863597,Divya Rao vs Aditya Desai - Criminal Complaint,criminal_complaint,India,Tamil Nadu,2015,acquitted,607,0,9,12,7,4,low,simple,False,generated,synthetic_generation
+IND_778964989,State vs Sneha Das - Criminal Case,criminal_complaint,India,Rajasthan,2013,acquitted,639,0,9,3,5,10,critical,complex,False,generated,synthetic_generation
+IND_555921530,Aditya Gupta vs Neha Desai - Criminal Complaint,criminal_complaint,India,Uttar Pradesh,2016,dismissed,716,0,10,5,9,0,medium,moderate,False,generated,synthetic_generation
+IND_141088430,Anjali Desai vs Arjun Bhat - Criminal Complaint,criminal_complaint,India,Chhattisgarh,2022,acquitted,829,0,2,1,2,2,low,complex,False,generated,synthetic_generation
+IND_407282013,Riya Singh vs Rohan Das - Criminal Complaint,criminal_complaint,India,West Bengal,2018,acquitted,628,0,3,3,4,6,low,complex,False,generated,synthetic_generation
+IND_401499835,State vs Riya Singh - Criminal Case,criminal_complaint,India,Karnataka,2021,convicted,405,549783,3,4,8,4,critical,complex,False,generated,synthetic_generation
+IND_649864646,Sanjay Singh vs Anjali Kumar - Criminal Complaint,criminal_complaint,India,Assam,2013,dismissed,487,0,7,4,1,1,critical,simple,True,generated,synthetic_generation
+IND_422295197,State vs Deepak Chatterjee - Criminal Case,criminal_complaint,India,Maharashtra,2021,dismissed,755,0,9,6,8,5,low,very_complex,False,generated,synthetic_generation
+IND_774924526,State vs Neha Patel - Criminal Case,criminal_complaint,India,Tamil Nadu,2012,convicted,438,1006114,2,13,1,7,critical,very_complex,True,generated,synthetic_generation
+IND_232137034,State vs Priya Mishra - Criminal Case,criminal_complaint,India,Jharkhand,2010,convicted,601,308820,7,8,10,3,low,simple,True,generated,synthetic_generation
+IND_501048780,Rahul Bhat vs Rajesh Bhat - Criminal Complaint,criminal_complaint,India,Gujarat,2019,acquitted,625,0,9,9,5,3,critical,moderate,True,generated,synthetic_generation
+IND_690973910,Rajesh Bhat vs Nikhil Mishra - Criminal Complaint,criminal_complaint,India,Haryana,2018,convicted,432,1318113,10,4,4,7,high,complex,True,generated,synthetic_generation
+IND_848475949,Harsh Joshi vs Riya Iyer - Criminal Complaint,criminal_complaint,India,Jharkhand,2019,convicted,316,464222,4,12,8,5,medium,very_complex,True,generated,synthetic_generation
+IND_205663045,Anjali Iyer vs Sneha Verma - Criminal Complaint,criminal_complaint,India,Delhi,2015,dismissed,296,0,5,0,7,9,low,very_complex,False,generated,synthetic_generation
+IND_954783077,State vs Priya Reddy - Criminal Case,criminal_complaint,India,Gujarat,2013,acquitted,441,0,6,8,2,9,low,complex,True,generated,synthetic_generation
+IND_855823517,Rahul Joshi vs Nikhil Das - Criminal Complaint,criminal_complaint,India,Gujarat,2013,acquitted,434,0,3,7,3,2,medium,simple,False,generated,synthetic_generation
+IND_331615603,State vs Rohan Gupta - Criminal Case,criminal_complaint,India,Maharashtra,2019,acquitted,455,0,1,8,9,1,high,simple,False,generated,synthetic_generation
+IND_636185079,Deepak Das vs Nikhil Patel - Criminal Complaint,criminal_complaint,India,Haryana,2013,acquitted,359,0,3,1,9,3,low,moderate,False,generated,synthetic_generation
+IND_935809111,Amit Desai vs Riya Iyer - Criminal Complaint,criminal_complaint,India,Assam,2018,acquitted,532,0,4,15,3,8,low,simple,False,generated,synthetic_generation
+IND_409448325,Amit Bhat vs Aditya Verma - Criminal Complaint,criminal_complaint,India,Gujarat,2021,dismissed,665,0,4,11,8,9,critical,simple,False,generated,synthetic_generation
+IND_313838742,Zara Sharma vs Priya Verma - Criminal Complaint,criminal_complaint,India,Uttar Pradesh,2014,acquitted,390,0,5,3,6,6,high,simple,False,generated,synthetic_generation
+IND_580117428,State vs Rohan Mishra - Criminal Case,criminal_complaint,India,Punjab,2012,acquitted,524,0,3,11,4,5,critical,complex,False,generated,synthetic_generation
+IND_388472891,State vs Zara Mishra - Criminal Case,criminal_complaint,India,Tamil Nadu,2022,convicted,494,1374280,2,13,9,2,medium,moderate,True,generated,synthetic_generation
+IND_646963577,Kumar Rao vs Arjun Sharma - Criminal Complaint,criminal_complaint,India,Uttar Pradesh,2010,acquitted,674,0,7,6,8,5,critical,moderate,False,generated,synthetic_generation
+IND_113055372,Kumar Reddy vs Pooja Rao - Criminal Complaint,criminal_complaint,India,Uttar Pradesh,2020,convicted,844,1210386,10,3,9,2,high,very_complex,False,generated,synthetic_generation
+IND_701516273,Shruti Desai vs Priya Chatterjee - Criminal Complaint,criminal_complaint,India,Maharashtra,2013,dismissed,335,0,9,13,1,2,low,moderate,False,generated,synthetic_generation
+IND_138695799,State vs Rohan Gupta - Criminal Case,criminal_complaint,India,Delhi,2015,dismissed,489,0,5,5,9,8,low,moderate,True,generated,synthetic_generation
+IND_451346081,State vs Riya Sharma - Criminal Case,criminal_complaint,India,Tamil Nadu,2017,convicted,782,579881,1,9,10,2,high,complex,False,generated,synthetic_generation
+IND_344337919,State vs Anjali Gupta - Criminal Case,criminal_complaint,India,Chhattisgarh,2023,acquitted,748,0,10,0,6,10,high,complex,True,generated,synthetic_generation
+IND_362762572,State vs Deepak Singh - Criminal Case,criminal_complaint,India,Himachal Pradesh,2021,dismissed,803,0,9,0,4,3,high,complex,True,generated,synthetic_generation
+IND_545467085,Neha Desai vs Rohan Singh - Criminal Complaint,criminal_complaint,India,Kerala,2014,convicted,404,1527321,4,6,9,4,critical,simple,True,generated,synthetic_generation
+IND_590255003,Deepak Joshi vs Shruti Singh - Criminal Complaint,criminal_complaint,India,West Bengal,2012,convicted,831,1552005,2,6,5,1,low,very_complex,True,generated,synthetic_generation
+IND_312368159,Rohan Singh vs Nikhil Iyer - Criminal Complaint,criminal_complaint,India,Punjab,2013,acquitted,890,0,6,7,10,5,medium,simple,True,generated,synthetic_generation
+IND_119205821,Anjali Mishra vs Rohan Chatterjee - Criminal Complaint,criminal_complaint,India,Madhya Pradesh,2020,convicted,735,1003373,10,11,8,0,low,complex,True,generated,synthetic_generation
+IND_110445797,Vikram Iyer vs Deepak Desai - Criminal Complaint,criminal_complaint,India,Tamil Nadu,2022,acquitted,868,0,4,4,8,6,medium,moderate,False,generated,synthetic_generation
+IND_687823356,Sanjay Kumar vs Arjun Joshi - Criminal Complaint,criminal_complaint,India,Gujarat,2015,acquitted,383,0,7,6,7,5,medium,complex,False,generated,synthetic_generation
+IND_246298091,State vs Rajesh Bhat - Criminal Case,criminal_complaint,India,Kerala,2022,convicted,816,1159531,4,4,9,0,high,complex,False,generated,synthetic_generation
+IND_771074968,State vs Divya Kumar - Criminal Case,criminal_complaint,India,Haryana,2021,convicted,562,1111361,2,0,8,3,critical,simple,True,generated,synthetic_generation
+IND_458334975,State vs Rohan Nair - Criminal Case,criminal_complaint,India,Gujarat,2022,convicted,506,1667391,3,5,5,4,critical,very_complex,True,generated,synthetic_generation
+IND_242187463,Sneha Iyer vs Deepak Chatterjee - Criminal Complaint,criminal_complaint,India,Himachal Pradesh,2016,acquitted,510,0,5,5,2,7,low,simple,True,generated,synthetic_generation
+IND_898982289,State vs Amit Sharma - Criminal Case,criminal_complaint,India,Kerala,2015,acquitted,667,0,7,3,2,4,medium,simple,True,generated,synthetic_generation
+IND_544247211,State vs Zara Joshi - Criminal Case,criminal_complaint,India,Punjab,2021,dismissed,895,0,10,14,8,4,high,moderate,False,generated,synthetic_generation
+IND_542286741,State vs Rohan Das - Criminal Case,criminal_complaint,India,Gujarat,2017,convicted,396,960058,1,13,4,2,medium,simple,True,generated,synthetic_generation
+IND_840563505,Sanjay Chatterjee vs Isha Desai - Criminal Complaint,criminal_complaint,India,Delhi,2011,convicted,367,1718835,1,11,4,2,critical,complex,False,generated,synthetic_generation
+IND_780972574,State vs Sanjay Gupta - Criminal Case,criminal_complaint,India,Punjab,2016,acquitted,735,0,10,5,5,2,high,very_complex,False,generated,synthetic_generation
+IND_200259686,Neha Mishra vs Amit Mishra - Criminal Complaint,criminal_complaint,India,Madhya Pradesh,2010,convicted,801,1872888,5,0,2,1,high,very_complex,True,generated,synthetic_generation
+IND_883972307,State vs Anjali Reddy - Criminal Case,criminal_complaint,India,West Bengal,2014,convicted,408,1038853,9,14,3,6,critical,simple,True,generated,synthetic_generation
+IND_970199505,Zara Sharma vs Nikhil Chatterjee - Criminal Complaint,criminal_complaint,India,Andhra Pradesh,2021,dismissed,848,0,6,1,8,4,critical,complex,True,generated,synthetic_generation
+IND_829572490,Rohan Patel vs Isha Patel - Criminal Complaint,criminal_complaint,India,Uttar Pradesh,2015,convicted,327,280638,2,8,8,0,high,moderate,False,generated,synthetic_generation
+IND_931833319,State vs Deepak Verma - Criminal Case,criminal_complaint,India,Haryana,2017,convicted,336,721012,1,4,2,6,critical,moderate,False,generated,synthetic_generation
+IND_662036067,State vs Amit Das - Criminal Case,criminal_complaint,India,West Bengal,2019,acquitted,423,0,1,9,7,1,low,complex,False,generated,synthetic_generation
+IND_462583742,Vikram Das vs Amit Nair - Criminal Complaint,criminal_complaint,India,Kerala,2018,convicted,378,1846788,8,9,3,5,critical,complex,False,generated,synthetic_generation
+IND_753356957,Neha Kumar vs Anjali Patel - Criminal Complaint,criminal_complaint,India,Telangana,2017,acquitted,626,0,9,15,1,3,high,complex,True,generated,synthetic_generation
+IND_445171676,State vs Neha Mishra - Criminal Case,criminal_complaint,India,Delhi,2021,acquitted,259,0,2,14,2,0,high,complex,True,generated,synthetic_generation
+IND_218779455,State vs Kavya Kumar - Criminal Case,criminal_complaint,India,Assam,2016,dismissed,395,0,8,0,2,0,critical,moderate,False,generated,synthetic_generation
+IND_375959960,Sneha Mishra vs Priya Bhat - Criminal Complaint,criminal_complaint,India,Bihar,2019,acquitted,301,0,1,5,7,6,low,moderate,True,generated,synthetic_generation
+IND_868982198,State vs Rohan Nair - Criminal Case,criminal_complaint,India,Haryana,2021,acquitted,426,0,3,10,5,1,critical,very_complex,False,generated,synthetic_generation
+IND_816454976,State vs Rajesh Bhat - Criminal Case,criminal_complaint,India,Bihar,2017,convicted,569,1454694,7,12,6,7,medium,simple,False,generated,synthetic_generation
+IND_593143276,State vs Aditya Chatterjee - Criminal Case,criminal_complaint,India,Tamil Nadu,2017,convicted,559,133898,9,12,8,6,critical,moderate,False,generated,synthetic_generation
+IND_371559985,Zara Patel vs Kumar Rao - Criminal Complaint,criminal_complaint,India,Chhattisgarh,2022,dismissed,397,0,5,14,9,0,medium,simple,False,generated,synthetic_generation
+IND_283571793,Kumar Iyer vs Sneha Gupta - Criminal Complaint,criminal_complaint,India,West Bengal,2012,convicted,255,1551796,1,7,1,1,low,complex,True,generated,synthetic_generation
+IND_520161717,Zara Joshi vs Neha Kumar - Property Dispute,property_dispute,India,Bihar,2023,settlement,1072,3459669,2,2,3,0,medium,complex,False,generated,synthetic_generation
+IND_298886470,Riya Chatterjee vs Rohan Mishra - Property Dispute,property_dispute,India,Karnataka,2017,convicted,1046,4492492,5,6,3,8,critical,very_complex,True,generated,synthetic_generation
+IND_991406687,Riya Nair vs Deepak Joshi - Property Dispute,property_dispute,India,Himachal Pradesh,2013,convicted,1147,4070811,5,12,10,7,high,moderate,False,generated,synthetic_generation
+IND_849028326,Sanjay Bhat vs Rajesh Iyer - Property Dispute,property_dispute,India,Uttar Pradesh,2020,convicted,427,8914787,5,14,4,8,critical,simple,False,generated,synthetic_generation
+IND_201475556,Neha Desai vs Anjali Patel - Land Title Case,property_dispute,India,Rajasthan,2018,convicted,609,2468704,7,8,9,2,medium,simple,True,generated,synthetic_generation
+IND_344436086,Anjali Rao vs Nikhil Singh - Property Dispute,property_dispute,India,Punjab,2017,dismissed,539,0,9,4,10,5,critical,very_complex,True,generated,synthetic_generation
+IND_443869523,Sneha Das vs Rajesh Nair - Land Title Case,property_dispute,India,Odisha,2016,settlement,1449,9434508,10,6,10,7,critical,simple,True,generated,synthetic_generation
+IND_772986909,Shruti Gupta vs Divya Desai - Land Title Case,property_dispute,India,Delhi,2020,dismissed,1233,0,6,14,7,5,medium,simple,True,generated,synthetic_generation
+IND_996228828,Riya Sharma vs Divya Bhat - Land Title Case,property_dispute,India,Madhya Pradesh,2016,convicted,1396,3092079,1,14,9,1,medium,moderate,True,generated,synthetic_generation
+IND_830204081,Shruti Joshi vs Sanjay Sharma - Land Title Case,property_dispute,India,Delhi,2012,convicted,716,8413743,3,5,8,3,critical,simple,True,generated,synthetic_generation
+IND_789369326,Sanjay Chatterjee vs Arjun Nair - Land Title Case,property_dispute,India,Rajasthan,2017,convicted,691,7066654,7,11,3,1,critical,complex,True,generated,synthetic_generation
+IND_796985118,Nikhil Joshi vs Kumar Rao - Property Dispute,property_dispute,India,Uttar Pradesh,2023,settlement,1354,8992695,8,4,6,10,low,moderate,False,generated,synthetic_generation
+IND_982747557,Kumar Bhat vs Kavya Kumar - Land Title Case,property_dispute,India,Telangana,2016,dismissed,630,0,6,6,1,7,medium,moderate,True,generated,synthetic_generation
+IND_217632929,Nikhil Singh vs Deepak Desai - Land Title Case,property_dispute,India,Jharkhand,2017,convicted,592,3594588,7,7,6,3,high,complex,False,generated,synthetic_generation
+IND_139046343,Kavya Bhat vs Anjali Chatterjee - Property Dispute,property_dispute,India,Telangana,2010,settlement,487,9488103,3,6,3,0,high,complex,True,generated,synthetic_generation
+IND_288792534,Amit Joshi vs Rahul Kumar - Land Title Case,property_dispute,India,Karnataka,2021,dismissed,1037,0,2,3,8,1,low,complex,True,generated,synthetic_generation
+IND_178330098,Aditya Bhat vs Sanjay Joshi - Land Title Case,property_dispute,India,Delhi,2010,settlement,490,8274316,8,14,8,3,high,simple,False,generated,synthetic_generation
+IND_395284420,Zara Singh vs Megha Patel - Property Dispute,property_dispute,India,Delhi,2022,settlement,517,7743420,3,12,10,2,critical,simple,False,generated,synthetic_generation
+IND_585727908,Kumar Nair vs Megha Joshi - Property Dispute,property_dispute,India,Tamil Nadu,2020,dismissed,423,0,9,2,9,0,medium,simple,False,generated,synthetic_generation
+IND_290826870,Priya Nair vs Rahul Iyer - Land Title Case,property_dispute,India,Maharashtra,2015,convicted,1331,2411491,6,10,5,0,critical,moderate,True,generated,synthetic_generation
+IND_209252780,Sanjay Mishra vs Amit Joshi - Property Dispute,property_dispute,India,Himachal Pradesh,2017,settlement,469,7620768,10,11,8,8,medium,moderate,True,generated,synthetic_generation
+IND_944333364,Amit Kumar vs Riya Nair - Land Title Case,property_dispute,India,Rajasthan,2020,settlement,692,3284081,9,2,5,9,high,very_complex,False,generated,synthetic_generation
+IND_484577296,Sanjay Joshi vs Nikhil Bhat - Land Title Case,property_dispute,India,Bihar,2016,settlement,614,6971674,4,1,6,10,medium,complex,True,generated,synthetic_generation
+IND_334526879,Rohan Chatterjee vs Amit Iyer - Property Dispute,property_dispute,India,West Bengal,2020,settlement,1338,2080337,10,8,5,7,medium,moderate,True,generated,synthetic_generation
+IND_365116089,Zara Chatterjee vs Rohan Patel - Property Dispute,property_dispute,India,Gujarat,2021,settlement,1397,1244574,3,9,2,6,high,complex,False,generated,synthetic_generation
+IND_314896795,Aditya Singh vs Priya Rao - Land Title Case,property_dispute,India,West Bengal,2011,settlement,1421,3437891,4,3,6,2,high,moderate,True,generated,synthetic_generation
+IND_156004031,Rahul Gupta vs Megha Kumar - Property Dispute,property_dispute,India,Bihar,2016,settlement,941,8003094,3,13,7,7,critical,moderate,False,generated,synthetic_generation
+IND_117859969,Neha Iyer vs Megha Chatterjee - Land Title Case,property_dispute,India,Gujarat,2015,convicted,1266,9207638,1,10,4,3,critical,very_complex,False,generated,synthetic_generation
+IND_328494645,Rahul Verma vs Priya Das - Property Dispute,property_dispute,India,Kerala,2014,settlement,1298,2804527,3,15,8,7,low,moderate,False,generated,synthetic_generation
+IND_246221094,Sneha Verma vs Amit Iyer - Property Dispute,property_dispute,India,Assam,2015,settlement,1423,7077629,3,3,1,5,low,complex,True,generated,synthetic_generation
+IND_108192268,Rahul Bhat vs Kavya Kumar - Property Dispute,property_dispute,India,Kerala,2010,convicted,640,5086101,10,15,9,5,medium,moderate,False,generated,synthetic_generation
+IND_122364461,Neha Verma vs Vikram Sharma - Property Dispute,property_dispute,India,Andhra Pradesh,2013,dismissed,770,0,6,7,8,6,critical,very_complex,True,generated,synthetic_generation
+IND_740588936,Deepak Kumar vs Sneha Singh - Property Dispute,property_dispute,India,Tamil Nadu,2016,settlement,872,9513949,1,0,8,1,low,simple,True,generated,synthetic_generation
+IND_202657549,Nikhil Chatterjee vs Kavya Bhat - Property Dispute,property_dispute,India,Madhya Pradesh,2016,convicted,1293,6396466,2,14,1,1,high,simple,False,generated,synthetic_generation
+IND_741311107,Aditya Gupta vs Sanjay Nair - Property Dispute,property_dispute,India,Jharkhand,2013,settlement,1417,1006922,3,7,6,9,critical,very_complex,False,generated,synthetic_generation
+IND_297003780,Kumar Rao vs Kavya Patel - Land Title Case,property_dispute,India,Maharashtra,2013,convicted,922,9303949,6,13,9,1,critical,complex,False,generated,synthetic_generation
+IND_223381179,Vikram Patel vs Divya Desai - Property Dispute,property_dispute,India,Tamil Nadu,2020,settlement,423,6703240,2,11,2,3,low,simple,False,generated,synthetic_generation
+IND_366063405,Neha Bhat vs Arjun Verma - Property Dispute,property_dispute,India,Bihar,2010,settlement,1155,1792533,1,2,8,8,high,moderate,True,generated,synthetic_generation
+IND_927988960,Kumar Rao vs Sneha Nair - Land Title Case,property_dispute,India,Punjab,2023,dismissed,952,0,1,1,3,3,critical,very_complex,True,generated,synthetic_generation
+IND_756892394,Aditya Chatterjee vs Rahul Chatterjee - Land Title Case,property_dispute,India,Bihar,2010,convicted,922,3137438,1,0,3,1,medium,simple,False,generated,synthetic_generation
+IND_757555157,Aditya Rao vs Deepak Joshi - Property Dispute,property_dispute,India,Uttar Pradesh,2018,convicted,426,8072820,9,5,10,2,critical,moderate,False,generated,synthetic_generation
+IND_358782041,Rajesh Chatterjee vs Rahul Gupta - Property Dispute,property_dispute,India,Andhra Pradesh,2017,convicted,1359,7923789,7,2,6,3,low,moderate,True,generated,synthetic_generation
+IND_686539122,Priya Iyer vs Anjali Sharma - Property Dispute,property_dispute,India,Telangana,2013,convicted,736,2055624,3,14,2,5,medium,very_complex,True,generated,synthetic_generation
+IND_736757657,Sanjay Kumar vs Harsh Patel - Land Title Case,property_dispute,India,Maharashtra,2011,convicted,655,6284092,6,11,5,0,critical,moderate,True,generated,synthetic_generation
+IND_498732094,Sneha Bhat vs Sneha Patel - Land Title Case,property_dispute,India,Odisha,2013,settlement,557,7900550,7,2,5,4,critical,complex,False,generated,synthetic_generation
+IND_393562002,Vikram Nair vs Anjali Kumar - Land Title Case,property_dispute,India,Chhattisgarh,2012,dismissed,852,0,1,13,9,2,high,moderate,False,generated,synthetic_generation
+IND_890700654,Rajesh Joshi vs Nikhil Desai - Property Dispute,property_dispute,India,Madhya Pradesh,2016,dismissed,819,0,9,14,1,9,high,simple,False,generated,synthetic_generation
+IND_294243001,Zara Mishra vs Kavya Reddy - Property Dispute,property_dispute,India,Andhra Pradesh,2011,dismissed,1118,0,5,11,2,9,low,very_complex,True,generated,synthetic_generation
+IND_908067026,Megha Sharma vs Divya Patel - Land Title Case,property_dispute,India,Gujarat,2016,settlement,464,7676116,1,6,1,3,high,moderate,True,generated,synthetic_generation
+IND_536777375,Megha Rao vs Riya Chatterjee - Property Dispute,property_dispute,India,Haryana,2018,settlement,1368,1059256,9,12,8,0,critical,simple,True,generated,synthetic_generation
+IND_477017496,Megha Bhat vs Nikhil Rao - Land Title Case,property_dispute,India,Bihar,2014,settlement,1216,3018613,10,9,6,6,medium,complex,False,generated,synthetic_generation
+IND_929094533,Sneha Joshi vs Shruti Reddy - Land Title Case,property_dispute,India,Delhi,2016,dismissed,805,0,10,14,4,6,medium,simple,True,generated,synthetic_generation
+IND_222261336,Deepak Desai vs Harsh Patel - Property Dispute,property_dispute,India,Haryana,2010,convicted,1065,7114969,7,1,9,7,critical,moderate,True,generated,synthetic_generation
+IND_980448663,Kumar Desai vs Vikram Bhat - Land Title Case,property_dispute,India,Delhi,2017,settlement,1227,8233350,3,7,5,9,high,very_complex,True,generated,synthetic_generation
+IND_160799283,Rohan Singh vs Rajesh Patel - Land Title Case,property_dispute,India,Telangana,2013,settlement,1379,1000263,10,6,7,2,high,moderate,True,generated,synthetic_generation
+IND_538019025,Sneha Desai vs Neha Iyer - Property Dispute,property_dispute,India,Assam,2020,convicted,1227,6552980,2,3,6,6,high,simple,True,generated,synthetic_generation
+IND_792104564,Pooja Reddy vs Rajesh Kumar - Land Title Case,property_dispute,India,Punjab,2023,dismissed,421,0,5,3,8,7,low,simple,False,generated,synthetic_generation
+IND_674051361,Rohan Kumar vs Nikhil Patel - Property Dispute,property_dispute,India,Maharashtra,2019,settlement,480,4891917,4,6,4,6,high,moderate,False,generated,synthetic_generation
+IND_187120618,Vikram Rao vs Divya Joshi - Property Dispute,property_dispute,India,Punjab,2023,dismissed,1208,0,7,6,3,8,medium,simple,True,generated,synthetic_generation
+IND_912648466,Riya Joshi vs Anjali Singh - Land Title Case,property_dispute,India,Rajasthan,2022,convicted,1173,1105465,3,3,2,1,critical,complex,True,generated,synthetic_generation
+IND_664760773,Riya Gupta vs Harsh Das - Land Title Case,property_dispute,India,Uttar Pradesh,2018,settlement,611,7509534,10,6,5,2,medium,complex,True,generated,synthetic_generation
+IND_761714605,Pooja Desai vs Shruti Rao - Land Title Case,property_dispute,India,Himachal Pradesh,2011,convicted,1433,4327108,7,7,10,5,critical,complex,False,generated,synthetic_generation
+IND_479496770,Kavya Singh vs Kavya Verma - Land Title Case,property_dispute,India,Karnataka,2019,dismissed,568,0,5,8,8,2,high,moderate,False,generated,synthetic_generation
+IND_938604977,Sanjay Singh vs Sneha Sharma - Land Title Case,property_dispute,India,West Bengal,2013,settlement,821,8912528,8,7,1,10,critical,simple,True,generated,synthetic_generation
+IND_166718381,Rahul Verma vs Rajesh Chatterjee - Property Dispute,property_dispute,India,Andhra Pradesh,2015,settlement,869,9014888,9,10,7,7,critical,complex,False,generated,synthetic_generation
+IND_885097573,Zara Das vs Arjun Sharma - Property Dispute,property_dispute,India,Tamil Nadu,2015,settlement,709,7677879,6,9,7,4,high,simple,True,generated,synthetic_generation
+IND_876102701,Rohan Kumar vs Riya Patel - Land Title Case,property_dispute,India,Andhra Pradesh,2020,settlement,1467,5343325,10,8,5,4,low,simple,True,generated,synthetic_generation
+IND_335549083,Neha Verma vs Harsh Chatterjee - Land Title Case,property_dispute,India,Rajasthan,2019,settlement,1355,4967555,2,5,8,0,low,very_complex,False,generated,synthetic_generation
+IND_382598045,Deepak Sharma vs Sanjay Bhat - Property Dispute,property_dispute,India,Bihar,2022,settlement,1134,4383967,7,1,3,1,critical,complex,False,generated,synthetic_generation
+IND_606076692,Kavya Singh vs Amit Joshi - Property Dispute,property_dispute,India,Assam,2015,settlement,1122,6680256,2,14,9,7,high,very_complex,False,generated,synthetic_generation
+IND_245335366,Megha Bhat vs Zara Joshi - Property Dispute,property_dispute,India,Assam,2023,convicted,1288,5447107,3,12,7,1,high,complex,False,generated,synthetic_generation
+IND_737424492,Rahul Gupta vs Arjun Verma - Land Title Case,property_dispute,India,Uttar Pradesh,2011,convicted,1438,6227669,10,8,10,4,critical,complex,False,generated,synthetic_generation
+IND_767359715,Megha Chatterjee vs Vikram Das - Land Title Case,property_dispute,India,Tamil Nadu,2014,convicted,1389,3397843,8,12,4,5,high,complex,True,generated,synthetic_generation
+IND_893299899,Nikhil Desai vs Divya Iyer - Property Dispute,property_dispute,India,Uttar Pradesh,2012,convicted,1112,5944079,2,1,1,8,high,complex,True,generated,synthetic_generation
+IND_683745992,Riya Gupta vs Harsh Chatterjee - Land Title Case,property_dispute,India,Assam,2017,settlement,1110,4974803,4,4,6,10,critical,moderate,True,generated,synthetic_generation
+IND_604097119,Pooja Singh vs Sneha Iyer - Land Title Case,property_dispute,India,Himachal Pradesh,2019,convicted,763,3973071,10,13,1,4,high,moderate,False,generated,synthetic_generation
+IND_275851573,Sneha Bhat vs Divya Kumar - Property Dispute,property_dispute,India,Bihar,2016,settlement,606,7321868,1,11,10,8,high,very_complex,True,generated,synthetic_generation
+IND_447990979,Anjali Patel vs Divya Joshi - Property Dispute,property_dispute,India,West Bengal,2017,convicted,842,9349177,6,7,9,8,critical,moderate,True,generated,synthetic_generation
+IND_877129839,Anjali Das vs Nikhil Bhat - Land Title Case,property_dispute,India,Maharashtra,2013,settlement,854,3439432,8,6,3,2,high,complex,True,generated,synthetic_generation
+IND_527014735,Divya Chatterjee vs Zara Verma - Land Title Case,property_dispute,India,Gujarat,2023,dismissed,627,0,4,1,10,3,low,moderate,False,generated,synthetic_generation
+IND_309192753,Riya Gupta vs Sneha Das - Contested Divorce,divorce_contested,India,Uttar Pradesh,2013,convicted,1127,2305901,5,15,9,8,critical,moderate,True,generated,synthetic_generation
+IND_154237347,Anjali Mishra vs Aditya Mishra - Contested Divorce,divorce_contested,India,Kerala,2010,dismissed,535,0,8,9,1,1,critical,complex,True,generated,synthetic_generation
+IND_161865567,Sneha Patel vs Kumar Joshi - Marriage Dissolution,divorce_contested,India,West Bengal,2020,settlement,888,249311,5,3,4,9,high,moderate,True,generated,synthetic_generation
+IND_153986594,Kavya Mishra vs Neha Verma - Contested Divorce,divorce_contested,India,Uttar Pradesh,2016,dismissed,556,0,10,4,1,8,critical,moderate,False,generated,synthetic_generation
+IND_469150859,Isha Desai vs Pooja Sharma - Contested Divorce,divorce_contested,India,Karnataka,2017,settlement,376,2218127,2,0,7,7,high,moderate,True,generated,synthetic_generation
+IND_342200471,Rajesh Mishra vs Anjali Reddy - Marriage Dissolution,divorce_contested,India,Delhi,2018,settlement,564,1564535,5,7,5,0,low,simple,True,generated,synthetic_generation
+IND_456380733,Riya Rao vs Nikhil Rao - Marriage Dissolution,divorce_contested,India,Kerala,2017,convicted,803,1124042,10,13,3,0,medium,complex,False,generated,synthetic_generation
+IND_154926043,Sneha Nair vs Rahul Joshi - Contested Divorce,divorce_contested,India,Assam,2022,settlement,1188,2886072,10,5,4,5,critical,simple,False,generated,synthetic_generation
+IND_112352053,Sneha Rao vs Arjun Patel - Contested Divorce,divorce_contested,India,Himachal Pradesh,2013,settlement,1005,1301802,2,11,9,7,medium,complex,False,generated,synthetic_generation
+IND_195532338,Priya Sharma vs Kavya Reddy - Marriage Dissolution,divorce_contested,India,Assam,2011,convicted,737,1923979,10,15,4,8,low,simple,True,generated,synthetic_generation
+IND_250251577,Zara Iyer vs Anjali Kumar - Contested Divorce,divorce_contested,India,West Bengal,2015,dismissed,944,0,5,4,6,0,low,very_complex,True,generated,synthetic_generation
+IND_553018235,Sneha Chatterjee vs Divya Singh - Contested Divorce,divorce_contested,India,Bihar,2015,settlement,819,2309410,7,7,4,3,low,very_complex,False,generated,synthetic_generation
+IND_148060114,Divya Chatterjee vs Rohan Verma - Contested Divorce,divorce_contested,India,Maharashtra,2017,convicted,596,1403358,10,4,6,7,critical,complex,True,generated,synthetic_generation
+IND_289483030,Pooja Kumar vs Divya Mishra - Contested Divorce,divorce_contested,India,Punjab,2017,convicted,1085,2166628,2,12,5,4,medium,simple,False,generated,synthetic_generation
+IND_803627096,Arjun Mishra vs Isha Kumar - Contested Divorce,divorce_contested,India,Tamil Nadu,2011,settlement,440,789434,1,3,4,5,low,complex,True,generated,synthetic_generation
+IND_619007056,Anjali Reddy vs Neha Kumar - Marriage Dissolution,divorce_contested,India,Jharkhand,2014,settlement,704,2997077,9,0,10,1,medium,simple,False,generated,synthetic_generation
+IND_266942865,Shruti Bhat vs Rohan Mishra - Contested Divorce,divorce_contested,India,Andhra Pradesh,2019,settlement,1068,919428,10,2,4,4,high,moderate,False,generated,synthetic_generation
+IND_404239515,Pooja Rao vs Sanjay Verma - Contested Divorce,divorce_contested,India,Rajasthan,2014,settlement,491,1591426,7,1,1,10,critical,simple,False,generated,synthetic_generation
+IND_645980159,Isha Nair vs Arjun Verma - Marriage Dissolution,divorce_contested,India,Uttar Pradesh,2020,dismissed,681,0,2,6,1,0,medium,complex,True,generated,synthetic_generation
+IND_716739068,Neha Iyer vs Aditya Bhat - Contested Divorce,divorce_contested,India,Uttar Pradesh,2014,settlement,697,2942037,4,14,1,4,critical,simple,True,generated,synthetic_generation
+IND_518085580,Priya Verma vs Rohan Joshi - Marriage Dissolution,divorce_contested,India,Madhya Pradesh,2023,settlement,388,2790969,8,5,10,3,medium,moderate,False,generated,synthetic_generation
+IND_638649334,Deepak Bhat vs Priya Desai - Contested Divorce,divorce_contested,India,Punjab,2015,dismissed,1091,0,2,9,10,5,critical,very_complex,False,generated,synthetic_generation
+IND_144566793,Riya Das vs Megha Verma - Contested Divorce,divorce_contested,India,Bihar,2017,settlement,758,1568521,2,9,4,1,low,moderate,False,generated,synthetic_generation
+IND_618405817,Riya Mishra vs Deepak Patel - Marriage Dissolution,divorce_contested,India,Haryana,2014,dismissed,801,0,9,5,3,5,high,moderate,False,generated,synthetic_generation
+IND_150953547,Nikhil Gupta vs Vikram Desai - Contested Divorce,divorce_contested,India,Karnataka,2021,settlement,743,932740,4,0,8,10,medium,moderate,True,generated,synthetic_generation
+IND_852611197,Rajesh Verma vs Rahul Patel - Contested Divorce,divorce_contested,India,Uttar Pradesh,2014,settlement,881,1324668,8,7,8,2,critical,complex,True,generated,synthetic_generation
+IND_924209601,Rohan Joshi vs Zara Reddy - Contested Divorce,divorce_contested,India,Tamil Nadu,2020,dismissed,528,0,9,10,7,0,high,moderate,False,generated,synthetic_generation
+IND_103163977,Vikram Das vs Pooja Verma - Marriage Dissolution,divorce_contested,India,Andhra Pradesh,2015,convicted,391,2965183,1,13,8,8,low,complex,False,generated,synthetic_generation
+IND_921389668,Megha Das vs Divya Verma - Contested Divorce,divorce_contested,India,Kerala,2010,settlement,387,296636,10,3,5,5,low,complex,True,generated,synthetic_generation
+IND_995199074,Rohan Kumar vs Isha Iyer - Marriage Dissolution,divorce_contested,India,Chhattisgarh,2019,convicted,791,1693879,10,5,10,1,low,complex,True,generated,synthetic_generation
+IND_312939262,Divya Rao vs Rajesh Singh - Marriage Dissolution,divorce_contested,India,Jharkhand,2023,settlement,597,2589177,6,5,2,2,critical,simple,False,generated,synthetic_generation
+IND_230415958,Aditya Joshi vs Amit Iyer - Contested Divorce,divorce_contested,India,Madhya Pradesh,2012,dismissed,640,0,8,0,2,2,high,moderate,True,generated,synthetic_generation
+IND_454135411,Anjali Das vs Rahul Kumar - Contested Divorce,divorce_contested,India,Bihar,2023,settlement,403,867839,6,5,8,8,critical,moderate,True,generated,synthetic_generation
+IND_556334357,Rahul Singh vs Deepak Gupta - Marriage Dissolution,divorce_contested,India,Tamil Nadu,2013,settlement,764,1688181,5,3,9,0,critical,very_complex,False,generated,synthetic_generation
+IND_590863447,Isha Kumar vs Megha Chatterjee - Contested Divorce,divorce_contested,India,Andhra Pradesh,2023,settlement,1177,1330258,10,4,4,6,high,very_complex,False,generated,synthetic_generation
+IND_470171904,Pooja Nair vs Anjali Joshi - Contested Divorce,divorce_contested,India,Tamil Nadu,2021,convicted,925,1288043,6,11,10,1,low,simple,False,generated,synthetic_generation
+IND_134599625,Megha Nair vs Isha Das - Contested Divorce,divorce_contested,India,Himachal Pradesh,2012,settlement,1063,2489746,6,10,9,3,medium,very_complex,True,generated,synthetic_generation
+IND_852936900,Riya Singh vs Rahul Mishra - Contested Divorce,divorce_contested,India,Maharashtra,2017,settlement,490,1370086,10,4,2,9,high,moderate,True,generated,synthetic_generation
+IND_168942837,Harsh Das vs Megha Das - Marriage Dissolution,divorce_contested,India,Himachal Pradesh,2021,convicted,976,2199389,5,2,9,8,medium,moderate,True,generated,synthetic_generation
+IND_938993254,Arjun Joshi vs Deepak Kumar - Marriage Dissolution,divorce_contested,India,Jharkhand,2015,convicted,926,1821368,9,9,3,1,low,complex,True,generated,synthetic_generation
+IND_454533938,Anjali Verma vs Rohan Patel - Contested Divorce,divorce_contested,India,Kerala,2020,settlement,562,464911,6,4,4,3,critical,very_complex,True,generated,synthetic_generation
+IND_809557537,Harsh Rao vs Nikhil Desai - Contested Divorce,divorce_contested,India,Rajasthan,2013,settlement,1048,2142880,1,14,8,0,medium,complex,True,generated,synthetic_generation
+IND_657193947,Zara Rao vs Rajesh Iyer - Contested Divorce,divorce_contested,India,Maharashtra,2022,convicted,1123,2305969,7,10,3,1,critical,very_complex,True,generated,synthetic_generation
+IND_972725385,Anjali Kumar vs Amit Singh - Marriage Dissolution,divorce_contested,India,Maharashtra,2017,convicted,383,2082822,7,15,1,4,medium,simple,False,generated,synthetic_generation
+IND_585454727,Rahul Patel vs Megha Das - Marriage Dissolution,divorce_contested,India,Kerala,2012,convicted,678,2882429,4,2,9,5,high,simple,True,generated,synthetic_generation
+IND_587678792,Riya Iyer vs Divya Rao - Marriage Dissolution,divorce_contested,India,Bihar,2017,convicted,815,782111,2,7,10,1,critical,very_complex,True,generated,synthetic_generation
+IND_823305155,Zara Joshi vs Priya Rao - Marriage Dissolution,divorce_contested,India,Telangana,2014,settlement,438,1611662,8,4,5,0,high,very_complex,True,generated,synthetic_generation
+IND_974724853,Kavya Singh vs Nikhil Verma - Contested Divorce,divorce_contested,India,Odisha,2013,settlement,1040,701486,6,13,3,10,low,moderate,True,generated,synthetic_generation
+IND_765204696,Deepak Desai vs Harsh Kumar - Marriage Dissolution,divorce_contested,India,Assam,2017,convicted,693,2695259,3,3,2,1,low,simple,False,generated,synthetic_generation
+IND_696245127,Harsh Sharma vs Amit Desai - Marriage Dissolution,divorce_contested,India,Jharkhand,2017,settlement,758,1063331,9,2,3,3,low,complex,False,generated,synthetic_generation
+IND_178380177,Isha Joshi vs Shruti Nair - Marriage Dissolution,divorce_contested,India,Delhi,2010,settlement,650,1790270,8,11,5,8,medium,complex,True,generated,synthetic_generation
+IND_747640714,Nikhil Sharma vs Aditya Kumar - Marriage Dissolution,divorce_contested,India,Jharkhand,2013,dismissed,953,0,5,14,4,3,low,very_complex,True,generated,synthetic_generation
+IND_327755401,Nikhil Mishra vs Deepak Joshi - Contested Divorce,divorce_contested,India,Kerala,2017,settlement,899,740872,9,7,9,10,low,moderate,False,generated,synthetic_generation
+IND_263301439,Rohan Das vs Megha Kumar - Marriage Dissolution,divorce_contested,India,Bihar,2013,dismissed,1192,0,10,0,10,0,medium,simple,True,generated,synthetic_generation
+IND_490018359,Kavya Patel vs Shruti Joshi - Contested Divorce,divorce_contested,India,Punjab,2019,dismissed,743,0,7,0,6,6,high,simple,False,generated,synthetic_generation
+IND_901365978,Harsh Mishra vs Sanjay Bhat - Marriage Dissolution,divorce_contested,India,Delhi,2021,settlement,639,276497,10,5,5,8,medium,simple,False,generated,synthetic_generation
+IND_536632100,Sanjay Chatterjee vs Pooja Desai - Marriage Dissolution,divorce_contested,India,West Bengal,2020,settlement,673,2747129,3,11,4,9,low,simple,True,generated,synthetic_generation
+IND_882727360,Shruti Bhat vs Rahul Desai - Marriage Dissolution,divorce_contested,India,Odisha,2018,settlement,801,1730040,1,8,4,9,high,simple,True,generated,synthetic_generation
+IND_374130969,Divya Verma vs Riya Verma - Contested Divorce,divorce_contested,India,Haryana,2017,settlement,1124,1745489,7,6,8,9,low,simple,True,generated,synthetic_generation
+IND_307559361,Rahul Joshi vs Zara Bhat - Marriage Dissolution,divorce_contested,India,Uttar Pradesh,2011,settlement,639,2731142,6,10,5,5,high,moderate,True,generated,synthetic_generation
+IND_655987688,Harsh Reddy vs Rajesh Joshi - Contested Divorce,divorce_contested,India,Gujarat,2019,settlement,760,1388833,1,7,3,0,low,simple,True,generated,synthetic_generation
+IND_898323242,Rohan Bhat vs Anjali Kumar - Contested Divorce,divorce_contested,India,Uttar Pradesh,2015,settlement,604,382689,3,9,6,7,medium,very_complex,False,generated,synthetic_generation
+IND_658328831,Divya Reddy vs Rajesh Sharma - Contested Divorce,divorce_contested,India,Chhattisgarh,2012,settlement,864,738268,10,2,1,9,medium,moderate,True,generated,synthetic_generation
+IND_772774136,Priya Desai vs Rahul Verma - Contested Divorce,divorce_contested,India,Telangana,2014,dismissed,1052,0,5,10,2,1,high,very_complex,True,generated,synthetic_generation
+IND_618575454,Anjali Desai vs Zara Joshi - Marriage Dissolution,divorce_contested,India,Gujarat,2013,settlement,687,1531968,2,7,7,9,low,complex,True,generated,synthetic_generation
+IND_191765002,Priya Kumar vs Vikram Singh - Contested Divorce,divorce_contested,India,Telangana,2014,settlement,515,1290225,1,13,9,3,high,very_complex,True,generated,synthetic_generation
+IND_562759065,Megha Singh vs Rohan Gupta - Marriage Dissolution,divorce_contested,India,Haryana,2019,settlement,411,2191098,3,8,10,1,medium,moderate,False,generated,synthetic_generation
+IND_228897264,Zara Sharma vs Harsh Verma - Marriage Dissolution,divorce_contested,India,Punjab,2017,convicted,1006,902798,4,5,1,4,medium,complex,False,generated,synthetic_generation
+IND_325024261,Kumar Chatterjee vs Shruti Verma - Contested Divorce,divorce_contested,India,Punjab,2012,convicted,888,2034290,1,0,3,9,critical,moderate,False,generated,synthetic_generation
+IND_753121538,Anjali Singh vs Aditya Rao - Contested Divorce,divorce_contested,India,West Bengal,2023,settlement,435,2391432,1,12,1,8,medium,moderate,True,generated,synthetic_generation
+IND_696311541,Riya Singh vs Rohan Das - Marriage Dissolution,divorce_contested,India,Jharkhand,2012,convicted,704,1513106,7,1,8,6,critical,simple,False,generated,synthetic_generation
+IND_119303064,Rahul Singh vs Anjali Mishra - Marriage Dissolution,divorce_contested,India,Gujarat,2011,settlement,769,2243949,10,11,2,9,critical,very_complex,True,generated,synthetic_generation
+IND_328332585,Megha Reddy vs Aditya Das - Contested Divorce,divorce_contested,India,Maharashtra,2022,convicted,491,1255304,9,13,7,7,low,very_complex,False,generated,synthetic_generation
+IND_358475375,Anjali Das vs Kavya Verma - Marriage Dissolution,divorce_contested,India,Rajasthan,2012,settlement,1137,2550100,6,3,7,9,high,simple,False,generated,synthetic_generation
+IND_487258116,Zara Kumar vs Zara Sharma - Marriage Dissolution,divorce_contested,India,West Bengal,2017,settlement,363,1665557,10,11,1,4,low,very_complex,False,generated,synthetic_generation
+IND_643305659,Rohan Singh vs Neha Reddy - Contested Divorce,divorce_contested,India,Punjab,2020,dismissed,593,0,10,4,4,3,critical,very_complex,True,generated,synthetic_generation
+IND_611054953,Vikram Mishra vs Nikhil Kumar - Marriage Dissolution,divorce_contested,India,Maharashtra,2018,settlement,597,1109284,9,6,3,4,high,simple,True,generated,synthetic_generation
+IND_699679468,Divya Bhat vs Riya Desai - Marriage Dissolution,divorce_contested,India,Rajasthan,2019,dismissed,1147,0,5,0,10,6,low,very_complex,True,generated,synthetic_generation
+IND_720139181,Zara Gupta vs Rohan Sharma - Contested Divorce,divorce_contested,India,Andhra Pradesh,2013,settlement,512,2835840,8,8,9,0,low,very_complex,False,generated,synthetic_generation
+IND_645164437,Harsh Das vs Kavya Joshi - Marriage Dissolution,divorce_contested,India,Madhya Pradesh,2010,convicted,896,1947186,6,10,9,2,low,moderate,True,generated,synthetic_generation
+IND_401912167,Riya Gupta vs Kavya Sharma - Civil Harassment,harassment_civil,India,Gujarat,2023,convicted,413,524698,9,2,2,10,critical,complex,False,generated,synthetic_generation
+IND_784754016,Megha Mishra vs Rohan Reddy - Harassment Case,harassment_civil,India,West Bengal,2015,dismissed,252,0,10,7,9,1,critical,moderate,True,generated,synthetic_generation
+IND_981455666,Vikram Kumar vs Nikhil Kumar - Harassment Case,harassment_civil,India,Punjab,2022,convicted,470,2299978,2,4,3,3,low,very_complex,True,generated,synthetic_generation
+IND_513522343,Vikram Desai vs Deepak Verma - Civil Harassment,harassment_civil,India,Kerala,2012,convicted,405,2033629,4,12,3,10,low,moderate,True,generated,synthetic_generation
+IND_207277184,Harsh Reddy vs Harsh Nair - Harassment Case,harassment_civil,India,Gujarat,2023,convicted,710,1507270,4,1,7,9,critical,very_complex,True,generated,synthetic_generation
+IND_983536510,Sanjay Iyer vs Amit Reddy - Harassment Case,harassment_civil,India,Kerala,2017,convicted,486,2198498,9,5,9,10,medium,moderate,True,generated,synthetic_generation
+IND_332401514,Isha Sharma vs Rahul Sharma - Civil Harassment,harassment_civil,India,Kerala,2014,convicted,353,1693611,1,0,10,1,medium,simple,True,generated,synthetic_generation
+IND_679843432,Rohan Bhat vs Kumar Mishra - Harassment Case,harassment_civil,India,Punjab,2020,convicted,446,440157,9,14,1,3,medium,simple,True,generated,synthetic_generation
+IND_521454583,Neha Gupta vs Amit Das - Harassment Case,harassment_civil,India,Jharkhand,2015,convicted,379,2043423,3,4,1,3,high,very_complex,False,generated,synthetic_generation
+IND_808710183,Amit Singh vs Pooja Verma - Harassment Case,harassment_civil,India,Rajasthan,2019,convicted,712,2246600,3,9,2,7,medium,complex,False,generated,synthetic_generation
+IND_557797338,Sneha Nair vs Aditya Chatterjee - Civil Harassment,harassment_civil,India,Madhya Pradesh,2012,settlement,470,2075797,1,12,9,10,critical,complex,False,generated,synthetic_generation
+IND_833772350,Divya Singh vs Divya Reddy - Civil Harassment,harassment_civil,India,Rajasthan,2022,dismissed,266,0,7,15,10,7,critical,moderate,False,generated,synthetic_generation
+IND_827367100,Anjali Nair vs Pooja Rao - Harassment Case,harassment_civil,India,Punjab,2014,convicted,263,2495954,9,4,4,9,medium,simple,False,generated,synthetic_generation
+IND_215376278,Anjali Sharma vs Kumar Mishra - Civil Harassment,harassment_civil,India,Maharashtra,2019,dismissed,493,0,6,5,8,8,high,complex,True,generated,synthetic_generation
+IND_698136859,Rajesh Reddy vs Divya Sharma - Civil Harassment,harassment_civil,India,Himachal Pradesh,2019,settlement,586,2043941,9,13,1,2,medium,moderate,False,generated,synthetic_generation
+IND_196003651,Vikram Nair vs Shruti Bhat - Harassment Case,harassment_civil,India,Himachal Pradesh,2022,settlement,323,1807289,3,8,4,7,low,moderate,True,generated,synthetic_generation
+IND_330954906,Amit Joshi vs Arjun Reddy - Harassment Case,harassment_civil,India,Gujarat,2015,convicted,334,2362244,6,10,1,2,critical,moderate,False,generated,synthetic_generation
+IND_491072393,Pooja Verma vs Vikram Rao - Harassment Case,harassment_civil,India,Andhra Pradesh,2016,settlement,248,2245941,10,0,3,6,critical,moderate,False,generated,synthetic_generation
+IND_691161655,Riya Das vs Pooja Joshi - Civil Harassment,harassment_civil,India,Punjab,2011,settlement,544,1043586,9,3,6,0,low,simple,False,generated,synthetic_generation
+IND_274684033,Isha Mishra vs Priya Gupta - Harassment Case,harassment_civil,India,Punjab,2011,dismissed,361,0,1,4,3,6,critical,complex,True,generated,synthetic_generation
+IND_221992727,Amit Reddy vs Rahul Iyer - Harassment Case,harassment_civil,India,Himachal Pradesh,2014,dismissed,481,0,6,15,2,2,high,very_complex,True,generated,synthetic_generation
+IND_979469001,Deepak Patel vs Kavya Nair - Civil Harassment,harassment_civil,India,Karnataka,2015,convicted,441,778119,2,1,9,1,medium,complex,True,generated,synthetic_generation
+IND_932969113,Priya Iyer vs Amit Gupta - Civil Harassment,harassment_civil,India,Kerala,2023,convicted,464,1962157,3,10,10,3,critical,very_complex,False,generated,synthetic_generation
+IND_361433750,Divya Mishra vs Megha Desai - Civil Harassment,harassment_civil,India,Delhi,2016,dismissed,678,0,1,5,2,1,high,moderate,True,generated,synthetic_generation
+IND_389685802,Anjali Bhat vs Sanjay Bhat - Harassment Case,harassment_civil,India,Kerala,2016,convicted,778,2218319,6,10,3,5,medium,moderate,True,generated,synthetic_generation
+IND_886335418,Divya Bhat vs Kavya Sharma - Civil Harassment,harassment_civil,India,Bihar,2022,convicted,529,1516837,3,4,3,1,critical,moderate,True,generated,synthetic_generation
+IND_827193632,Shruti Patel vs Arjun Kumar - Harassment Case,harassment_civil,India,Rajasthan,2012,settlement,389,454976,3,15,7,4,high,complex,True,generated,synthetic_generation
+IND_160948426,Arjun Joshi vs Sanjay Mishra - Civil Harassment,harassment_civil,India,Punjab,2010,convicted,788,304887,5,8,9,8,critical,simple,True,generated,synthetic_generation
+IND_606583604,Anjali Singh vs Amit Patel - Harassment Case,harassment_civil,India,Gujarat,2017,convicted,638,653116,6,2,6,10,critical,complex,True,generated,synthetic_generation
+IND_328310180,Nikhil Singh vs Zara Kumar - Civil Harassment,harassment_civil,India,Rajasthan,2010,convicted,792,958682,7,12,1,5,medium,very_complex,True,generated,synthetic_generation
+IND_558749541,Vikram Gupta vs Arjun Desai - Civil Harassment,harassment_civil,India,Gujarat,2011,dismissed,767,0,2,15,1,4,medium,simple,True,generated,synthetic_generation
+IND_805357034,Rajesh Desai vs Kavya Nair - Civil Harassment,harassment_civil,India,Telangana,2016,dismissed,223,0,6,8,4,5,low,moderate,True,generated,synthetic_generation
+IND_928216629,Divya Joshi vs Nikhil Singh - Harassment Case,harassment_civil,India,Telangana,2013,settlement,515,1804642,4,1,7,10,low,moderate,False,generated,synthetic_generation
+IND_356839243,Priya Desai vs Shruti Chatterjee - Harassment Case,harassment_civil,India,Punjab,2012,dismissed,603,0,4,3,9,5,high,simple,True,generated,synthetic_generation
+IND_392003518,Pooja Bhat vs Harsh Kumar - Civil Harassment,harassment_civil,India,Punjab,2019,dismissed,229,0,3,15,8,8,low,simple,True,generated,synthetic_generation
+IND_745812995,Nikhil Chatterjee vs Riya Verma - Civil Harassment,harassment_civil,India,Himachal Pradesh,2014,convicted,568,2231678,9,15,3,1,low,complex,False,generated,synthetic_generation
+IND_507543012,Rohan Mishra vs Kavya Patel - Harassment Case,harassment_civil,India,Himachal Pradesh,2020,convicted,455,490038,9,2,10,9,high,moderate,True,generated,synthetic_generation
+IND_677438472,Zara Sharma vs Kumar Gupta - Civil Harassment,harassment_civil,India,West Bengal,2015,settlement,586,2288071,5,1,8,8,medium,moderate,True,generated,synthetic_generation
+IND_690924446,Deepak Rao vs Priya Patel - Harassment Case,harassment_civil,India,Himachal Pradesh,2015,settlement,585,558799,7,15,5,8,low,simple,False,generated,synthetic_generation
+IND_342626385,Shruti Bhat vs Megha Desai - Civil Harassment,harassment_civil,India,Chhattisgarh,2016,settlement,724,1794853,8,9,6,3,critical,simple,True,generated,synthetic_generation
+IND_323155869,Riya Mishra vs Arjun Rao - Harassment Case,harassment_civil,India,Telangana,2017,dismissed,375,0,3,6,1,7,critical,complex,True,generated,synthetic_generation
+IND_260884224,Zara Rao vs Riya Singh - Civil Harassment,harassment_civil,India,Punjab,2015,convicted,262,2466583,8,0,3,9,medium,very_complex,False,generated,synthetic_generation
+IND_399632818,Harsh Sharma vs Priya Patel - Harassment Case,harassment_civil,India,Madhya Pradesh,2013,convicted,752,1169197,2,0,9,7,high,simple,False,generated,synthetic_generation
+IND_731559241,Megha Bhat vs Rajesh Singh - Harassment Case,harassment_civil,India,West Bengal,2016,convicted,209,1009483,2,2,5,9,critical,moderate,True,generated,synthetic_generation
+IND_432475974,Riya Bhat vs Kavya Sharma - Civil Harassment,harassment_civil,India,Himachal Pradesh,2013,settlement,350,1473355,2,8,4,1,low,complex,False,generated,synthetic_generation
+IND_217159407,Divya Das vs Pooja Rao - Harassment Case,harassment_civil,India,West Bengal,2021,convicted,366,1980124,9,9,6,1,low,moderate,False,generated,synthetic_generation
+IND_672212575,Deepak Das vs Vikram Bhat - Civil Harassment,harassment_civil,India,West Bengal,2016,settlement,399,319771,8,10,8,6,medium,very_complex,True,generated,synthetic_generation
+IND_589328492,Amit Mishra vs Arjun Bhat - Harassment Case,harassment_civil,India,Tamil Nadu,2015,convicted,402,2442940,7,2,5,0,high,simple,False,generated,synthetic_generation
+IND_262419813,Kumar Bhat vs Neha Gupta - Civil Harassment,harassment_civil,India,Haryana,2014,settlement,771,501565,8,4,6,0,low,complex,False,generated,synthetic_generation
+IND_755155420,Riya Desai vs Pooja Gupta - Harassment Case,harassment_civil,India,Uttar Pradesh,2018,convicted,424,1492305,3,9,4,1,high,moderate,False,generated,synthetic_generation
+IND_465125267,Isha Iyer vs Sanjay Mishra - Civil Harassment,harassment_civil,India,Andhra Pradesh,2022,settlement,578,2317789,8,9,9,5,critical,simple,False,generated,synthetic_generation
+IND_145268104,Isha Chatterjee vs Aditya Mishra - Civil Harassment,harassment_civil,India,Maharashtra,2023,convicted,256,1257563,4,13,6,2,critical,moderate,False,generated,synthetic_generation
+IND_661030874,Kumar Mishra vs Kumar Chatterjee - Harassment Case,harassment_civil,India,West Bengal,2020,convicted,776,543097,2,8,1,9,low,very_complex,False,generated,synthetic_generation
+IND_127949644,Kumar Gupta vs Anjali Mishra - Civil Harassment,harassment_civil,India,Bihar,2010,convicted,678,1690432,9,11,4,10,critical,very_complex,True,generated,synthetic_generation
+IND_134804304,Priya Sharma vs Megha Chatterjee - Harassment Case,harassment_civil,India,Bihar,2018,settlement,592,1711286,1,13,10,5,low,simple,False,generated,synthetic_generation
+IND_940772695,Amit Chatterjee vs Anjali Joshi - Civil Harassment,harassment_civil,India,Andhra Pradesh,2022,dismissed,226,0,9,5,8,6,critical,very_complex,True,generated,synthetic_generation
+IND_971493891,Divya Bhat vs Arjun Mishra - Civil Harassment,harassment_civil,India,Madhya Pradesh,2011,dismissed,725,0,3,13,7,10,low,simple,True,generated,synthetic_generation
+IND_553798045,Amit Rao vs Sneha Bhat - Civil Harassment,harassment_civil,India,Gujarat,2011,dismissed,351,0,8,12,5,5,low,very_complex,True,generated,synthetic_generation
+IND_413786916,Riya Gupta vs Amit Sharma - Harassment Case,harassment_civil,India,Odisha,2011,settlement,659,1834738,10,6,10,10,high,complex,True,generated,synthetic_generation
+IND_747114837,Megha Singh vs Arjun Chatterjee - Civil Harassment,harassment_civil,India,Tamil Nadu,2012,dismissed,685,0,8,5,2,8,low,very_complex,False,generated,synthetic_generation
+IND_259766683,Priya Kumar vs Vikram Joshi - Civil Harassment,harassment_civil,India,Maharashtra,2016,dismissed,316,0,6,12,1,0,low,simple,False,generated,synthetic_generation
+IND_736168523,Sneha Bhat vs Nikhil Singh - Harassment Case,harassment_civil,India,Himachal Pradesh,2011,dismissed,299,0,5,0,2,7,critical,simple,True,generated,synthetic_generation
+IND_824713267,Kavya Bhat vs Rajesh Singh - Harassment Case,harassment_civil,India,Uttar Pradesh,2023,settlement,251,1822426,10,14,7,5,high,complex,False,generated,synthetic_generation
+IND_409871518,Vikram Gupta vs Anjali Mishra - Civil Harassment,harassment_civil,India,Tamil Nadu,2012,convicted,772,1311121,2,3,4,2,low,simple,False,generated,synthetic_generation
+IND_447376704,Nikhil Sharma vs Kumar Joshi - Harassment Case,harassment_civil,India,Delhi,2018,convicted,421,913816,10,1,2,1,medium,moderate,True,generated,synthetic_generation
+IND_333950382,Amit Sharma vs Harsh Reddy - Civil Harassment,harassment_civil,India,Karnataka,2011,dismissed,589,0,3,5,8,2,high,very_complex,True,generated,synthetic_generation
+IND_568469398,Harsh Patel vs Sanjay Gupta - Harassment Case,harassment_civil,India,Gujarat,2016,convicted,210,2146188,5,6,3,8,medium,simple,False,generated,synthetic_generation
+IND_785155904,Rahul Kumar vs Aditya Patel - Civil Harassment,harassment_civil,India,Madhya Pradesh,2019,settlement,619,1369053,3,10,10,10,critical,complex,False,generated,synthetic_generation
+IND_401285656,Kavya Kumar vs Sanjay Rao - Harassment Case,harassment_civil,India,Telangana,2017,convicted,509,628970,2,8,7,0,low,complex,True,generated,synthetic_generation
+IND_915397742,Rahul Reddy vs Nikhil Kumar - Civil Harassment,harassment_civil,India,Chhattisgarh,2020,convicted,742,614560,8,4,5,0,low,moderate,True,generated,synthetic_generation
+IND_261747336,Nikhil Das vs Harsh Gupta - Harassment Case,harassment_civil,India,Bihar,2012,settlement,361,902626,4,9,10,3,high,complex,True,generated,synthetic_generation
+IND_438898580,Pooja Rao vs Shruti Das - Harassment Case,harassment_civil,India,Gujarat,2023,convicted,496,370064,1,8,10,6,high,very_complex,True,generated,synthetic_generation
+IND_474043179,Isha Rao vs Zara Singh - Harassment Case,harassment_civil,India,Haryana,2017,dismissed,631,0,3,14,7,6,medium,moderate,False,generated,synthetic_generation
+IND_977967271,Aditya Kumar vs Isha Singh - Civil Harassment,harassment_civil,India,West Bengal,2012,dismissed,480,0,1,7,8,9,high,very_complex,True,generated,synthetic_generation
+IND_674843422,Nikhil Rao vs Rajesh Desai - Civil Harassment,harassment_civil,India,Karnataka,2010,settlement,796,919074,3,9,7,4,high,very_complex,False,generated,synthetic_generation
+IND_840251687,Kavya Patel vs Rohan Das - Civil Harassment,harassment_civil,India,Telangana,2019,dismissed,354,0,10,11,3,5,critical,very_complex,False,generated,synthetic_generation
+IND_571602521,Amit Nair vs Sanjay Nair - Harassment Case,harassment_civil,India,Odisha,2020,settlement,624,2163791,9,10,1,9,medium,very_complex,True,generated,synthetic_generation
+IND_449218161,Amit Kumar vs Anjali Bhat - Harassment Case,harassment_civil,India,Uttar Pradesh,2013,convicted,516,1410170,10,13,8,4,medium,very_complex,True,generated,synthetic_generation
+IND_140802196,Divya Desai vs Riya Gupta - Civil Harassment,harassment_civil,India,Jharkhand,2011,convicted,775,1743978,10,11,8,2,low,moderate,False,generated,synthetic_generation
+IND_312918132,Anjali Iyer vs Kumar Sharma - Civil Harassment,harassment_civil,India,Rajasthan,2012,dismissed,667,0,3,1,6,3,low,very_complex,True,generated,synthetic_generation
