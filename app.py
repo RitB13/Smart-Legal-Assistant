@@ -2,7 +2,7 @@ import logging
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from src.routes import chatbot, summarizer
+from src.routes import chatbot, summarizer, case_outcome
 from config import CORS_ORIGINS, DEBUG
 
 
@@ -33,6 +33,7 @@ app.add_middleware(
 # Include routers
 app.include_router(chatbot.router, tags=["Chatbot"])
 app.include_router(summarizer.router, tags=["Document Summarizer"])
+app.include_router(case_outcome.router, tags=["Case Outcome Prediction"])
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])
