@@ -3,7 +3,7 @@ from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import JSONResponse
-from src.routes import chatbot, summarizer, case_outcome, auth_routes, conversation_routes, prediction_routes
+from src.routes import chatbot, summarizer, case_outcome, auth_routes, conversation_routes, prediction_routes, chat_intelligence
 from src.middleware.auth_middleware import jwt_auth_middleware
 from config import CORS_ORIGINS, DEBUG
 from src.services.model_manager import get_model_manager
@@ -42,6 +42,7 @@ app.add_middleware(BaseHTTPMiddleware, dispatch=jwt_auth_middleware)
 app.include_router(auth_routes.router, tags=["Authentication"])
 app.include_router(conversation_routes.router, tags=["Conversations"])
 app.include_router(prediction_routes.router, tags=["Predictions"])
+app.include_router(chat_intelligence.router, tags=["Chat Intelligence"])
 app.include_router(chatbot.router, tags=["Chatbot"])
 app.include_router(summarizer.router, tags=["Document Summarizer"])
 app.include_router(case_outcome.router, tags=["Case Outcome Prediction"])
