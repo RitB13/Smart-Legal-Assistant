@@ -1,0 +1,109 @@
+{
+  "issue_type": "dowry_harassment",
+  "name": "Dowry Harassment Checklist",
+  "description": "Action steps for victims of dowry harassment and related crimes",
+  "applicable_to": ["India"],
+  "base_steps": [
+    {
+      "action": "Document all harassment incidents and threats",
+      "details": [
+        "Create detailed written record of each incident with date, time, location, and witnesses",
+        "Record all threatening phone calls, messages, and communications",
+        "Take screenshots of WhatsApp, emails, and other digital communications",
+        "Photograph any physical injuries or property damage",
+        "Store evidence in secure location (cloud backup + physical copies)"
+      ],
+      "priority": "critical",
+      "timeline": "immediately"
+    },
+    {
+      "action": "Ensure immediate physical safety",
+      "details": [
+        "Identify safe place to stay if needed",
+        "Inform trusted family members or friends of situation",
+        "Keep mobile phone charged and emergency contacts ready",
+        "Consider staying at relative's house or safe shelter"
+      ],
+      "priority": "critical",
+      "timeline": "immediately"
+    },
+    {
+      "action": "Consult with qualified lawyer specializing in dowry/women's issues",
+      "details": [
+        "Contact women's legal aid organization or NGO",
+        "Schedule immediate consultation (many offer free/subsidized help)",
+        "Bring all evidence documents and communications",
+        "Discuss immediate protective measures (restraining order, safe place order)",
+        "Understand available legal options under IPC 498A and Dowry Prohibition Act"
+      ],
+      "priority": "critical",
+      "timeline": "within 24-48 hours",
+      "reference_law": "IPC 498A, Dowry Prohibition Act 1961"
+    },
+    {
+      "action": "File First Information Report (FIR) at police station",
+      "details": [
+        "Go to nearest police station with lawyer (if possible)",
+        "Narrate complete incident with all details",
+        "Insist on FIR registration under IPC 498A and other applicable sections",
+        "Request copy of FIR for your records",
+        "Get the police station's complaint/FIR number",
+        "Note the investigating officer's name and contact"
+      ],
+      "priority": "critical",
+      "timeline": "within 1-2 weeks",
+      "reference_law": "IPC 498A"
+    },
+    {
+      "action": "Apply for Domestic Violence Protection Order",
+      "details": [
+        "File application under Protection of Women from Domestic Violence Act",
+        "Request interim protection order immediately",
+        "Ask for shelter home order if needed",
+        "Request compensation order",
+        "Attend all hearings with lawyer"
+      ],
+      "priority": "high",
+      "timeline": "within 2-3 weeks",
+      "reference_law": "Protection of Women from Domestic Violence Act 2005"
+    },
+    {
+      "action": "Gather evidence and testimonies",
+      "details": [
+        "Prepare list of witnesses (family members, neighbors, friends who saw incidents)",
+        "Collect written statements from witnesses",
+        "Get medical certificates if there are injuries",
+        "Collect financial documents (marriage expenses, gifts, dowry records)",
+        "Get communications evidence (printouts, screenshots, recordings if legal)"
+      ],
+      "priority": "high",
+      "timeline": "within 3-4 weeks"
+    }
+  ],
+  "jurisdiction_additions": {
+    "India": [
+      {
+        "action": "Report to Police Women's Helpline (if available in your state)",
+        "details": [
+          "Call women's helpline number for your state (varies by state)",
+          "Report incident and get guidance",
+          "Ask for women police officer assistance",
+          "Get helpline reference number"
+        ],
+        "priority": "high",
+        "timeline": "within 1 week"
+      },
+      {
+        "action": "Contact NGO/Women's Organization for additional support",
+        "details": [
+          "Reach out to local women's rights organizations",
+          "Get counseling and emotional support",
+          "Explore legal aid (often free for dowry cases)",
+          "Join support groups with other survivors"
+        ],
+        "priority": "high",
+        "timeline": "within 1-2 weeks"
+      }
+    ]
+  }
+}

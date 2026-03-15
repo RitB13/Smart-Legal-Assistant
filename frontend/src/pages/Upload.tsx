@@ -1,13 +1,40 @@
 import { useState, useRef } from "react";
 import { Upload, FileText, X, CheckCircle, Loader2 } from "lucide-react";
 import Layout from "../components/Layout";
+import ImpactScoreDisplay from "../components/ImpactScoreDisplay";
 import { toast } from "../hooks/use-toast";
+
+interface DocumentAnalysis {
+  summary: string;
+  laws: string[];
+  suggestions: string[];
+  impact_score: {
+    overall_score: number;
+    financial_risk_score: number;
+    legal_exposure_score: number;
+    long_term_impact_score: number;
+    rights_lost_score: number;
+    risk_level: string;
+    breakdown: {
+      financial_risk: string;
+      legal_exposure: string;
+      long_term_impact: string;
+      rights_lost: string;
+    };
+    key_factors: string[];
+    mitigating_factors: string[];
+    recommendation: string;
+  };
+  language: string;
+  request_id: string;
+  created_at: string;
+}
 
 const UploadPage = () => {
   const [file, setFile] = useState<File | null>(null);
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [simplifiedText, setSimplifiedText] = useState("");
+  const [analysis, setAnalysis] = useState<DocumentAnalysis | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const handleDragOver = (e: React.DragEvent) => {
@@ -65,57 +92,43 @@ const UploadPage = () => {
     
     setIsProcessing(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      setSimplifiedText(`
-**Simplified Document Summary:**
-
-This document appears to be a legal agreement regarding property rental/lease.
-
-**Key Points:**
-
-1. **Parties Involved:** The agreement is between the landlord (property owner) and tenant (renter).
-
-2. **Property Details:** The property is located at the specified address and includes basic amenities.
-
-3. **Rental Terms:**
-   - Monthly rent amount is clearly specified
-   - Payment is due on the 1st of each month
-   - Late payment may incur additional fees
-
-4. **Duration:** The lease period is for 12 months starting from the date of agreement.
-
-5. **Security Deposit:** An amount equal to two months' rent is required as security deposit.
-
-6. **Responsibilities:**
-   - Tenant: Keep property clean, pay utilities, report damages
-   - Landlord: Maintain property, handle major repairs
-
-7. **Termination:** Either party must give 30 days notice before terminating the agreement.
-
-**Important Rights:**
-- You have the right to peaceful enjoyment of the property
-- The landlord cannot enter without proper notice
-- You can request necessary repairs
-- Security deposit must be returned within 30 days after lease ends
-
-**Recommendations:**
-- Keep copies of all rent receipts
-- Document property condition with photos
-- Communicate all issues in writing
-- Review local tenant protection laws
-      `);
-      setIsProcessing(false);
-      toast({
-        title: "Document simplified successfully!",
-        description: "Your document has been analyzed and simplified.",
+    try {
+      // Create FormData for file upload
+      const formData = new FormData();
+      formData.append("file", file);
+      
+      // Call backend API to process document
+      const response = await fetch("http://localhost:8000/document/analyze", {
+        method: "POST",
+        body: formData,
       });
-    }, 2000);
+      
+      if (!response.ok) {
+        throw new Error(`API error: ${response.statusText}`);
+      }
+      
+      const data: DocumentAnalysis = await response.json();
+      setAnalysis(data);
+      
+      toast({
+        title: "Document analyzed successfully!",
+        description: `Risk level: ${data.impact_score.risk_level}`,
+      });
+    } catch (error) {
+      console.error("Error analyzing document:", error);
+      toast({
+        title: "Error analyzing document",
+        description: error instanceof Error ? error.message : "Could not process document",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
   
   const removeFile = () => {
     setFile(null);
-    setSimplifiedText("");
+    setAnalysis(null);
     if (fileInputRef.current) {
       fileInputRef.current.value = "";
     }
@@ -214,26 +227,69 @@ This document appears to be a legal agreement regarding property rental/lease.
           <div className="animate-fade-up" style={{ animationDelay: "0.2s" }}>
             <div className="border border-border rounded-xl p-6 h-full bg-card">
               <h3 className="text-lg font-semibold text-foreground mb-4">
-                Simplified Version
+                Document Analysis
               </h3>
               
-              {simplifiedText ? (
-                <div className="prose prose-sm max-w-none">
-                  <div className="text-sm text-muted-foreground whitespace-pre-wrap">
-                    {simplifiedText}
+              {analysis ? (
+                <div className="space-y-6">
+                  {/* Summary Section */}
+                  <div>
+                    <h4 className="font-semibold text-foreground mb-2">📄 Summary</h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">
+                      {analysis.summary}
+                    </p>
                   </div>
+                  
+                  {/* Laws Section */}
+                  {analysis.laws.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-2">⚖️ Relevant Laws</h4>
+                      <ul className="space-y-1">
+                        {analysis.laws.map((law, idx) => (
+                          <li key={idx} className="text-sm text-muted-foreground flex items-start">
+                            <span className="text-primary mr-2">•</span>
+                            <span>{law}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+                  
+                  {/* Suggestions Section */}
+                  {analysis.suggestions.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold text-foreground mb-2">💡 Suggestions</h4>
+                      <ul className="space-y-1">
+                        {analysis.suggestions.map((suggestion, idx) => (
+                          <li key={idx} className="text-sm text-muted-foreground flex items-start">
+                            <span className="text-primary mr-2">•</span>
+                            <span>{suggestion}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
                 </div>
               ) : (
                 <div className="flex flex-col items-center justify-center h-64 text-center">
                   <FileText className="h-12 w-12 text-muted-foreground/30 mb-4" />
                   <p className="text-muted-foreground">
-                    Upload a document to see the simplified version here
+                    Upload a document to see the analysis here
                   </p>
                 </div>
               )}
             </div>
           </div>
         </div>
+        
+        {/* Impact Score Section - Full Width */}
+        {analysis && (
+          <div className="mt-12 animate-fade-up" style={{ animationDelay: "0.3s" }}>
+            <div className="border border-border rounded-xl p-8 bg-card">
+              <ImpactScoreDisplay score={analysis.impact_score} />
+            </div>
+          </div>
+        )}
       </div>
     </Layout>
   );

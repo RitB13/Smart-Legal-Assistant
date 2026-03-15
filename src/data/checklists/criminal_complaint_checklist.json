@@ -1,0 +1,97 @@
+{
+  "issue_type": "criminal_complaint",
+  "name": "Filing Criminal Complaint Checklist",
+  "description": "Step-by-step checklist for filing criminal complaint and FIR with police",
+  "applicable_to": ["India"],
+  "base_steps": [
+    {
+      "action": "Assess if criminal complaint is the right action",
+      "details": [
+        "Consult with lawyer to understand if case qualifies as criminal",
+        "Discuss timeline and likely outcomes",
+        "Understand difference between FIR (criminal) and civil case",
+        "Clarify jurisdiction and which court/police station has authority"
+      ],
+      "priority": "high",
+      "timeline": "within 1-3 days"
+    },
+    {
+      "action": "Gather all evidence before filing complaint",
+      "details": [
+        "Compile written timeline of all incidents with dates and times",
+        "Collect physical evidence (weapons, documents, recordings)",
+        "Get medical/injury reports if applicable",
+        "List all witnesses with contact information",
+        "Prepare written summary of complaint in simple language"
+      ],
+      "priority": "critical",
+      "timeline": "within 1 week"
+    },
+    {
+      "action": "Visit police station and file FIR",
+      "details": [
+        "Go to appropriate police station jurisdiction",
+        "Request to file First Information Report (FIR)",
+        "Narrate entire incident clearly and factually",
+        "Provide list of witnesses and their contact details",
+        "Firmly request FIR registration (log number to be given)",
+        "Obtain copy of FIR immediately for your records",
+        "Get officer's name, badge number, and station contact"
+      ],
+      "priority": "critical",
+      "timeline": "within 1-2 weeks",
+      "reference_law": "IPC Section 154"
+    },
+    {
+      "action": "Follow up with investigating officer",
+      "details": [
+        "Contact investigation officer 1-2 weeks after FIR filing",
+        "Check status of investigation",
+        "Provide any additional evidence discovered",
+        "Ask about timeline for investigation completion",
+        "Stay in touch and provide statements as required"
+      ],
+      "priority": "high",
+      "timeline": "ongoing during investigation"
+    },
+    {
+      "action": "Prepare for police interrogation",
+      "details": [
+        "You may be called for detailed statement/interrogation",
+        "Bring all relevant documents and evidence",
+        "Be accurate and factual in your statement",
+        "Consider taking lawyer's assistance if available",
+        "Request written copy of your statement"
+      ],
+      "priority": "high",
+      "timeline": "when called by police"
+    },
+    {
+      "action": "Cooperate with investigation process",
+      "details": [
+        "Respond promptly to police calls and summons",
+        "Attend any identification parades if required",
+        "Provide any additional information requested",
+        "Maintain contact with investigation officer",
+        "Track investigation progress"
+      ],
+      "priority": "medium",
+      "timeline": "during investigation period"
+    }
+  ],
+  "jurisdiction_additions": {
+    "India": [
+      {
+        "action": "Apply for interim protection if you're in danger",
+        "details": [
+          "Inform police about threats from accused",
+          "Request police protection/security",
+          "File application for protective custody if needed",
+          "Keep emergency contacts of police always"
+        ],
+        "priority": "critical",
+        "timeline": "immediately"
+      }
+    ]
+  }
+}

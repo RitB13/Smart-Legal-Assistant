@@ -1,0 +1,98 @@
+{
+  "issue_type": "divorce_contested",
+  "name": "Contested Divorce Checklist",
+  "description": "Action steps for filing and managing a contested/disputed divorce case",
+  "applicable_to": ["India"],
+  "base_steps": [
+    {
+      "action": "Consult family law attorney specialized in divorce",
+      "details": [
+        "Interview 2-3 family law attorneys and compare their approach",
+        "Discuss grounds for divorce (adultery, cruelty, desertion, etc.)",
+        "Understand timeline (typically 6-18 months for contested))",
+        "Ask about complexity and estimated legal costs",
+        "Arrange fee payment structure and retainer"
+      ],
+      "priority": "critical",
+      "timeline": "within 1-2 weeks",
+      "reference_law": "Hindu Marriage Act 1955"
+    },
+    {
+      "action": "Document ground(s) for divorce",
+      "details": [
+        "Prepare detailed written account of cruelty/abandonment with dates and witnesses",
+        "Collect all evidence (letters, emails, photographs, medical reports)",
+        "Get witness statements in writing from people who witnessed incidents",
+        "Compile any communications from spouse (letters, messages) that support grounds",
+        "Organize evidence chronologically in separate folders/files"
+      ],
+      "priority": "critical",
+      "timeline": "within 2-3 weeks"
+    },
+    {
+      "action": "Attempt reconciliation (as required by law)",
+      "details": [
+        "Send formal notice to spouse mentioning reconciliation attempt",
+        "Attend reconciliation meeting with or without mediator",
+        "Document all reconciliation attempts with dates and details",
+        "Get mutual agreement if reconciliation succeeds, else proceed with divorce"
+      ],
+      "priority": "medium",
+      "timeline": "within 4-6 weeks",
+      "reference_law": "Hindu Marriage Act 1955, Section 23(1)"
+    },
+    {
+      "action": "File divorce petition in district court",
+      "details": [
+        "Prepare divorce petition with lawyer's help",
+        "Pay court filing fees",
+        "Serve summons to spouse (personally or through court)",
+        "Spouse has 30 days to file response",
+        "Obtain court date for first hearing"
+      ],
+      "priority": "critical",
+      "timeline": "within 6-8 weeks",
+      "reference_law": "Hindu Marriage Act 1955, Section 13"
+    },
+    {
+      "action": "Settle financial and custody matters",
+      "details": [
+        "Prepare list of all assets and liabilities",
+        "Calculate fair share of property and savings",
+        "Discuss alimony/maintenance if applicable",
+        "Agree on custody and visitation of children",
+        "Negotiate settlement or prepare for contested court battle"
+      ],
+      "priority": "high",
+      "timeline": "within 2-3 months"
+    },
+    {
+      "action": "Attend court hearings regularly",
+      "details": [
+        "Never miss scheduled court dates",
+        "Bring all required documents",
+        "Follow lawyer's guidance on what to say in court",
+        "Be prepared to answer questions from judge or opponent's lawyer",
+        "Document all court proceedings and orders"
+      ],
+      "priority": "critical",
+      "timeline": "ongoing until final decree"
+    }
+  ],
+  "jurisdiction_additions": {
+    "India": [
+      {
+        "action": "Seek court protection order if needed",
+        "details": [
+          "Apply for maintenance during pendency of case under Section 24",
+          "Request custody order for children under Section 26",
+          "Apply for protection order if subject to harassment/abuse",
+          "Request interim protection while case is pending"
+        ],
+        "priority": "high",
+        "timeline": "within 1 month of filing",
+        "reference_law": "Hindu Marriage Act 1955, Sections 24, 26"
+      }
+    ]
+  }
+}

@@ -16,11 +16,7 @@ const Footer = () => {
             © {new Date().getFullYear()} Smart Legal Assistant. All rights reserved.
           </div>
           
-          <div className="flex items-center space-x-1 text-sm text-muted-foreground">
-            <span>Made with</span>
-            <Heart className="h-4 w-4 text-accent fill-accent animate-pulse" />
-            <span>for justice</span>
-          </div>
+          
         </div>
       </div>
     </footer>

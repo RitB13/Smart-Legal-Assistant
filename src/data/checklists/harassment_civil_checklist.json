@@ -1,0 +1,83 @@
+{
+  "issue_type": "harassment_civil",
+  "name": "Harassment (Civil) Action Checklist",
+  "description": "Action steps for filing civil case for harassment",
+  "applicable_to": ["India"],
+  "base_steps": [
+    {
+      "action": "Document all harassment incidents with evidence",
+      "details": [
+        "Create detailed written record of each harassment incident with date, time, location, and witnesses",
+        "Save all communications (emails, messages, letters) from harasser",
+        "Take screenshots of harassment messages, social media posts, etc.",
+        "Keep medical reports if there are any health impacts",
+        "Store evidence securely in multiple locations (cloud + physical)"
+      ],
+      "priority": "critical",
+      "timeline": "immediately"
+    },
+    {
+      "action": "Consult with civil lawyer",
+      "details": [
+        "Schedule consultation with lawyer experienced in harassment cases",
+        "Bring all evidence and documentation",
+        "Discuss options: civil suit, tort claim, compensation amount",
+        "Understand costs, timeline, and likely outcomes",
+        "Clarify difference between civil and criminal remedies"
+      ],
+      "priority": "high",
+      "timeline": "within 1 week"
+    },
+    {
+      "action": "Send formal cease and desist notice",
+      "details": [
+        "Draft notice with lawyer's assistance",
+        "Send notice via registered mail/email with acknowledgment",
+        "Give reasonable deadline for response (typically 2-4 weeks)",
+        "Keep all correspondence and delivery proof",
+        "Get acknowledgment of receipt"
+      ],
+      "priority": "high",
+      "timeline": "within 2 weeks"
+    },
+    {
+      "action": "File civil suit for damages if needed",
+      "details": [
+        "If harassment continues after notice, file civil suit",
+        "Sue for general damages, special damages, and mental anguish",
+        "Request injunction to prevent future harassment",
+        "File in appropriate civil court (district court or high court)",
+        "Pay court filing fees"
+      ],
+      "priority": "high",
+      "timeline": "within 6-8 weeks"
+    },
+    {
+      "action": "Attend court hearings and comply with court orders",
+      "details": [
+        "Never miss scheduled hearings",
+        "Bring all evidence and witnesses",
+        "Follow all court orders and directions",
+        "Document all new harassment incidents",
+        "Keep lawyer informed of any updates"
+      ],
+      "priority": "high",
+      "timeline": "ongoing"
+    }
+  ],
+  "jurisdiction_additions": {
+    "India": [
+      {
+        "action": "Request interim injunction from court",
+        "details": [
+          "Apply for interim injunction to stop harassment immediately",
+          "Request protection order if in danger",
+          "Ask for compensation during pendency of case",
+          "Attend all hearings for injunction"
+        ],
+        "priority": "high",
+        "timeline": "within 1 month of filing suit"
+      }
+    ]
+  }
+}

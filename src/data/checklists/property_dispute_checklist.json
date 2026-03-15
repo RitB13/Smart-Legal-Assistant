@@ -1,0 +1,95 @@
+{
+  "issue_type": "property_dispute",
+  "name": "Property Dispute Resolution Checklist",
+  "description": "Action steps for resolving property disputes and boundaries",
+  "applicable_to": ["India"],
+  "base_steps": [
+    {
+      "action": "Gather all property-related documentation",
+      "details": [
+        "Collect property deed, title documents, registration certificate",
+        "Get survey reports and boundary demarcation documents",
+        "Collect all purchase/sale agreements and previous ownership records",
+        "Get municipal property tax records and utility bills",
+        "Compile all correspondence related to the property"
+      ],
+      "priority": "critical",
+      "timeline": "within 1 week"
+    },
+    {
+      "action": "Get legal title verification completed",
+      "details": [
+        "Verify property registration with Revenue Department",
+        "Check for any encumbrances, mortgages, or legal claims",
+        "Obtain certified copy of registered document",
+        "Check if property is under dispute or litigation",
+        "Get title insurance if available"
+      ],
+      "priority": "critical",
+      "timeline": "within 2 weeks"
+    },
+    {
+      "action": "Consult with property law expert",
+      "details": [
+        "Hire lawyer specializing in property disputes and conveyancing",
+        "Discuss legal merits of your claim",
+        "Understand applicable real estate and property laws",
+        "Discuss settlement vs litigation options",
+        "Estimate case timeline and costs"
+      ],
+      "priority": "high",
+      "timeline": "within 1 week"
+    },
+    {
+      "action": "Attempt amicable settlement/negotiation",
+      "details": [
+        "Send formal notice proposing settlement to other party",
+        "Meet for negotiation (with lawyer if needed)",
+        "Explore mediation or arbitration options",
+        "If settlement reached, document in written agreement",
+        "Get agreement registered if required"
+      ],
+      "priority": "high",
+      "timeline": "within 3-4 weeks"
+    },
+    {
+      "action": "File civil suit if settlement fails",
+      "details": [
+        "File suit for possession, declaration of title, or boundaries",
+        "Pay court filing fees and stamp duty",
+        "Serve summons to other party",
+        "File detailed plaint with all evidence",
+        "Appear before court for preliminary hearings"
+      ],
+      "priority": "high",
+      "timeline": "within 6-8 weeks"
+    },
+    {
+      "action": "Gather and organize evidence",
+      "details": [
+        "Collect witness statements from neighbors and previous owners",
+        "Get expert reports on boundary, construction, damages",
+        "Compile photographs/videos of property and boundaries",
+        "Get municipal/government records and maps",
+        "Prepare chronological timeline of dispute events"
+      ],
+      "priority": "high",
+      "timeline": "before filing suit"
+    }
+  ],
+  "jurisdiction_additions": {
+    "India": [
+      {
+        "action": "Apply for injunction to prevent unauthorized use",
+        "details": [
+          "Request court injunction to prevent other party from using property",
+          "Apply for interim injunction if property is being misused",
+          "Request compensation for trespass or unauthorized occupation",
+          "Monitor injunction compliance"
+        ],
+        "priority": "high",
+        "timeline": "within 1 month of filing suit"
+      }
+    ]
+  }
+}
