@@ -28,7 +28,7 @@ An **AI-powered legal assistance platform** with **multilingual support** for 10
 - **UI Components**: shadcn/ui
 - **Routing**: React Router v6
 
-## 🚀 Quick Start (10 minutes)
+##  Quick Start (10 minutes)
 
 ### Prerequisites
 - Python 3.8+ (backend)

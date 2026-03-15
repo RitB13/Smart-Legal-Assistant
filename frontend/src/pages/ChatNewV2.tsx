@@ -1,5 +1,5 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2, CheckCircle2, X, MessageCircle, TrendingUp } from "lucide-react";
+import { Send, Bot, User, Loader2, CheckCircle2, X, MessageCircle, TrendingUp, Zap, AlertTriangle } from "lucide-react";
 import Layout from "../components/Layout";
 
 // Enhanced message type system
@@ -121,7 +121,7 @@ const ModeSelectionCard = ({
   onSelect,
   isLoading,
 }: {
-  onSelect: (mode: "chat" | "predict") => void;
+  onSelect: (mode: "chat" | "predict" | "simulate") => void;
   isLoading?: boolean;
 }) => {
   const modes = [
@@ -137,28 +137,34 @@ const ModeSelectionCard = ({
       description: "Provide details about a legal case and get an AI-based prediction of the likely verdict with confidence and explanation.",
       icon: TrendingUp,
     },
+    {
+      id: "simulate",
+      title: "Consequence Simulator",
+      description: "Describe a planned action and see the potential legal consequences before you act. Understand risks and applicable laws.",
+      icon: Zap,
+    },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+    <div className="grid grid-cols-3 gap-4 mt-4 w-full">
       {modes.map((mode) => {
         const IconComponent = mode.icon;
         return (
           <button
             key={mode.id}
-            onClick={() => onSelect(mode.id as "chat" | "predict")}
+            onClick={() => onSelect(mode.id as "chat" | "predict" | "simulate")}
             disabled={isLoading}
-            className="group relative h-full p-6 rounded-xl border-2 border-gray-200 bg-gradient-to-br from-white to-gray-50 hover:border-blue-400 hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-left hover:bg-blue-50"
+            className="group relative py-4 px-5 rounded-xl border-2 border-gray-200 bg-gradient-to-br from-white to-gray-50 hover:border-blue-400 hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-left hover:bg-blue-50"
           >
-            <div className="flex items-start gap-4">
-              <div className="p-3 rounded-lg bg-blue-100 group-hover:bg-blue-200 transition-colors">
-                <IconComponent className="w-6 h-6 text-blue-600" />
+            <div className="flex flex-col items-start gap-2">
+              <div className="p-2 rounded-lg bg-blue-100 group-hover:bg-blue-200 transition-colors">
+                <IconComponent className="w-5 h-5 text-blue-600" />
               </div>
-              <div className="flex-1">
-                <h3 className="font-bold text-lg text-foreground group-hover:text-blue-700 transition-colors">
+              <div className="flex-1 w-full">
+                <h3 className="font-bold text-base text-foreground group-hover:text-blue-700 transition-colors">
                   {mode.title}
                 </h3>
-                <p className="text-sm text-muted-foreground mt-2 leading-relaxed">
+                <p className="text-xs text-muted-foreground mt-1 leading-snug">
                   {mode.description}
                 </p>
               </div>
@@ -243,12 +249,12 @@ const ChatNewV2 = () => {
       timestamp: new Date(),
       type: "options",
       data: {
-        options: ["Chat & Get Legal Guidance", "Predict Case Outcome"],
+        options: ["Chat & Get Legal Guidance", "Predict Case Outcome", "Consequence Simulator"],
       },
     },
   ]);
 
-  const [mode, setMode] = useState<"chat" | "predict" | null>(null);
+  const [mode, setMode] = useState<"chat" | "predict" | "simulate" | null>(null);
   const [caseContext, setCaseContext] = useState<CaseContext>({});
   const [currentStep, setCurrentStep] = useState(0);
   const [inputText, setInputText] = useState("");
@@ -268,13 +274,14 @@ const ChatNewV2 = () => {
   }, [messages]);
 
   // Handle mode selection (welcome screen)
-  const handleModeSelection = async (selectedMode: "chat" | "predict") => {
+  const handleModeSelection = async (selectedMode: "chat" | "predict" | "simulate") => {
     setMode(selectedMode);
 
     // Add user selection to messages
+    const modeText = selectedMode === "chat" ? "Chat & Get Legal Guidance" : selectedMode === "predict" ? "Predict Case Outcome" : "Consequence Simulator";
     const userMsg: Message = {
       id: Date.now().toString(),
-      text: selectedMode === "chat" ? "Chat & Get Legal Guidance" : "Predict Case Outcome",
+      text: modeText,
       sender: "user",
       timestamp: new Date(),
       type: "text",
@@ -291,7 +298,7 @@ const ChatNewV2 = () => {
         type: "text",
       };
       setMessages((prev) => [...prev, botMsg]);
-    } else {
+    } else if (selectedMode === "predict") {
       // Prediction mode - start guided questions
       setCurrentStep(0);
       const firstQuestion = PREDICTION_STEPS[0];
@@ -307,6 +314,16 @@ const ChatNewV2 = () => {
           inputType: firstQuestion.type,
           options: firstQuestion.options,
         },
+      };
+      setMessages((prev) => [...prev, botMsg]);
+    } else if (selectedMode === "simulate") {
+      // Simulate mode - ask for planned action
+      const botMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        text: "⚡ Consequence Simulator\n\nDescribe your planned action or what you want to do. I'll analyze the potential legal consequences and risks based on applicable laws.\n\nFor example: 'I want to record a phone call with my business partner' or 'What happens if I don't pay my property taxes?'",
+        sender: "bot",
+        timestamp: new Date(),
+        type: "text",
       };
       setMessages((prev) => [...prev, botMsg]);
     }
@@ -347,9 +364,77 @@ const ChatNewV2 = () => {
       }
     } catch (error) {
       console.error("Chat error:", error);
+    }
+  };
+
+  // Handle simulate mode - send query to consequence simulator
+  const handleSimulateMessage = async (query: string) => {
+    const userMsg: Message = {
+      id: Date.now().toString(),
+      text: query,
+      sender: "user",
+      timestamp: new Date(),
+      type: "text",
+    };
+    setMessages((prev) => [...prev, userMsg]);
+    setInputText("");
+    setIsLoading(true);
+
+    // Add analyzing message
+    const analyzingMsg: Message = {
+      id: (Date.now() + 1).toString(),
+      text: "⚙️ Analyzing consequences and legal risks...",
+      sender: "bot",
+      timestamp: new Date(),
+      type: "text",
+    };
+    setMessages((prev) => [...prev, analyzingMsg]);
+
+    try {
+      const response = await fetch(`${apiUrl}/chatbot/query`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query, mode: "simulate" }),
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        
+        // Create a formatted response message
+        let responseText = data.response || "Unable to generate analysis";
+        
+        if (data.risk_level || data.risk_score) {
+          responseText += `\n\n📊 Risk Level: ${data.risk_level} (Score: ${data.risk_score}/100)`;
+        }
+        
+        if (data.applicable_laws && data.applicable_laws.length > 0) {
+          responseText += `\n\n⚖️ Applicable Laws:\n${data.applicable_laws.map((law: string) => `• ${law}`).join("\n")}`;
+        }
+        
+        if (data.consequences && data.consequences.length > 0) {
+          responseText += `\n\n⚠️ Potential Consequences:\n${data.consequences.map((cons: string) => `• ${cons}`).join("\n")}`;
+        }
+        
+        if (data.prevention_suggestions && data.prevention_suggestions.length > 0) {
+          responseText += `\n\n✅ How to Stay Compliant:\n${data.prevention_suggestions.map((sug: string) => `• ${sug}`).join("\n")}`;
+        }
+
+        const botMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          text: responseText,
+          sender: "bot",
+          timestamp: new Date(),
+          type: "text",
+        };
+        setMessages((prev) => [...prev, botMsg]);
+      } else {
+        throw new Error("Analysis failed");
+      }
+    } catch (error) {
+      console.error("Simulate error:", error);
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
-        text: "Sorry, I encountered an error. Please try again.",
+        text: "Sorry, I couldn't analyze the consequences. Please try again.",
         sender: "bot",
         timestamp: new Date(),
         type: "text",
@@ -498,6 +583,8 @@ const ChatNewV2 = () => {
 
     if (mode === "chat") {
       handleChatMessage(inputText);
+    } else if (mode === "simulate") {
+      handleSimulateMessage(inputText);
     } else if (mode === "predict" && currentStep < PREDICTION_STEPS.length) {
       const currentStepConfig = PREDICTION_STEPS[currentStep];
 
@@ -575,6 +662,7 @@ const ChatNewV2 = () => {
 
   // Input placeholder based on current state
   const getInputPlaceholder = (): string => {
+    if (mode === "simulate") return "Describe your planned action...";
     if (!mode) return "Select an option...";
     if (mode === "chat") return "Ask a legal question...";
 
