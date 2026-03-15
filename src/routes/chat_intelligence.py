@@ -8,7 +8,7 @@ from fastapi import APIRouter, HTTPException, status, Request
 from pydantic import BaseModel, Field
 from typing import Optional, Dict, Any, List
 from datetime import datetime
-from src.services.llm_service import LLMService
+from src.services.llm_service import get_legal_response
 import logging
 import json
 
@@ -106,8 +106,6 @@ async def extract_case_context(
         ExtractedCaseContext with extracted fields and confidence
     """
     try:
-        llm_service = LLMService()
-        
         # Build conversation text
         conversation = "\n".join([
             f"{msg.sender.upper()}: {msg.text}"
@@ -146,7 +144,7 @@ Return ONLY valid JSON:
     "extraction_warnings": ["Year not mentioned", "Damages unclear"]
 }}"""
         
-        response_text = llm_service.get_response(extraction_prompt)
+        response_text = get_legal_response(extraction_prompt, language=request_body.language)
         
         # Parse JSON response
         response_data = json.loads(response_text)
@@ -187,8 +185,6 @@ async def decide_mode(
         ModeDecisionResponse with suggested mode and follow-up
     """
     try:
-        llm_service = LLMService()
-        
         conversation = ""
         if request_body.conversation_history:
             conversation = "\n".join([
@@ -217,7 +213,7 @@ Respond with JSON only:
 Examples of "predict" keywords: outcome, chances, will I win, predict, likely result
 Examples of "chat" keywords: explain, help, understand, how does, what is, advice"""
         
-        response_text = llm_service.get_response(mode_prompt)
+        response_text = get_legal_response(mode_prompt, language=request_body.language)
         response_data = json.loads(response_text)
         
         return ModeDecisionResponse(**response_data)
