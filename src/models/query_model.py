@@ -297,6 +297,26 @@ class QueryResponse(BaseModel):
         description="Complete audit trail of all processing steps for compliance and transparency"
     )
     
+    # NEW (Phase 3): Smart mode routing
+    suggested_mode: Optional[str] = Field(
+        None,
+        description="Suggested mode for this query: 'chat' (legal advice), 'predict' (case prediction), or 'simulate' (consequence simulator)"
+    )
+    mode_confidence: Optional[float] = Field(
+        None,
+        ge=0.0,
+        le=1.0,
+        description="Confidence level for mode suggestion (0.0-1.0)"
+    )
+    mode_reasoning: Optional[str] = Field(
+        None,
+        description="Explanation for why this mode was suggested"
+    )
+    extracted_action: Optional[str] = Field(
+        None,
+        description="For simulate mode: the planned action extracted from the query"
+    )
+    
     class Config:
         json_schema_extra = {
             "example": {
