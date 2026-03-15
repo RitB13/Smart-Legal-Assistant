@@ -4,6 +4,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from src.routes import chatbot, summarizer, case_outcome
 from config import CORS_ORIGINS, DEBUG
+from src.services.model_manager import get_model_manager
+from src.services.monitoring_service import get_prediction_monitor
 
 
 # Configure logging
@@ -74,6 +76,30 @@ async def global_exception_handler(request: Request, exc: Exception):
 async def startup_event():
     logger.info("Smart Legal Assistant API starting up...")
     logger.info(f"Debug mode: {DEBUG}")
+    
+    # PHASE 9: Load models at startup
+    logger.info("\n" + "=" * 70)
+    logger.info("PHASE 9 - DEPLOYMENT & MONITORING: Initializing at startup")
+    logger.info("=" * 70)
+    
+    # Load and cache models in memory
+    model_manager = get_model_manager()
+    if model_manager.load_model_at_startup():
+        logger.info("✓ Models loaded successfully and cached in memory")
+        model_info = model_manager.get_model_info()
+        logger.info(f"  Available versions: {len(model_info['available_versions'])}")
+        logger.info(f"  Current version: {model_info['current_version']}")
+        logger.info(f"  Fallback available: {model_info['fallback_version'] is not None}")
+    else:
+        logger.warning("⚠ Failed to load models, predictions may be unavailable")
+    
+    # Initialize monitoring
+    monitor = get_prediction_monitor()
+    logger.info("✓ Prediction monitoring initialized")
+    
+    logger.info("=" * 70)
+    logger.info("Startup complete - API ready for requests")
+    logger.info("=" * 70 + "\n")
 
 # Log app shutdown
 @app.on_event("shutdown")

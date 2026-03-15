@@ -11,10 +11,14 @@ from src.models.case_model import (
     HealthCheckResponse
 )
 from src.services.case_outcome_predictor_service import get_predictor_service
+from src.services.model_manager import get_model_manager
+from src.services.monitoring_service import get_prediction_monitor
+from src.services.audit_trail_service import AuditTrailService
 import logging
 import uuid
 from datetime import datetime
 from typing import Dict, Any, List
+import time
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/case-outcome", tags=["Case Outcome Prediction"])
@@ -44,16 +48,24 @@ def health_check():
         HealthCheckResponse with service status
     """
     try:
-        service = get_predictor_service()
-        model_info = service.get_model_info()
+        # PHASE 9: Use model manager for model loading status
+        model_manager = get_model_manager()
+        model_info = model_manager.get_model_info()
+        
+        # Check if model is loaded and has fallback
+        service_status = "healthy" if model_info['model_loaded'] else "degraded"
         
         return HealthCheckResponse(
-            status="healthy",
+            status=service_status,
             model_loaded=model_info['model_loaded'],
-            model_version="1.0",
+            model_version=model_info.get('current_version', 'unknown'),
             features_available=model_info['feature_count'],
             last_update="2026-03-15",
-            message="Case outcome prediction service is operational"
+            message=(
+                "Case outcome prediction service is operational with model in memory"
+                if model_info['model_loaded']
+                else "Case outcome prediction service is running but model not yet loaded"
+            )
         )
     except Exception as e:
         logger.error(f"Health check failed: {e}")
@@ -145,6 +157,15 @@ async def predict_case_outcome(
     """
     prediction_id = f"pred_{str(uuid.uuid4())[:12]}"
     request_time = datetime.utcnow()
+    start_time = time.time()
+    
+    # PHASE 9: Initialize audit trail for prediction
+    audit_service = AuditTrailService()
+    audit_service.start_audit_trail(prediction_id, case_input.case_name)
+    
+    # PHASE 9: Get model manager and monitoring
+    model_manager = get_model_manager()
+    prediction_monitor = get_prediction_monitor()
     
     try:
         logger.info(f"[{prediction_id}] Prediction request: {case_input.case_name}")
@@ -154,6 +175,7 @@ async def predict_case_outcome(
             service = get_predictor_service()
         except Exception as e:
             logger.error(f"[{prediction_id}] Failed to initialize predictor service: {e}")
+            model_manager.record_prediction(time.time() - start_time, success=False, error_msg="Service init failed")
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Prediction service temporarily unavailable"
@@ -269,13 +291,48 @@ async def predict_case_outcome(
             timestamp=request_time
         )
         
+        # PHASE 9: Log prediction to audit trail
+        elapsed_ms = (time.time() - start_time) * 1000
+        audit_service.log_case_prediction(
+            request_id=prediction_id,
+            case_name=case_input.case_name,
+            predicted_verdict=verdict,
+            confidence=prob,
+            model_version=model_manager.get_current_version(),
+            prediction_time_ms=elapsed_ms,
+            similar_cases_count=len(response.similar_cases),
+            input_data=case_dict,
+            duration_ms=elapsed_ms
+        )
+        
+        # PHASE 9: Record prediction metrics for monitoring
+        prediction_monitor.log_prediction(
+            model_version=model_manager.get_current_version(),
+            prediction_time_ms=elapsed_ms,
+            confidence=prob,
+            input_features=case_dict,
+            prediction_class=verdict
+        )
+        
+        # PHASE 9: Record in model manager for performance tracking
+        model_manager.record_prediction(elapsed_ms, success=True)
+        
         logger.info(f"[{prediction_id}] ✓ Prediction successful: {verdict} (confidence: {prob:.2%})")
+        logger.info(f"[{prediction_id}] Model version: {model_manager.get_current_version()} | Time: {elapsed_ms:.1f}ms")
+        
         return response
         
     except HTTPException:
+        elapsed_ms = (time.time() - start_time) * 1000
+        model_manager.record_prediction(elapsed_ms, success=False, error_msg="HTTP exception")
         raise
     except Exception as e:
+        elapsed_ms = (time.time() - start_time) * 1000
         logger.error(f"[{prediction_id}] ✗ Prediction failed: {e}", exc_info=True)
+        
+        # PHASE 9: Record error in monitoring
+        model_manager.record_prediction(elapsed_ms, success=False, error_msg=str(e))
+        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Prediction failed: {str(e)}"
@@ -339,6 +396,11 @@ async def batch_predict_outcomes(
         HTTPException 500: Batch processing error
     """
     batch_id = f"batch_{str(uuid.uuid4())[:12]}"
+    batch_start_time = time.time()
+    
+    # PHASE 9: Get monitoring service
+    prediction_monitor = get_prediction_monitor()
+    model_manager = get_model_manager()
     
     try:
         # Validate batch size
@@ -355,6 +417,11 @@ async def batch_predict_outcomes(
             service = get_predictor_service()
         except Exception as e:
             logger.error(f"[{batch_id}] Service initialization failed: {e}")
+            model_manager.record_prediction(
+                (time.time() - batch_start_time) * 1000,
+                success=False,
+                error_msg="Service initialization failed"
+            )
             raise HTTPException(
                 status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
                 detail="Prediction service temporarily unavailable"
@@ -387,6 +454,19 @@ async def batch_predict_outcomes(
                 similar = _get_similar_cases(verdict, {})
                 prediction['similar_cases'] = [s.dict() for s in similar]
         
+        # PHASE 9: Log metrics for each successful prediction
+        for i, prediction in enumerate(batch_result['predictions']):
+            try:
+                prediction_monitor.log_prediction(
+                    model_version=model_manager.get_current_version(),
+                    prediction_time_ms=batch_result.get('processing_time_seconds', 0) * 1000 / max(1, batch_result['successful_predictions']),
+                    confidence=prediction.get('probability', 0.5),
+                    input_features=cases_dicts[i] if i < len(cases_dicts) else {},
+                    prediction_class=prediction.get('verdict', 'Unknown')
+                )
+            except Exception as e:
+                logger.debug(f"Could not log batch prediction metric: {e}")
+        
         # Build response
         response = BatchPredictionResponse(
             batch_id=batch_id,
@@ -399,6 +479,13 @@ async def batch_predict_outcomes(
             timestamp=datetime.utcnow()
         )
         
+        # PHASE 9: Record overall batch metrics
+        total_elapsed_ms = (time.time() - batch_start_time) * 1000
+        model_manager.record_prediction(
+            total_elapsed_ms,
+            success=batch_result['successful_predictions'] > 0
+        )
+        
         logger.info(
             f"[{batch_id}] ✓ Batch complete: {batch_result['successful_predictions']}/"
             f"{batch_result['total_cases']} successful"
@@ -409,7 +496,12 @@ async def batch_predict_outcomes(
     except HTTPException:
         raise
     except Exception as e:
+        elapsed_ms = (time.time() - batch_start_time) * 1000
         logger.error(f"[{batch_id}] ✗ Batch prediction failed: {e}", exc_info=True)
+        
+        # PHASE 9: Record error in monitoring
+        model_manager.record_prediction(elapsed_ms, success=False, error_msg=f"Batch failed: {str(e)}")
+        
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail=f"Batch prediction failed: {str(e)}"
@@ -737,3 +829,202 @@ def _get_similar_cases(verdict: str, case_dict: Dict[str, Any]) -> List[SimilarC
     # Return top 2-3 similar cases for the predicted verdict
     cases = similar_cases_db.get(verdict, [])
     return cases[:3]  # Return up to 3 most similar cases
+
+
+# ============================================================================
+# MONITORING & DEPLOYMENT ENDPOINTS (PHASE 9)
+# ============================================================================
+
+@router.get(
+    "/monitoring/performance",
+    status_code=200,
+    summary="Performance Metrics",
+    description="Get current model performance metrics and prediction statistics"
+)
+def get_performance_metrics():
+    """
+    Get comprehensive performance metrics for monitoring.
+    
+    Returns performance data including:
+    - Total predictions made
+    - Average confidence
+    - Prediction accuracy (if feedback available)
+    - Average inference time
+    - Predictions by class
+    
+    Returns:
+        Dict with performance metrics
+    """
+    try:
+        monitor = get_prediction_monitor()
+        return {
+            "status": "ok",
+            "data": monitor.get_performance_summary()
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving performance metrics: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve performance metrics"
+        )
+
+
+@router.get(
+    "/monitoring/drift",
+    status_code=200,
+    summary="Data Drift Report",
+    description="Check for data drift in recent predictions"
+)
+def check_data_drift():
+    """
+    Check for data drift in the prediction input features.
+    
+    Analyzes recent predictions to detect changes in:
+    - Feature distributions
+    - Model input patterns
+    - Potential concept drift
+    
+    Returns:
+        Dict with drift detection results and recommendations
+    """
+    try:
+        monitor = get_prediction_monitor()
+        return {
+            "status": "ok",
+            "data": monitor.get_drift_report()
+        }
+    except Exception as e:
+        logger.error(f"Error checking data drift: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to check data drift"
+        )
+
+
+@router.get(
+    "/monitoring/dashboard",
+    status_code=200,
+    summary="Monitoring Dashboard",
+    description="Get comprehensive monitoring dashboard with all metrics"
+)
+def get_monitoring_dashboard():
+    """
+    Get comprehensive monitoring dashboard data.
+    
+    Combines:
+    - Performance metrics
+    - Data drift analysis
+    - Recent predictions
+    - Model version info
+    
+    Returns:
+        Dict with complete monitoring dashboard data
+    """
+    try:
+        monitor = get_prediction_monitor()
+        model_manager = get_model_manager()
+        
+        dashboard = monitor.get_monitoring_dashboard()
+        dashboard["model_info"] = model_manager.get_model_info()
+        dashboard["timestamp"] = datetime.utcnow().isoformat()
+        
+        return {
+            "status": "ok",
+            "data": dashboard
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving monitoring dashboard: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve monitoring dashboard"
+        )
+
+
+@router.get(
+    "/model-info",
+    status_code=200,
+    summary="Model Information",
+    description="Get current model version and deployment information"
+)
+def get_model_information():
+    """
+    Get detailed model version and deployment information.
+    
+    Returns:
+    - Current active model version
+    - Available model versions
+    - Fallback model version
+    - Model metadata
+    - Performance metrics
+    
+    Returns:
+        Dict with model information
+    """
+    try:
+        model_manager = get_model_manager()
+        return {
+            "status": "ok",
+            "data": model_manager.get_model_info()
+        }
+    except Exception as e:
+        logger.error(f"Error retrieving model information: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to retrieve model information"
+        )
+
+
+@router.post(
+    "/feedback/{prediction_id}",
+    status_code=200,
+    summary="Log Prediction Feedback",
+    description="Log user feedback on a specific prediction"
+)
+def log_prediction_feedback(
+    prediction_id: str,
+    feedback: str
+):
+    """
+    Log user feedback on a prediction for continuous improvement.
+    
+    Enables:
+    - Tracking correct vs incorrect predictions
+    - Identifying systematic errors
+    - Training data for model retraining
+    
+    Args:
+        prediction_id: ID of the prediction
+        feedback: User feedback (e.g., "correct", "incorrect", "helpful")
+    
+    Returns:
+        Dict with feedback confirmation
+    """
+    try:
+        monitor = get_prediction_monitor()
+        audit_service = AuditTrailService()
+        
+        # Log feedback in monitoring
+        monitor.log_user_feedback(0, feedback)  # Index 0 for most recent
+        
+        # Log feedback in audit trail
+        audit_service.log_event(
+            request_id=prediction_id,
+            event_type="user_feedback",
+            description=f"User feedback: {feedback}",
+            details={"feedback": feedback},
+            component="monitoring",
+            status="success"
+        )
+        
+        return {
+            "status": "ok",
+            "message": "Feedback recorded successfully",
+            "prediction_id": prediction_id,
+            "feedback": feedback
+        }
+    except Exception as e:
+        logger.error(f"Error logging feedback: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to log feedback"
+        )
