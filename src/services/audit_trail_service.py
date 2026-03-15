@@ -358,6 +358,53 @@ class AuditTrailService:
             duration_ms=duration_ms
         )
     
+    def log_case_prediction(
+        self,
+        request_id: str,
+        case_name: str,
+        predicted_verdict: str,
+        confidence: float,
+        model_version: str,
+        prediction_time_ms: float,
+        similar_cases_count: int,
+        input_data: Dict[str, Any],
+        duration_ms: float
+    ):
+        """
+        Log a case outcome prediction event (PHASE 9: Monitoring).
+        
+        Tracks:
+        - Prediction time
+        - Model version used
+        - Prediction confidence
+        - Similar cases found
+        """
+        self.log_event(
+            request_id=request_id,
+            event_type="case_prediction",
+            description=f"Predicted verdict: {predicted_verdict} (confidence: {confidence:.1%})",
+            details={
+                "predicted_verdict": predicted_verdict,
+                "confidence": f"{confidence:.1%}",
+                "model_version": model_version,
+                "prediction_time_ms": prediction_time_ms,
+                "similar_cases_found": similar_cases_count,
+                "confidence_score": round(confidence, 4)
+            },
+            input_data={
+                "case_name": case_name,
+                **input_data
+            },
+            output_data={
+                "verdict": predicted_verdict,
+                "confidence": confidence,
+                "model_version": model_version
+            },
+            component="case_outcome_predictor",
+            duration_ms=duration_ms,
+            status="success"
+        )
+    
     def log_error(
         self,
         request_id: str,
