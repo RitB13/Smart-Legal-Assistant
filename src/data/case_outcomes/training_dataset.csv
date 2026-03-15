@@ -485,3 +485,203 @@ IND_571602521,Amit Nair vs Sanjay Nair - Harassment Case,harassment_civil,India,
 IND_449218161,Amit Kumar vs Anjali Bhat - Harassment Case,harassment_civil,India,Uttar Pradesh,2013,convicted,516,1410170,10,13,8,4,medium,very_complex,True,generated,synthetic_generation
 IND_140802196,Divya Desai vs Riya Gupta - Civil Harassment,harassment_civil,India,Jharkhand,2011,convicted,775,1743978,10,11,8,2,low,moderate,False,generated,synthetic_generation
 IND_312918132,Anjali Iyer vs Kumar Sharma - Civil Harassment,harassment_civil,India,Rajasthan,2012,dismissed,667,0,3,1,6,3,low,very_complex,True,generated,synthetic_generation
+IND_315736642,"Amit Das vs Arjun Patel on 26 August, 2005",divorce_contested,India,Madhya Pradesh,2005,dismissed,921,0,9,3,9,6,high,simple,False,generated,synthetic_generation
+IND_473218891,"Riya Nair vs Riya Patel on 13 March, 2008",property_dispute,India,Delhi,2008,acquitted,1089,0,1,0,4,9,high,very_complex,False,generated,synthetic_generation
+IND_445605407,"Kavya Nair vs Rohan Patel on 23 July, 2018",property_dispute,India,Rajasthan,2018,settlement,807,4596428,6,15,8,7,high,simple,True,generated,synthetic_generation
+IND_474866986,"Nikhil Das vs Rohan Rao on 18 July, 2009",criminal_complaint,India,Maharashtra,2009,acquitted,1033,0,4,5,10,4,critical,moderate,False,generated,synthetic_generation
+IND_708580158,"Zara Reddy vs Priya Sharma on 19 June, 2019",criminal_complaint,India,Karnataka,2019,settlement,664,4899594,6,4,0,9,low,simple,True,generated,synthetic_generation
+IND_238290336,"Arjun Sharma vs Deepak Rao on 16 August, 2023",property_dispute,India,Rajasthan,2023,unknown,487,1165219,7,8,2,7,medium,moderate,True,generated,synthetic_generation
+IND_417255560,"Vikram Singh vs Megha Iyer on 9 August, 2003",criminal_complaint,India,Karnataka,2003,unknown,294,533687,7,0,10,10,critical,simple,False,generated,synthetic_generation
+IND_731304362,"Deepak Chatterjee vs Arjun Gupta on 13 August, 2005",criminal_complaint,India,Andhra Pradesh,2005,unknown,680,4286683,10,10,1,1,low,moderate,True,generated,synthetic_generation
+IND_646615571,"Vikram Joshi vs Vikram Reddy on 21 March, 2003",property_dispute,India,Kerala,2003,unknown,587,3051525,10,2,7,10,low,simple,False,generated,synthetic_generation
+IND_433681732,"Divya Reddy vs Megha Verma on 19 November, 2013",harassment_civil,India,Karnataka,2013,acquitted,1042,0,10,3,10,5,low,complex,False,generated,synthetic_generation
+IND_754236298,"Riya Iyer vs Rohan Rao on 19 October, 2010",property_dispute,India,Delhi,2010,convicted,959,4403045,9,2,6,2,critical,complex,True,generated,synthetic_generation
+IND_291530756,"Vikram Singh vs Divya Das on 18 November, 2009",harassment_civil,India,Tamil Nadu,2009,convicted,528,1765236,3,3,0,2,critical,very_complex,True,generated,synthetic_generation
+IND_709308475,"Zara Iyer vs Divya Iyer on 8 January, 2007",property_dispute,India,Tamil Nadu,2007,acquitted,778,0,8,14,0,0,low,simple,False,generated,synthetic_generation
+IND_188860710,"Sneha Kumar vs Divya Nair on 24 June, 2002",criminal_complaint,India,Himachal Pradesh,2002,acquitted,455,0,10,7,3,6,low,complex,True,generated,synthetic_generation
+IND_419195835,"Arjun Iyer vs Kavya Patel on 23 August, 2023",dowry_harassment,India,Rajasthan,2023,dismissed,766,0,4,10,9,3,critical,very_complex,False,generated,synthetic_generation
+IND_169928283,"Deepak Verma vs Riya Kumar on 9 October, 2024",dowry_harassment,India,Delhi,2024,convicted,813,4968473,4,10,10,10,low,complex,True,generated,synthetic_generation
+IND_868749486,"Zara Chatterjee vs Kavya Patel on 2 March, 2005",property_dispute,India,Bihar,2005,unknown,866,3002206,6,7,6,2,low,moderate,False,generated,synthetic_generation
+IND_600993922,"Amit Kumar vs Vikram Bhat on 24 May, 2003",criminal_complaint,India,Tamil Nadu,2003,dismissed,995,0,7,7,8,7,medium,very_complex,False,generated,synthetic_generation
+IND_782149967,"Vikram Bhat vs Kavya Rao on 14 December, 2000",criminal_complaint,India,Maharashtra,2000,acquitted,486,0,3,4,2,2,low,complex,True,generated,synthetic_generation
+IND_541517980,"Riya Gupta vs Deepak Gupta on 6 December, 2009",divorce_contested,India,Haryana,2009,settlement,333,532794,6,14,10,5,medium,complex,False,generated,synthetic_generation
+IND_435915788,"Sneha Gupta vs Sanjay Joshi on 3 July, 2005",property_dispute,India,Uttar Pradesh,2005,settlement,615,350827,9,13,5,8,low,complex,False,generated,synthetic_generation
+IND_775407543,"Sanjay Singh vs Arjun Reddy on 11 March, 2016",property_dispute,India,Maharashtra,2016,dismissed,967,0,10,14,10,7,high,moderate,True,generated,synthetic_generation
+IND_301123843,"Sneha Rao vs Vikram Sharma on 28 December, 2016",divorce_contested,India,Maharashtra,2016,settlement,990,486172,1,15,10,4,high,simple,False,generated,synthetic_generation
+IND_398163227,"Amit Patel vs Vikram Joshi on 17 February, 2009",divorce_contested,India,Odisha,2009,dismissed,853,0,6,8,3,0,critical,moderate,False,generated,synthetic_generation
+IND_763384571,"Nikhil Singh vs Rohan Gupta on 3 June, 2005",criminal_complaint,India,Bihar,2005,acquitted,675,0,5,12,2,10,medium,simple,True,generated,synthetic_generation
+IND_603835373,"Divya Nair vs Vikram Chatterjee on 4 April, 2019",divorce_contested,India,Madhya Pradesh,2019,dismissed,1082,0,6,5,8,8,medium,simple,False,generated,synthetic_generation
+IND_700323107,"Megha Sharma vs Riya Verma on 15 April, 2001",property_dispute,India,Kerala,2001,settlement,884,3170605,3,8,7,5,medium,moderate,False,generated,synthetic_generation
+IND_130486363,"Amit Das vs Rahul Chatterjee on 5 October, 2003",property_dispute,India,Himachal Pradesh,2003,dismissed,283,0,9,5,1,3,medium,moderate,False,generated,synthetic_generation
+IND_894351901,"Kavya Das vs Deepak Singh on 21 March, 2006",dowry_harassment,India,Telangana,2006,dismissed,230,0,10,13,2,5,high,simple,True,generated,synthetic_generation
+IND_732271434,"Riya Singh vs Kavya Patel on 11 May, 2004",property_dispute,India,Odisha,2004,dismissed,499,0,5,8,0,4,critical,moderate,False,generated,synthetic_generation
+IND_783319991,"Divya Rao vs Amit Iyer on 28 November, 2016",criminal_complaint,India,Rajasthan,2016,acquitted,546,0,1,1,1,8,medium,simple,True,generated,synthetic_generation
+IND_349795517,"Megha Bhat vs Riya Gupta on 11 August, 2020",dowry_harassment,India,Andhra Pradesh,2020,acquitted,865,0,7,1,5,8,critical,complex,True,generated,synthetic_generation
+IND_713326367,"Nikhil Sharma vs Divya Chatterjee on 15 June, 2020",criminal_complaint,India,Bihar,2020,settlement,271,3959258,4,4,3,10,low,complex,True,generated,synthetic_generation
+IND_400612975,"Riya Verma vs Anjali Das on 12 July, 2013",property_dispute,India,Andhra Pradesh,2013,settlement,882,4105215,1,8,0,1,medium,very_complex,False,generated,synthetic_generation
+IND_713851983,"Arjun Singh vs Sanjay Gupta on 9 June, 2002",criminal_complaint,India,Rajasthan,2002,acquitted,248,0,4,15,3,7,medium,complex,False,generated,synthetic_generation
+IND_716072051,"Anjali Gupta vs Rohan Gupta on 22 July, 2001",criminal_complaint,India,Odisha,2001,convicted,660,260438,5,3,9,5,high,simple,True,generated,synthetic_generation
+IND_111476637,"Deepak Gupta vs Anjali Iyer on 12 February, 2005",dowry_harassment,India,Madhya Pradesh,2005,unknown,874,4162196,1,12,1,7,medium,simple,True,generated,synthetic_generation
+IND_272959467,"Divya Chatterjee vs Nikhil Kumar on 5 October, 2000",property_dispute,India,Maharashtra,2000,acquitted,344,0,9,1,5,4,low,complex,True,generated,synthetic_generation
+IND_906874690,"Zara Chatterjee vs Priya Chatterjee on 16 December, 2000",harassment_civil,India,Haryana,2000,unknown,680,4738003,7,11,0,1,high,complex,False,generated,synthetic_generation
+IND_378917372,"Riya Chatterjee vs Zara Nair on 3 October, 2001",dowry_harassment,India,Chhattisgarh,2001,acquitted,212,0,2,5,10,1,critical,simple,False,generated,synthetic_generation
+IND_959357375,"Nikhil Rao vs Zara Kumar on 8 March, 2016",harassment_civil,India,Tamil Nadu,2016,dismissed,724,0,9,0,0,7,low,moderate,True,generated,synthetic_generation
+IND_501175012,"Sanjay Bhat vs Rahul Bhat on 21 March, 2023",dowry_harassment,India,Andhra Pradesh,2023,settlement,680,1992901,7,5,1,3,critical,very_complex,False,generated,synthetic_generation
+IND_715870445,"Amit Bhat vs Kavya Verma on 1 June, 2014",divorce_contested,India,Rajasthan,2014,convicted,1185,3887341,10,2,2,1,high,moderate,False,generated,synthetic_generation
+IND_967541748,"Amit Chatterjee vs Megha Nair on 22 July, 2005",dowry_harassment,India,Rajasthan,2005,settlement,616,4669025,9,11,8,9,medium,simple,False,generated,synthetic_generation
+IND_646806162,"Riya Patel vs Megha Singh on 15 January, 2023",harassment_civil,India,Telangana,2023,dismissed,632,0,3,13,5,7,critical,very_complex,False,generated,synthetic_generation
+IND_503045293,"Arjun Verma vs Divya Singh on 24 September, 2006",criminal_complaint,India,Maharashtra,2006,unknown,343,3856253,7,3,0,2,high,moderate,False,generated,synthetic_generation
+IND_128173810,"Vikram Gupta vs Kavya Rao on 26 January, 2022",criminal_complaint,India,Delhi,2022,convicted,707,2970102,9,8,3,9,low,simple,False,generated,synthetic_generation
+IND_509323266,"Rohan Gupta vs Sanjay Patel on 3 December, 2004",dowry_harassment,India,Haryana,2004,unknown,1168,715204,5,5,9,6,low,simple,False,generated,synthetic_generation
+IND_410532414,"Kavya Iyer vs Vikram Chatterjee on 14 April, 2002",criminal_complaint,India,Punjab,2002,acquitted,358,0,6,9,7,5,critical,moderate,True,generated,synthetic_generation
+IND_922647271,"Kavya Reddy vs Megha Joshi on 28 February, 2004",criminal_complaint,India,Assam,2004,acquitted,1031,0,6,12,6,0,critical,simple,True,generated,synthetic_generation
+IND_324166701,"Arjun Verma vs Sanjay Bhat on 28 April, 2010",criminal_complaint,India,Jharkhand,2010,settlement,792,1753986,2,7,10,7,critical,complex,False,generated,synthetic_generation
+IND_735938262,"Deepak Sharma vs Deepak Bhat on 20 July, 2019",divorce_contested,India,Telangana,2019,settlement,1092,1569179,6,1,10,4,medium,very_complex,False,generated,synthetic_generation
+IND_859876751,"Sanjay Rao vs Priya Kumar on 9 December, 2008",harassment_civil,India,Odisha,2008,acquitted,595,0,1,2,7,9,critical,simple,True,generated,synthetic_generation
+IND_807363657,"Zara Singh vs Sneha Nair on 28 August, 2024",divorce_contested,India,Jharkhand,2024,convicted,1128,2834867,2,6,3,5,low,moderate,False,generated,synthetic_generation
+IND_392460519,"Sanjay Rao vs Divya Kumar on 5 February, 2018",property_dispute,India,Jharkhand,2018,settlement,1091,775981,7,3,5,5,critical,simple,False,generated,synthetic_generation
+IND_947399986,"Megha Verma vs Nikhil Reddy on 4 April, 2011",criminal_complaint,India,Gujarat,2011,acquitted,245,0,1,15,3,4,medium,very_complex,True,generated,synthetic_generation
+IND_756503523,"Priya Patel vs Deepak Reddy on 18 January, 2018",property_dispute,India,Punjab,2018,unknown,770,1758587,6,1,3,3,critical,moderate,True,generated,synthetic_generation
+IND_666339613,"Deepak Joshi vs Deepak Gupta on 16 December, 2004",dowry_harassment,India,Karnataka,2004,dismissed,1198,0,10,11,0,9,high,complex,True,generated,synthetic_generation
+IND_368834176,"Megha Verma vs Priya Chatterjee on 5 September, 2015",divorce_contested,India,West Bengal,2015,convicted,286,741424,5,2,3,3,high,moderate,True,generated,synthetic_generation
+IND_714227635,"Sneha Singh vs Anjali Reddy on 15 May, 2004",criminal_complaint,India,Tamil Nadu,2004,convicted,1073,3701479,4,0,5,1,critical,complex,True,generated,synthetic_generation
+IND_787273925,"Sanjay Sharma vs Nikhil Verma on 8 March, 2011",criminal_complaint,India,Telangana,2011,settlement,1006,704027,9,8,9,7,high,simple,False,generated,synthetic_generation
+IND_134441678,"Priya Singh vs Zara Rao on 12 May, 2011",property_dispute,India,Gujarat,2011,settlement,476,1630155,5,14,6,7,critical,very_complex,False,generated,synthetic_generation
+IND_183822589,"Sanjay Reddy vs Kavya Chatterjee on 22 July, 2021",criminal_complaint,India,Kerala,2021,dismissed,1124,0,7,1,7,1,medium,very_complex,True,generated,synthetic_generation
+IND_985975609,"Amit Kumar vs Priya Singh on 21 September, 2015",property_dispute,India,Chhattisgarh,2015,unknown,990,2105237,6,8,10,10,critical,moderate,True,generated,synthetic_generation
+IND_408928200,"Deepak Das vs Zara Verma on 18 March, 2021",property_dispute,India,Himachal Pradesh,2021,acquitted,463,0,8,6,9,6,medium,simple,False,generated,synthetic_generation
+IND_108426923,"Priya Singh vs Riya Sharma on 8 May, 2021",harassment_civil,India,Jharkhand,2021,dismissed,748,0,7,10,4,1,medium,very_complex,False,generated,synthetic_generation
+IND_435303822,"Arjun Nair vs Deepak Singh on 21 December, 2011",property_dispute,India,Rajasthan,2011,acquitted,672,0,5,12,7,1,critical,complex,False,generated,synthetic_generation
+IND_955810841,"Sanjay Chatterjee vs Amit Patel on 26 February, 2014",divorce_contested,India,Odisha,2014,convicted,1042,2534480,6,13,8,5,critical,simple,False,generated,synthetic_generation
+IND_288242720,"Divya Das vs Nikhil Chatterjee on 23 April, 2011",harassment_civil,India,Bihar,2011,unknown,448,3056930,1,4,10,3,high,moderate,False,generated,synthetic_generation
+IND_720301168,"Nikhil Rao vs Zara Rao on 21 February, 2001",dowry_harassment,India,West Bengal,2001,acquitted,912,0,6,5,9,9,critical,very_complex,True,generated,synthetic_generation
+IND_168998371,"Divya Patel vs Anjali Nair on 21 March, 2002",harassment_civil,India,Jharkhand,2002,settlement,426,4190683,3,7,3,10,critical,very_complex,True,generated,synthetic_generation
+IND_707681559,"Sneha Rao vs Anjali Joshi on 11 October, 2019",property_dispute,India,Madhya Pradesh,2019,unknown,272,1174513,9,12,4,0,low,very_complex,True,generated,synthetic_generation
+IND_821255053,"Rohan Sharma vs Sneha Gupta on 25 March, 2007",criminal_complaint,India,Karnataka,2007,dismissed,353,0,5,14,1,2,critical,complex,False,generated,synthetic_generation
+IND_299582298,"Kavya Singh vs Rahul Verma on 13 April, 2013",divorce_contested,India,Punjab,2013,unknown,301,1599147,7,5,4,8,high,simple,False,generated,synthetic_generation
+IND_700331195,"Vikram Das vs Priya Chatterjee on 23 May, 2022",divorce_contested,India,Chhattisgarh,2022,acquitted,707,0,5,1,10,7,medium,simple,False,generated,synthetic_generation
+IND_960591408,"Megha Nair vs Sneha Das on 12 May, 2012",dowry_harassment,India,Assam,2012,settlement,554,1995884,2,13,0,7,high,very_complex,True,generated,synthetic_generation
+IND_546643402,"Sanjay Das vs Deepak Joshi on 17 September, 2001",harassment_civil,India,Andhra Pradesh,2001,settlement,1131,2422043,4,11,5,10,medium,moderate,True,generated,synthetic_generation
+IND_389600727,"Riya Nair vs Deepak Joshi on 3 May, 2024",divorce_contested,India,Telangana,2024,settlement,630,4931791,1,7,5,2,medium,simple,False,generated,synthetic_generation
+IND_432385398,"Sanjay Sharma vs Sanjay Sharma on 7 February, 2020",property_dispute,India,Himachal Pradesh,2020,convicted,516,2230456,5,9,3,0,low,very_complex,False,generated,synthetic_generation
+IND_691311600,"Deepak Joshi vs Arjun Chatterjee on 11 September, 2021",criminal_complaint,India,Maharashtra,2021,dismissed,940,0,7,14,7,2,high,moderate,True,generated,synthetic_generation
+IND_485712966,"Zara Rao vs Kavya Joshi on 12 December, 2000",property_dispute,India,Punjab,2000,convicted,865,4172010,5,6,3,7,low,simple,True,generated,synthetic_generation
+IND_290510847,"Kavya Joshi vs Nikhil Rao on 21 February, 2002",dowry_harassment,India,Haryana,2002,unknown,1105,2247718,10,11,1,5,medium,very_complex,True,generated,synthetic_generation
+IND_176408190,"Riya Singh vs Vikram Singh on 19 May, 2014",criminal_complaint,India,Kerala,2014,unknown,239,4364256,9,0,4,7,critical,complex,True,generated,synthetic_generation
+IND_426196036,"Deepak Chatterjee vs Priya Joshi on 10 April, 2024",dowry_harassment,India,Odisha,2024,unknown,550,2647744,3,9,1,8,medium,simple,False,generated,synthetic_generation
+IND_182333753,"Deepak Das vs Sanjay Nair on 19 July, 2011",harassment_civil,India,Jharkhand,2011,unknown,802,281647,8,12,7,5,low,complex,False,generated,synthetic_generation
+IND_343880611,"Sanjay Patel vs Kavya Reddy on 12 August, 2000",property_dispute,India,Himachal Pradesh,2000,unknown,267,1132072,9,10,0,8,high,moderate,False,generated,synthetic_generation
+IND_985297071,"Deepak Kumar vs Riya Sharma on 18 December, 2000",divorce_contested,India,Haryana,2000,settlement,763,3033016,5,12,10,1,high,simple,False,generated,synthetic_generation
+IND_195535755,"Anjali Rao vs Riya Bhat on 8 September, 2010",property_dispute,India,Jharkhand,2010,dismissed,683,0,5,2,10,6,low,simple,False,generated,synthetic_generation
+IND_607340199,"Riya Nair vs Kavya Chatterjee on 10 January, 2017",divorce_contested,India,Himachal Pradesh,2017,acquitted,374,0,2,10,8,8,medium,complex,True,generated,synthetic_generation
+IND_168033306,"Sanjay Chatterjee vs Amit Reddy on 10 December, 2009",criminal_complaint,India,Madhya Pradesh,2009,settlement,795,2849000,9,6,1,2,medium,complex,True,generated,synthetic_generation
+IND_334520645,"Amit Nair vs Deepak Rao on 26 March, 2020",criminal_complaint,India,Jharkhand,2020,dismissed,582,0,6,12,4,2,high,moderate,True,generated,synthetic_generation
+IND_220966264,"Vikram Nair vs Zara Reddy on 3 April, 2003",criminal_complaint,India,Kerala,2003,settlement,1064,695443,7,12,8,10,medium,very_complex,False,generated,synthetic_generation
+IND_841185951,"Amit Bhat vs Zara Nair on 2 June, 2022",dowry_harassment,India,Telangana,2022,acquitted,970,0,3,14,8,5,critical,very_complex,False,generated,synthetic_generation
+IND_485660248,"Priya Nair vs Vikram Kumar on 2 August, 2024",dowry_harassment,India,Haryana,2024,convicted,759,966976,1,5,1,1,low,simple,True,generated,synthetic_generation
+IND_634036140,"Priya Rao vs Sanjay Verma on 16 June, 2015",harassment_civil,India,Assam,2015,acquitted,237,0,2,2,6,3,medium,moderate,True,generated,synthetic_generation
+IND_626539905,"Sneha Sharma vs Megha Gupta on 18 December, 2005",criminal_complaint,India,Tamil Nadu,2005,convicted,878,2080054,6,6,3,10,critical,complex,True,generated,synthetic_generation
+IND_211073199,"Zara Singh vs Vikram Kumar on 19 September, 2000",harassment_civil,India,Uttar Pradesh,2000,unknown,948,949919,3,2,5,10,low,complex,False,generated,synthetic_generation
+IND_817895024,"Kavya Gupta vs Priya Verma on 8 August, 2022",dowry_harassment,India,Punjab,2022,settlement,491,4809527,9,12,5,8,low,very_complex,True,generated,synthetic_generation
+IND_708449987,"Priya Bhat vs Sneha Singh on 9 May, 2022",divorce_contested,India,West Bengal,2022,unknown,1198,1775992,4,7,2,6,low,very_complex,False,generated,synthetic_generation
+IND_864118234,"Nikhil Rao vs Sanjay Gupta on 6 June, 2021",harassment_civil,India,Uttar Pradesh,2021,acquitted,412,0,3,2,4,8,medium,very_complex,True,generated,synthetic_generation
+IND_544426459,"Megha Joshi vs Sanjay Singh on 3 April, 2012",criminal_complaint,India,Assam,2012,convicted,1035,2794608,8,1,5,5,critical,moderate,False,generated,synthetic_generation
+IND_190542923,"Anjali Kumar vs Deepak Chatterjee on 18 May, 2010",harassment_civil,India,Kerala,2010,unknown,982,587391,8,0,1,0,critical,moderate,False,generated,synthetic_generation
+IND_871135445,"Amit Rao vs Zara Patel on 17 May, 2009",dowry_harassment,India,Delhi,2009,acquitted,463,0,4,13,1,5,medium,very_complex,False,generated,synthetic_generation
+IND_414633009,"Sanjay Das vs Zara Nair on 18 May, 2011",dowry_harassment,India,Bihar,2011,settlement,895,232876,6,15,9,3,medium,complex,True,generated,synthetic_generation
+IND_385299966,"Anjali Nair vs Deepak Joshi on 28 June, 2002",divorce_contested,India,Delhi,2002,unknown,879,3384158,4,8,0,10,medium,simple,False,generated,synthetic_generation
+IND_605951473,"Kavya Rao vs Rahul Iyer on 6 March, 2023",harassment_civil,India,Tamil Nadu,2023,unknown,393,1967507,2,10,6,3,low,very_complex,True,generated,synthetic_generation
+IND_569139978,"Riya Verma vs Arjun Sharma on 14 December, 2019",property_dispute,India,Jharkhand,2019,convicted,494,2689426,7,7,2,5,low,simple,False,generated,synthetic_generation
+IND_794912361,"Nikhil Gupta vs Sneha Gupta on 11 June, 2019",dowry_harassment,India,Haryana,2019,unknown,606,4082250,4,12,3,1,low,complex,True,generated,synthetic_generation
+IND_561142148,"Rahul Das vs Kavya Rao on 9 April, 2024",property_dispute,India,Odisha,2024,acquitted,790,0,9,11,10,2,medium,very_complex,False,generated,synthetic_generation
+IND_550210484,"Divya Rao vs Sneha Joshi on 5 November, 2009",property_dispute,India,Rajasthan,2009,settlement,1080,2462467,2,6,6,5,high,moderate,False,generated,synthetic_generation
+IND_897245584,"Riya Chatterjee vs Amit Nair on 25 December, 2023",property_dispute,India,Odisha,2023,settlement,1037,2082824,9,1,10,6,medium,simple,False,generated,synthetic_generation
+IND_546280938,"Divya Nair vs Zara Bhat on 23 October, 2012",criminal_complaint,India,Delhi,2012,acquitted,205,0,2,2,8,4,medium,complex,True,generated,synthetic_generation
+IND_601371894,"Vikram Kumar vs Zara Nair on 11 August, 2024",property_dispute,India,Himachal Pradesh,2024,convicted,790,2895145,6,13,9,6,low,moderate,True,generated,synthetic_generation
+IND_877291173,"Riya Nair vs Priya Reddy on 4 February, 2008",property_dispute,India,Himachal Pradesh,2008,unknown,991,554943,8,7,5,1,high,moderate,True,generated,synthetic_generation
+IND_619422126,"Zara Chatterjee vs Arjun Joshi on 1 June, 2003",dowry_harassment,India,Andhra Pradesh,2003,settlement,851,1789207,2,3,4,4,critical,simple,True,generated,synthetic_generation
+IND_659392923,"Nikhil Gupta vs Sanjay Kumar on 4 July, 2011",property_dispute,India,Jharkhand,2011,convicted,1092,396653,4,2,6,7,medium,very_complex,False,generated,synthetic_generation
+IND_849610562,"Arjun Nair vs Sanjay Verma on 9 May, 2010",dowry_harassment,India,Karnataka,2010,acquitted,591,0,1,0,2,7,critical,complex,True,generated,synthetic_generation
+IND_460799515,"Priya Verma vs Megha Rao on 8 February, 2009",divorce_contested,India,Maharashtra,2009,dismissed,716,0,9,14,9,6,critical,moderate,False,generated,synthetic_generation
+IND_184698330,"Nikhil Singh vs Sneha Bhat on 25 November, 2009",harassment_civil,India,Himachal Pradesh,2009,acquitted,767,0,3,10,5,3,low,moderate,True,generated,synthetic_generation
+IND_720220176,"Rohan Reddy vs Amit Nair on 15 December, 2018",divorce_contested,India,Punjab,2018,acquitted,691,0,9,13,4,7,high,very_complex,True,generated,synthetic_generation
+IND_462154385,"Kavya Reddy vs Kavya Singh on 26 November, 2007",divorce_contested,India,Andhra Pradesh,2007,convicted,566,1876624,3,8,8,5,low,simple,True,generated,synthetic_generation
+IND_122114324,"Megha Patel vs Nikhil Reddy on 21 May, 2007",divorce_contested,India,Jharkhand,2007,convicted,888,1690572,6,1,1,7,medium,very_complex,True,generated,synthetic_generation
+IND_715104730,"Megha Reddy vs Vikram Iyer on 27 October, 2023",property_dispute,India,Madhya Pradesh,2023,unknown,1160,501514,5,7,10,6,critical,complex,True,generated,synthetic_generation
+IND_815627564,"Arjun Gupta vs Amit Nair on 14 September, 2018",harassment_civil,India,Chhattisgarh,2018,unknown,1052,4301992,6,2,0,3,medium,very_complex,False,generated,synthetic_generation
+IND_942692024,"Sneha Patel vs Nikhil Singh on 4 September, 2010",divorce_contested,India,Himachal Pradesh,2010,settlement,770,4412434,8,6,7,9,critical,moderate,False,generated,synthetic_generation
+IND_434559460,"Amit Joshi vs Divya Chatterjee on 9 October, 2008",harassment_civil,India,Odisha,2008,settlement,858,2433567,4,0,4,4,low,very_complex,True,generated,synthetic_generation
+IND_339904048,"Anjali Iyer vs Sneha Kumar on 24 August, 2010",dowry_harassment,India,Assam,2010,acquitted,863,0,2,9,8,3,high,complex,False,generated,synthetic_generation
+IND_438102634,"Sanjay Chatterjee vs Zara Chatterjee on 7 March, 2006",criminal_complaint,India,Kerala,2006,dismissed,370,0,9,6,9,5,critical,simple,True,generated,synthetic_generation
+IND_514824892,"Rahul Das vs Anjali Joshi on 5 June, 2011",divorce_contested,India,Chhattisgarh,2011,settlement,595,2221420,3,11,2,6,critical,moderate,False,generated,synthetic_generation
+IND_938032886,"Megha Reddy vs Amit Das on 2 July, 2018",harassment_civil,India,Kerala,2018,settlement,1046,4275831,5,8,2,8,critical,simple,False,generated,synthetic_generation
+IND_851383774,"Divya Patel vs Megha Kumar on 15 November, 2024",criminal_complaint,India,West Bengal,2024,unknown,1115,3212142,5,10,4,10,medium,complex,False,generated,synthetic_generation
+IND_480536031,"Sanjay Rao vs Arjun Chatterjee on 10 July, 2022",divorce_contested,India,Madhya Pradesh,2022,settlement,414,406205,2,12,6,10,high,moderate,True,generated,synthetic_generation
+IND_205257972,"Megha Verma vs Sanjay Gupta on 10 April, 2013",dowry_harassment,India,Haryana,2013,unknown,548,2448001,5,5,10,1,high,complex,False,generated,synthetic_generation
+IND_922191118,"Vikram Reddy vs Rohan Sharma on 15 February, 2011",dowry_harassment,India,Jharkhand,2011,settlement,701,3693232,10,8,7,3,medium,complex,True,generated,synthetic_generation
+IND_125208774,"Zara Das vs Rahul Iyer on 2 January, 2009",property_dispute,India,Tamil Nadu,2009,acquitted,653,0,9,2,8,4,critical,complex,False,generated,synthetic_generation
+IND_805904851,"Kavya Singh vs Nikhil Bhat on 10 November, 2017",property_dispute,India,West Bengal,2017,unknown,520,3335426,7,8,5,4,low,very_complex,True,generated,synthetic_generation
+IND_642467777,"Megha Iyer vs Sanjay Joshi on 7 March, 2007",property_dispute,India,Assam,2007,convicted,880,2048611,9,10,5,7,critical,very_complex,True,generated,synthetic_generation
+IND_510427146,"Amit Gupta vs Arjun Kumar on 8 March, 2005",criminal_complaint,India,Karnataka,2005,settlement,918,2555711,9,12,5,5,critical,moderate,True,generated,synthetic_generation
+IND_659845865,"Sneha Singh vs Vikram Sharma on 20 June, 2021",criminal_complaint,India,Maharashtra,2021,convicted,1177,4943883,8,3,6,4,medium,complex,True,generated,synthetic_generation
+IND_976816430,"Kavya Patel vs Priya Kumar on 24 March, 2015",criminal_complaint,India,Tamil Nadu,2015,unknown,666,1504721,1,9,1,1,critical,simple,False,generated,synthetic_generation
+IND_157166069,"Rohan Kumar vs Priya Gupta on 28 August, 2013",property_dispute,India,Chhattisgarh,2013,settlement,815,3945212,6,8,2,8,critical,moderate,True,generated,synthetic_generation
+IND_673154000,"Priya Sharma vs Vikram Sharma on 21 October, 2008",property_dispute,India,Rajasthan,2008,convicted,510,2914635,6,8,2,9,low,very_complex,True,generated,synthetic_generation
+IND_585004703,"Rohan Chatterjee vs Vikram Gupta on 10 May, 2001",criminal_complaint,India,Kerala,2001,settlement,511,3729691,3,6,1,9,critical,simple,False,generated,synthetic_generation
+IND_966083784,"Megha Verma vs Divya Patel on 20 November, 2004",divorce_contested,India,Rajasthan,2004,acquitted,447,0,6,7,0,9,high,complex,False,generated,synthetic_generation
+IND_764348009,"Deepak Iyer vs Priya Patel on 6 August, 2002",property_dispute,India,Bihar,2002,unknown,1063,2981072,7,11,1,9,high,simple,False,generated,synthetic_generation
+IND_198237523,"Zara Patel vs Priya Gupta on 10 May, 2000",harassment_civil,India,West Bengal,2000,convicted,1007,2278097,6,13,7,7,medium,moderate,True,generated,synthetic_generation
+IND_832803157,"Nikhil Sharma vs Zara Bhat on 10 September, 2005",harassment_civil,India,Madhya Pradesh,2005,settlement,954,3512289,1,10,9,3,medium,complex,True,generated,synthetic_generation
+IND_369547683,"Divya Kumar vs Deepak Gupta on 10 January, 2002",property_dispute,India,Rajasthan,2002,unknown,588,4995197,1,13,9,4,low,complex,True,generated,synthetic_generation
+IND_117306478,"Deepak Bhat vs Vikram Sharma on 9 November, 2006",criminal_complaint,India,Gujarat,2006,unknown,223,1266952,10,14,6,6,high,simple,True,generated,synthetic_generation
+IND_614285939,"Riya Sharma vs Sanjay Rao on 11 April, 2022",criminal_complaint,India,Uttar Pradesh,2022,acquitted,894,0,6,11,0,3,critical,very_complex,True,generated,synthetic_generation
+IND_520178519,"Kavya Singh vs Deepak Reddy on 24 December, 2016",divorce_contested,India,Gujarat,2016,unknown,566,642580,9,3,4,9,medium,moderate,False,generated,synthetic_generation
+IND_578180649,"Sanjay Das vs Megha Rao on 1 April, 2002",dowry_harassment,India,Himachal Pradesh,2002,convicted,473,507057,9,6,7,4,critical,very_complex,False,generated,synthetic_generation
+IND_601506390,"Rohan Kumar vs Deepak Gupta on 25 November, 2006",harassment_civil,India,Madhya Pradesh,2006,dismissed,478,0,10,13,9,7,high,complex,False,generated,synthetic_generation
+IND_638046983,"Kavya Singh vs Vikram Gupta on 5 January, 2012",divorce_contested,India,Haryana,2012,settlement,1173,753585,5,3,9,2,critical,complex,False,generated,synthetic_generation
+IND_574403118,"Vikram Iyer vs Amit Bhat on 1 October, 2019",harassment_civil,India,Uttar Pradesh,2019,settlement,653,4032385,4,15,2,4,medium,moderate,False,generated,synthetic_generation
+IND_353877367,"Sneha Sharma vs Sanjay Reddy on 25 November, 2004",harassment_civil,India,Chhattisgarh,2004,dismissed,978,0,9,4,4,1,high,very_complex,True,generated,synthetic_generation
+IND_235400714,"Priya Joshi vs Sneha Gupta on 14 November, 2022",property_dispute,India,Odisha,2022,unknown,868,933388,5,5,0,7,critical,simple,True,generated,synthetic_generation
+IND_837984453,"Vikram Kumar vs Deepak Iyer on 7 November, 2024",property_dispute,India,Karnataka,2024,unknown,303,4150666,2,12,6,8,critical,complex,True,generated,synthetic_generation
+IND_899994119,"Priya Das vs Divya Reddy on 24 November, 2022",property_dispute,India,Assam,2022,settlement,920,1442919,4,14,5,10,low,very_complex,True,generated,synthetic_generation
+IND_949615940,"Vikram Nair vs Rohan Chatterjee on 12 March, 2018",criminal_complaint,India,Bihar,2018,unknown,499,4289486,10,9,8,1,medium,complex,True,generated,synthetic_generation
+IND_668104338,"Divya Joshi vs Vikram Das on 7 September, 2021",divorce_contested,India,Andhra Pradesh,2021,settlement,505,547443,5,11,1,10,critical,very_complex,False,generated,synthetic_generation
+IND_221556932,"Rohan Joshi vs Zara Reddy on 16 December, 2022",criminal_complaint,India,Rajasthan,2022,convicted,1132,4400986,8,15,2,5,low,moderate,False,generated,synthetic_generation
+IND_138450097,"Sneha Joshi vs Megha Bhat on 21 December, 2022",dowry_harassment,India,Rajasthan,2022,convicted,516,3021673,7,14,6,8,medium,very_complex,False,generated,synthetic_generation
+IND_121443599,"Arjun Nair vs Sneha Gupta on 17 July, 2020",dowry_harassment,India,Gujarat,2020,unknown,827,3585300,7,6,10,0,critical,simple,True,generated,synthetic_generation
+IND_454238181,"Amit Das vs Sneha Iyer on 12 March, 2023",criminal_complaint,India,Karnataka,2023,dismissed,395,0,7,5,1,5,low,complex,True,generated,synthetic_generation
+IND_104266815,"Sneha Joshi vs Priya Nair on 26 July, 2016",harassment_civil,India,Jharkhand,2016,acquitted,950,0,7,9,7,7,high,moderate,False,generated,synthetic_generation
+IND_342595589,"Megha Chatterjee vs Rohan Verma on 5 September, 2002",criminal_complaint,India,Karnataka,2002,dismissed,437,0,6,10,6,1,critical,moderate,True,generated,synthetic_generation
+IND_667016578,"Anjali Bhat vs Nikhil Sharma on 5 August, 2001",divorce_contested,India,Bihar,2001,unknown,649,4563516,3,7,10,3,critical,very_complex,True,generated,synthetic_generation
+IND_923465254,"Vikram Verma vs Zara Kumar on 15 September, 2001",property_dispute,India,Jharkhand,2001,acquitted,230,0,8,0,1,6,medium,moderate,True,generated,synthetic_generation
+IND_691341297,"Megha Rao vs Amit Joshi on 24 August, 2001",harassment_civil,India,Madhya Pradesh,2001,unknown,743,3782996,10,11,3,0,medium,moderate,True,generated,synthetic_generation
+IND_846841098,"Nikhil Gupta vs Nikhil Gupta on 10 October, 2024",dowry_harassment,India,Karnataka,2024,unknown,401,4865798,3,14,10,10,medium,simple,False,generated,synthetic_generation
+IND_692247345,"Rohan Chatterjee vs Amit Chatterjee on 14 January, 2006",harassment_civil,India,Haryana,2006,dismissed,314,0,1,1,0,8,low,complex,False,generated,synthetic_generation
+IND_552554466,"Zara Das vs Deepak Verma on 10 October, 2018",criminal_complaint,India,Telangana,2018,dismissed,403,0,3,14,8,1,medium,moderate,False,generated,synthetic_generation
+IND_814765985,"Rahul Joshi vs Divya Gupta on 4 November, 2006",criminal_complaint,India,Madhya Pradesh,2006,settlement,790,3063319,2,9,9,10,low,moderate,True,generated,synthetic_generation
+IND_859611809,"Zara Reddy vs Amit Reddy on 15 November, 2024",harassment_civil,India,Assam,2024,dismissed,514,0,2,3,1,8,critical,moderate,False,generated,synthetic_generation
+IND_645982891,"Sanjay Rao vs Nikhil Reddy on 6 November, 2002",criminal_complaint,India,Madhya Pradesh,2002,unknown,569,3581011,6,11,6,9,medium,complex,False,generated,synthetic_generation
+IND_398494070,"Amit Bhat vs Anjali Chatterjee on 7 October, 2015",divorce_contested,India,Punjab,2015,unknown,750,2750246,2,6,10,3,high,very_complex,False,generated,synthetic_generation
+IND_814376921,"Anjali Sharma vs Anjali Joshi on 23 January, 2014",property_dispute,India,Bihar,2014,acquitted,935,0,8,3,3,5,low,very_complex,False,generated,synthetic_generation
+IND_169216395,"Priya Bhat vs Vikram Joshi on 18 February, 2013",harassment_civil,India,Odisha,2013,acquitted,829,0,7,3,4,1,low,simple,True,generated,synthetic_generation
+IND_454067872,"Zara Chatterjee vs Kavya Singh on 2 October, 2018",criminal_complaint,India,Delhi,2018,acquitted,653,0,10,8,5,3,critical,simple,False,generated,synthetic_generation
+IND_305427325,"Zara Rao vs Deepak Verma on 4 February, 2024",dowry_harassment,India,Telangana,2024,acquitted,618,0,2,10,2,1,low,simple,False,generated,synthetic_generation
+IND_496958322,"Nikhil Singh vs Zara Bhat on 5 April, 2021",divorce_contested,India,Himachal Pradesh,2021,settlement,582,2958247,4,2,2,5,critical,simple,False,generated,synthetic_generation
+IND_221709159,"Amit Patel vs Riya Joshi on 4 April, 2006",dowry_harassment,India,Maharashtra,2006,acquitted,631,0,7,2,2,10,high,moderate,False,generated,synthetic_generation
+IND_824087686,"Rohan Sharma vs Kavya Das on 24 November, 2013",harassment_civil,India,Uttar Pradesh,2013,unknown,740,745987,2,14,2,0,critical,complex,True,generated,synthetic_generation
+IND_129254778,"Megha Gupta vs Rohan Sharma on 25 December, 2022",property_dispute,India,Kerala,2022,dismissed,436,0,7,15,8,8,low,very_complex,False,generated,synthetic_generation
+IND_110243724,"Megha Sharma vs Arjun Iyer on 12 February, 2020",harassment_civil,India,Jharkhand,2020,dismissed,306,0,6,9,2,8,medium,complex,False,generated,synthetic_generation
+IND_597639176,"Zara Bhat vs Kavya Kumar on 16 December, 2014",harassment_civil,India,Odisha,2014,acquitted,1105,0,3,0,1,3,medium,simple,False,generated,synthetic_generation
+IND_715334348,"Divya Reddy vs Amit Verma on 4 July, 2010",property_dispute,India,Uttar Pradesh,2010,settlement,382,561156,7,0,1,0,low,complex,True,generated,synthetic_generation
+IND_605897953,"Riya Chatterjee vs Rahul Rao on 5 September, 2017",property_dispute,India,Maharashtra,2017,dismissed,754,0,5,1,8,0,medium,simple,False,generated,synthetic_generation
+IND_656354144,"Vikram Patel vs Riya Patel on 4 January, 2017",harassment_civil,India,Kerala,2017,dismissed,916,0,2,11,6,6,low,moderate,False,generated,synthetic_generation
+IND_383534396,"Megha Verma vs Nikhil Bhat on 2 February, 2000",criminal_complaint,India,Haryana,2000,unknown,441,4951579,4,8,0,9,critical,very_complex,False,generated,synthetic_generation
+IND_474791939,"Kavya Joshi vs Divya Patel on 10 April, 2004",divorce_contested,India,Rajasthan,2004,convicted,851,2161706,9,12,4,1,critical,simple,True,generated,synthetic_generation
+IND_878545966,"Rohan Reddy vs Megha Reddy on 15 June, 2003",property_dispute,India,Bihar,2003,settlement,1140,850027,6,10,6,10,medium,complex,True,generated,synthetic_generation
+IND_221572912,"Kavya Bhat vs Rahul Patel on 20 November, 2016",property_dispute,India,Karnataka,2016,unknown,624,2670394,6,8,6,0,critical,moderate,True,generated,synthetic_generation
+IND_564632804,"Priya Reddy vs Divya Nair on 16 December, 2002",harassment_civil,India,Jharkhand,2002,acquitted,1061,0,7,2,6,5,critical,moderate,True,generated,synthetic_generation
+IND_587014157,"Vikram Bhat vs Zara Sharma on 15 July, 2022",dowry_harassment,India,Punjab,2022,unknown,1059,2358535,1,0,7,1,low,complex,True,generated,synthetic_generation
+IND_291819143,"Riya Bhat vs Divya Joshi on 17 March, 2005",divorce_contested,India,West Bengal,2005,dismissed,727,0,8,15,1,1,critical,simple,False,generated,synthetic_generation
+IND_503828716,"Nikhil Gupta vs Deepak Iyer on 10 September, 2020",dowry_harassment,India,Rajasthan,2020,acquitted,348,0,6,6,10,8,medium,complex,False,generated,synthetic_generation
+IND_679671936,"Rahul Verma vs Priya Rao on 25 November, 2021",property_dispute,India,Uttar Pradesh,2021,settlement,795,3299449,6,9,7,8,high,moderate,False,generated,synthetic_generation
+IND_259655265,"Priya Joshi vs Divya Das on 1 September, 2000",harassment_civil,India,Tamil Nadu,2000,acquitted,809,0,8,2,6,2,high,simple,False,generated,synthetic_generation
