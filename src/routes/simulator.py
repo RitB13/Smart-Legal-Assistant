@@ -176,19 +176,38 @@ def submit_simulation_feedback(simulation_id: str, feedback: SimulationFeedback)
     try:
         logger.info(f"Feedback received for simulation: {simulation_id}")
         logger.info(f"Rating: {feedback.rating}/5, Helpful: {feedback.helpful}")
-        
         if feedback.comments:
             logger.info(f"Comments: {feedback.comments}")
-        
-        # Here you would save feedback to database
-        # For now, just log it
-        
+
+        # Store feedback in MongoDB 'feedback' collection
+        from src.services.database_service import get_database_service
+        from src.models.database_models import UserFeedbackModel
+        import uuid
+        from datetime import datetime
+
+        feedback_id = str(uuid.uuid4())
+        feedback_model = UserFeedbackModel(
+            feedback_id=feedback_id,
+            session_id=None,  # Optionally extract from request if available
+            feedback_type="simulation_feedback",
+            related_query_id=None,
+            related_simulation_id=simulation_id,
+            rating=feedback.rating if feedback.rating is not None else 0,
+            comment=feedback.comments,
+            timestamp=datetime.utcnow(),
+            language="en"  # Optionally extract from request or feedback
+        )
+        db_service = get_database_service()
+        saved = db_service.save_feedback(feedback_model)
+        if not saved:
+            raise Exception("Failed to save feedback to database")
+
         return {
             "status": "success",
             "message": "Feedback recorded successfully. Thank you!",
-            "simulation_id": simulation_id
+            "simulation_id": simulation_id,
+            "feedback_id": feedback_id
         }
-    
     except Exception as e:
         logger.error(f"Error recording feedback: {str(e)}")
         raise HTTPException(

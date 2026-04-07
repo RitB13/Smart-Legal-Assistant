@@ -83,19 +83,35 @@ const ChatPage = () => {
     setInputText("");
     setIsTyping(true);
 
+    let timeoutId: NodeJS.Timeout | null = null;
+
     try {
       // Call the backend /query endpoint with multilingual support
       const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      
+      // Create an abort controller with 60 second timeout
+      const controller = new AbortController();
+      timeoutId = setTimeout(() => {
+        console.log("Aborting request due to 60s timeout");
+        controller.abort();
+      }, 60000);
+
+      console.log("[Chat] Sending query:", queryText.substring(0, 50) + "...");
+
       const response = await fetch(`${apiUrl}/query`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          query: queryText,  // ← Now uses stored value, not empty state
-          // Language will be auto-detected by the backend
+          query: queryText,
         }),
+        signal: controller.signal,
       });
+
+      if (timeoutId) clearTimeout(timeoutId);
+
+      console.log("[Chat] Response received:", response.status, response.statusText);
 
       if (!response.ok) {
         const errorStatus = response.status;
@@ -113,13 +129,16 @@ const ChatPage = () => {
           errorMessage = "The service is taking too long to respond. Please try again.";
         }
 
+        console.error(`[Chat] HTTP Error ${errorStatus}:`, errorMessage);
         throw new Error(`API Error ${errorStatus}: ${errorMessage}`);
       }
 
       const data = await response.json();
+      console.log("[Chat] Response data parsed successfully");
 
       // Type validation for response
       if (!data || typeof data.summary !== "string") {
+        console.error("[Chat] Invalid response format:", data);
         throw new Error("Invalid response format from backend");
       }
 
@@ -146,11 +165,22 @@ const ChatPage = () => {
         language: detectedLanguage,
       };
 
+      console.log("[Chat] Adding bot response to messages");
       setMessages(prev => [...prev, botResponse]);
     } catch (error) {
-      console.error("Error calling backend API:", error);
+      console.error("[Chat] Error caught:", error);
 
-      const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+      let errorMessage = "Unknown error occurred";
+      
+      if (error instanceof Error) {
+        if (error.name === 'AbortError') {
+          errorMessage = "Request timeout: The service took too long to respond. Please try again.";
+        } else {
+          errorMessage = error.message;
+        }
+      }
+
+      console.log("[Chat] Displaying error to user:", errorMessage);
 
       // Fallback error message
       const errorResponse: Message = {
@@ -161,9 +191,11 @@ const ChatPage = () => {
       };
 
       setMessages(prev => [...prev, errorResponse]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      console.log("[Chat] Setting isTyping to false");
+      setIsTyping(false);
     }
-
-    setIsTyping(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {

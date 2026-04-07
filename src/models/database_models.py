@@ -3,7 +3,7 @@ Phase 4: Database Models
 Models for storing queries, simulations, sessions, and analytics in MongoDB
 """
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, ConfigDict
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 from enum import Enum
@@ -61,6 +61,8 @@ class QueryRecordModel(BaseModel):
 
 class SimulationRecordModel(BaseModel):
     """Record of a consequence simulation"""
+    model_config = ConfigDict(protected_namespaces=())
+    
     simulation_id: str = Field(..., description="Unique simulation identifier")
     session_id: Optional[str] = Field(None, description="Associated session ID")
     
@@ -86,9 +88,6 @@ class SimulationRecordModel(BaseModel):
     user_feedback: Optional[int] = Field(None, ge=1, le=5, description="User rating (1-5)")
     user_comment: Optional[str] = Field(None, description="User comment")
     user_found_helpful: Optional[bool] = Field(None, description="Did user find simulation helpful?")
-    
-    class Config:
-        json_encoders = {datetime: lambda v: v.isoformat()}
 
 
 class ModeDecisionModel(BaseModel):

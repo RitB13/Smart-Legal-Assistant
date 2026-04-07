@@ -317,6 +317,11 @@ class QueryResponse(BaseModel):
         description="For simulate mode: the planned action extracted from the query"
     )
     
+    conversation_id: Optional[str] = Field(
+        None,
+        description="MongoDB conversation document ID for tracking chat sessions"
+    )
+    
     class Config:
         json_schema_extra = {
             "example": {

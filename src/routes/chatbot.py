@@ -1,10 +1,12 @@
 from fastapi import APIRouter, HTTPException, status, Request
 from src.models.query_model import QueryRequest, QueryResponse, ImpactScoreModel
+from src.models.db_models import ConversationCreate
 from src.services.llm_service import get_legal_response
 from src.services.parser import parse_llm_output
 from src.services.language_service import detect_language, get_language_name
 from src.services.feedback_processor import FeedbackProcessor, ScoreFeedback, ScoreFeedbackResponse
 from src.services.smart_mode_router import get_smart_mode_router, ModeRecommendation
+from src.services.conversation_service import ConversationService
 import logging
 import uuid
 import time
@@ -113,16 +115,21 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
             language = req.language.lower()
             logger.info(f"[{request_id}] Language: {language} (provided)")
         else:
+            logger.debug(f"[{request_id}] Detecting language from query...")
             language = detect_language(req.query)
             logger.info(f"[{request_id}] Language auto-detected: {language}")
         
         # Phase 3: Smart mode detection
         logger.debug(f"[{request_id}] Detecting query mode...")
+        mode_start = time.time()
         mode_result = smart_router.route_query(
             req.query,
             language=language,
             session_id=None
         )
+        mode_time = time.time() - mode_start
+        logger.debug(f"[{request_id}] Mode detection took {mode_time:.2f}s")
+        
         mode_rec = mode_result.mode_recommendation
         
         logger.info(
@@ -131,12 +138,30 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
         )
         
         # Call LLM for legal analysis
-        logger.debug(f"[{request_id}] Calling LLM service...")
-        raw_output = get_legal_response(req.query, language=language)
+        logger.debug(f"[{request_id}] Calling LLM service for legal analysis...")
+        llm_start = time.time()
+        try:
+            raw_output = get_legal_response(req.query, language=language)
+            llm_time = time.time() - llm_start
+            logger.debug(f"[{request_id}] LLM response received in {llm_time:.2f}s ({len(raw_output)} chars)")
+        except Exception as e:
+            llm_time = time.time() - llm_start
+            logger.error(f"[{request_id}] LLM service failed after {llm_time:.2f}s: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=f"Legal AI service unavailable: {str(e)}"
+            )
         
         # Parse LLM response
         logger.debug(f"[{request_id}] Parsing LLM response...")
-        parsed = parse_llm_output(raw_output)
+        try:
+            parsed = parse_llm_output(raw_output)
+        except Exception as e:
+            logger.error(f"[{request_id}] Failed to parse LLM output: {str(e)}")
+            raise HTTPException(
+                status_code=status.HTTP_502_BAD_GATEWAY,
+                detail="Failed to parse AI response"
+            )
         
         # Add required metadata
         parsed["request_id"] = request_id
@@ -167,13 +192,57 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
         elapsed = time.time() - start_time
         logger.info(f"[{request_id}] Query processed successfully in {elapsed:.2f}s")
         
+        # Persist conversation to MongoDB
+        try:
+            conversation_title = req.query[:100] if len(req.query) > 0 else "Chatbot Query"
+            
+            # Create new conversation document
+            conv_data = ConversationCreate(
+                user_id="anonymous",  # TODO: Get from auth context when available
+                title=conversation_title,
+                language=language
+            )
+            
+            conv = ConversationService.create_conversation(conv_data)
+            
+            if conv:
+                # Add user query to conversation
+                ConversationService.add_message(
+                    str(conv.id),
+                    role="user",
+                    content=req.query,
+                    language=language
+                )
+                
+                # Add assistant response to conversation
+                response_text = parsed.get("summary", "")
+                ConversationService.add_message(
+                    str(conv.id),
+                    role="assistant",
+                    content=response_text,
+                    language=language
+                )
+                
+                # Add conversation_id to response for frontend tracking
+                parsed["conversation_id"] = str(conv.id)
+                logger.info(f"[{request_id}] Conversation saved to MongoDB: {conv.id}")
+            else:
+                logger.warning(f"[{request_id}] Failed to persist conversation to MongoDB")
+                parsed["conversation_id"] = None
+        except Exception as e:
+            logger.warning(f"[{request_id}] Error persisting conversation: {str(e)}")
+            parsed["conversation_id"] = None
+        
         # Return response
         response = QueryResponse(**parsed)
         return response
         
+    except HTTPException:
+        # Re-raise HTTP exceptions as-is
+        raise
     except Exception as e:
         elapsed = time.time() - start_time
-        logger.exception(f"[{request_id}] Error after {elapsed:.2f}s: {str(e)}")
+        logger.exception(f"[{request_id}] Unexpected error after {elapsed:.2f}s: {str(e)}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while processing your query. Please try again."

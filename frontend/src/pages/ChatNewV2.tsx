@@ -342,15 +342,32 @@ const ChatNewV2 = () => {
     setInputText("");
     setIsLoading(true);
 
+    let timeoutId: NodeJS.Timeout | null = null;
+
     try {
+      // Create abort controller with 60 second timeout
+      const controller = new AbortController();
+      timeoutId = setTimeout(() => {
+        console.log("Chat request timeout");
+        controller.abort();
+      }, 60000);
+
+      console.log("[ChatNewV2] Sending query:", query.substring(0, 50) + "...");
+
       const response = await fetch(`${apiUrl}/query`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ query }),
+        signal: controller.signal,
       });
+
+      if (timeoutId) clearTimeout(timeoutId);
+
+      console.log("[ChatNewV2] Response received:", response.status);
 
       if (response.ok) {
         const data = await response.json();
+        console.log("[ChatNewV2] Response parsed successfully");
         const botMsg: Message = {
           id: (Date.now() + 1).toString(),
           text: data.summary || "I'll help you with this legal matter.",
@@ -360,10 +377,38 @@ const ChatNewV2 = () => {
         };
         setMessages((prev) => [...prev, botMsg]);
       } else {
-        throw new Error("Query failed");
+        console.error("[ChatNewV2] Query failed with status:", response.status);
+        const errorMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          text: `Sorry, I encountered an error (${response.status}). Please try again.`,
+          sender: "bot",
+          timestamp: new Date(),
+          type: "text",
+        };
+        setMessages((prev) => [...prev, errorMsg]);
       }
     } catch (error) {
-      console.error("Chat error:", error);
+      console.error("[ChatNewV2] Chat error:", error);
+      let errorText = "Sorry, an error occurred while processing your request.";
+      if (error instanceof Error) {
+        if (error.name === "AbortError") {
+          errorText = "Request timeout - the service took too long to respond. Please try again.";
+        } else {
+          errorText = `Error: ${error.message}`;
+        }
+      }
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        text: errorText,
+        sender: "bot",
+        timestamp: new Date(),
+        type: "text",
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      console.log("[ChatNewV2] Setting isLoading to false");
+      setIsLoading(false);
     }
   };
 
@@ -390,33 +435,55 @@ const ChatNewV2 = () => {
     };
     setMessages((prev) => [...prev, analyzingMsg]);
 
+    let timeoutId: NodeJS.Timeout | null = null;
+
     try {
-      const response = await fetch(`${apiUrl}/chatbot/query`, {
+      // Create abort controller with 60 second timeout
+      const controller = new AbortController();
+      timeoutId = setTimeout(() => {
+        console.log("Simulate request timeout");
+        controller.abort();
+      }, 60000);
+
+      console.log("[ChatNewV2] Sending simulate query:", query.substring(0, 50) + "...");
+
+      const response = await fetch(`${apiUrl}/consequence-simulator/simulate`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ query, mode: "simulate" }),
+        body: JSON.stringify({
+          action_description: query,
+          jurisdiction: "India",
+          language: "en"
+        }),
+        signal: controller.signal,
       });
+
+      if (timeoutId) clearTimeout(timeoutId);
+
+      console.log("[ChatNewV2] Simulate response received:", response.status);
 
       if (response.ok) {
         const data = await response.json();
+        console.log("[ChatNewV2] Simulate response parsed successfully");
         
-        // Create a formatted response message
-        let responseText = data.response || "Unable to generate analysis";
+        // Create a formatted response message from ConsequenceSimulationResult
+        let responseText = data.explanation || "Unable to generate analysis";
         
-        if (data.risk_level || data.risk_score) {
-          responseText += `\n\n📊 Risk Level: ${data.risk_level} (Score: ${data.risk_score}/100)`;
+        if (data.risk_level) {
+          const confidencePercent = Math.round((data.confidence_score || 0) * 100);
+          responseText += `\n\n📊 Risk Level: ${data.risk_level} (Confidence: ${confidencePercent}%)`;
         }
         
         if (data.applicable_laws && data.applicable_laws.length > 0) {
-          responseText += `\n\n⚖️ Applicable Laws:\n${data.applicable_laws.map((law: string) => `• ${law}`).join("\n")}`;
+          responseText += `\n\n⚖️ Applicable Laws:\n${data.applicable_laws.map((law: any) => `• ${law.name}${law.section ? ` - ${law.section}` : ''}`).join("\n")}`;
         }
         
-        if (data.consequences && data.consequences.length > 0) {
-          responseText += `\n\n⚠️ Potential Consequences:\n${data.consequences.map((cons: string) => `• ${cons}`).join("\n")}`;
+        if (data.penalties && data.penalties.length > 0) {
+          responseText += `\n\n⚠️ Potential Penalties:\n${data.penalties.map((penalty: any) => `• ${penalty.description} (${penalty.severity})`).join("\n")}`;
         }
         
-        if (data.prevention_suggestions && data.prevention_suggestions.length > 0) {
-          responseText += `\n\n✅ How to Stay Compliant:\n${data.prevention_suggestions.map((sug: string) => `• ${sug}`).join("\n")}`;
+        if (data.safer_alternatives && data.safer_alternatives.length > 0) {
+          responseText += `\n\n✅ Safer Alternatives:\n${data.safer_alternatives.map((alt: any) => `• ${alt.alternative}: ${alt.explanation}`).join("\n")}`;
         }
 
         const botMsg: Message = {
@@ -428,19 +495,37 @@ const ChatNewV2 = () => {
         };
         setMessages((prev) => [...prev, botMsg]);
       } else {
-        throw new Error("Analysis failed");
+        console.error("[ChatNewV2] Simulate failed with status:", response.status);
+        const errorMsg: Message = {
+          id: (Date.now() + 1).toString(),
+          text: `Sorry, the analysis failed (${response.status}). Please try again.`,
+          sender: "bot",
+          timestamp: new Date(),
+          type: "text",
+        };
+        setMessages((prev) => [...prev, errorMsg]);
       }
     } catch (error) {
-      console.error("Simulate error:", error);
+      console.error("[ChatNewV2] Simulate error:", error);
+      let errorText = "Sorry, I couldn't analyze the consequences. Please try again.";
+      if (error instanceof Error) {
+        if (error.name === "AbortError") {
+          errorText = "The analysis took too long. Please try again with a simpler query.";
+        } else {
+          errorText = `Analysis error: ${error.message}`;
+        }
+      }
       const errorMsg: Message = {
         id: (Date.now() + 1).toString(),
-        text: "Sorry, I couldn't analyze the consequences. Please try again.",
+        text: errorText,
         sender: "bot",
         timestamp: new Date(),
         type: "text",
       };
       setMessages((prev) => [...prev, errorMsg]);
     } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+      console.log("[ChatNewV2] Setting isLoading to false (simulate)");
       setIsLoading(false);
     }
   };

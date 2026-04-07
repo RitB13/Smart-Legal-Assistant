@@ -69,12 +69,14 @@ class DatabaseService:
             )
             # Test connection
             self.client.admin.command('ismaster')
-            
-            self.db = self.client['smart_legal_assistant']
+
+            # Use DB name from env var or default
+            db_name = os.getenv("MONGODB_DB_NAME", "smart_legal_assistant")
+            self.db = self.client[db_name]
             self._setup_collections()
             self.is_connected = True
-            logger.info("Connected to MongoDB successfully")
-            
+            logger.info(f"Connected to MongoDB database: {db_name}")
+
         except (ConnectionFailure, ServerSelectionTimeoutError) as e:
             logger.error(f"Failed to connect to MongoDB: {str(e)}")
             self.is_connected = False

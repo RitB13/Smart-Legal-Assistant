@@ -1,0 +1,33 @@
+{
+  "feature_names": [
+    "case_type",
+    "jurisdiction_country",
+    "jurisdiction_state",
+    "year",
+    "damages_awarded",
+    "legal_representation",
+    "number_of_parties"
+  ],
+  "train_size": 53587,
+  "val_size": 7146,
+  "test_size": 10718,
+  "n_features": 7,
+  "target_classes": [
+    "Accepted",
+    "Acquitted",
+    "Convicted",
+    "Other",
+    "Rejected",
+    "Settlement",
+    "Unknown"
+  ],
+  "categorical_features": [
+    "case_type",
+    "jurisdiction_country",
+    "jurisdiction_state"
+  ],
+  "numerical_features": [
+    "year",
+    "damages_awarded"
+  ]
+}
