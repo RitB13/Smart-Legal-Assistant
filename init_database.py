@@ -14,7 +14,7 @@ Run this ONCE at the beginning to set up your database structure.
 import sys
 sys.path.insert(0, 'src')
 
-from src.services.db_connection import db_connection
+from src.services.db_connection import get_db_connection
 
 def init_database():
     """Initialize MongoDB database with collections and indexes"""
@@ -24,7 +24,8 @@ def init_database():
     print("=" * 70)
     
     try:
-        db = db_connection.db
+        db_conn = get_db_connection()
+        db = db_conn.db
         
         # ==================== STEP 1: CREATE COLLECTIONS ====================
         print("\n[STEP 1] Creating collections...")

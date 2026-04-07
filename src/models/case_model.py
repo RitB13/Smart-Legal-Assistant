@@ -15,6 +15,16 @@ class CaseInputModel(BaseModel):
     damages_awarded: Optional[float] = Field(None, ge=0, description="Damages awarded (in rupees)")
     parties_count: Optional[int] = Field(None, ge=1, description="Number of parties involved")
     is_appeal: Optional[bool] = Field(False, description="Whether this case is an appeal")
+    legal_representation: Optional[str] = Field(
+        "unknown",
+        description="Legal representation status (both_sides, claimant_only, defendant_only, none, unknown)"
+    )
+    number_of_parties: Optional[int] = Field(
+        2,
+        ge=1,
+        le=10,
+        description="Number of parties involved in the case (1-10)"
+    )
     
     class Config:
         json_schema_extra = {
@@ -25,7 +35,9 @@ class CaseInputModel(BaseModel):
                 "jurisdiction_state": "Delhi",
                 "damages_awarded": 500000,
                 "parties_count": 2,
-                "is_appeal": True
+                "is_appeal": True,
+                "legal_representation": "both_sides",
+                "number_of_parties": 2
             }
         }
 
@@ -39,6 +51,8 @@ class PredictionConfidence(BaseModel):
 
 class SHAPExplanation(BaseModel):
     """SHAP-based model explanation."""
+    model_config = ConfigDict(protected_namespaces=())
+    
     top_positive_features: List[Dict[str, Any]] = Field(
         ..., 
         description="Top features that increased prediction confidence"
@@ -88,7 +102,8 @@ class CaseOutcomePredictionResponse(BaseModel):
     verdict: str = Field(..., description="Predicted verdict (Accepted, Acquitted, Convicted, Other, Rejected, Settlement, Unknown)")
     verdict_id: int = Field(..., ge=0, le=6, description="Verdict class ID (0-6)")
     probability: float = Field(..., ge=0.0, le=1.0, description="Probability of predicted verdict")
-    confidence: PredictionConfidence = Field(..., description="Confidence assessment")
+    confidence: PredictionConfidence = Field(..., description="Confidence assessment (how certain is the model about this prediction)")
+    risk_level: str = Field(..., description="Semantic risk level for the client (very_high, high, medium, low) - based on verdict type AND confidence")
     verdict_probabilities: VerdictProbabilities = Field(..., description="Probability distribution across all verdicts")
     explanation: SHAPExplanation = Field(..., description="Model explainability using SHAP")
     similar_cases: List[SimilarCase] = Field(default_factory=list, description="Most similar historical cases")

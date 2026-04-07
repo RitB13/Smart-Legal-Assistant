@@ -15,6 +15,16 @@ from dataclasses import dataclass, asdict
 from datetime import datetime
 import logging
 import json
+from pymongo.errors import PyMongoError
+
+# Import MongoDB connection
+try:
+    from src.services.db_connection import get_collection
+    HAS_DB_CONNECTION = True
+except ImportError:
+    HAS_DB_CONNECTION = False
+    def get_collection(name):
+        raise RuntimeError("Database connection not available")
 
 logger = logging.getLogger(__name__)
 
@@ -404,6 +414,157 @@ class AuditTrailService:
             duration_ms=duration_ms,
             status="success"
         )
+        
+        # PERSISTENCE: Save to MongoDB audit_logs collection
+        self._persist_to_mongodb(
+            request_id=request_id,
+            case_name=case_name,
+            predicted_verdict=predicted_verdict,
+            confidence=confidence,
+            model_version=model_version,
+            input_data=input_data
+        )
+    
+    def _persist_to_mongodb(
+        self,
+        request_id: str,
+        case_name: str,
+        predicted_verdict: str,
+        confidence: float,
+        model_version: str,
+        input_data: Dict[str, Any]
+    ) -> bool:
+        """
+        Persist case prediction to MongoDB audit_logs collection.
+        
+        Args:
+            request_id: Unique request identifier
+            case_name: Name of the case
+            predicted_verdict: Predicted verdict
+            confidence: Confidence level (0-1)
+            model_version: Version of the model used
+            input_data: Input features used for prediction
+            
+        Returns:
+            True if persisted successfully, False otherwise
+        """
+        if not HAS_DB_CONNECTION:
+            self.logger.warning("[AUDIT] Database connection not available - audit log not persisted")
+            return False
+        
+        try:
+            collection = get_collection("audit_logs")
+            
+            # Convert input_data to serializable format (handle Pydantic models)
+            def serialize_value(obj):
+                """Convert Pydantic models and other objects to JSON-serializable format"""
+                if hasattr(obj, 'dict'):
+                    return obj.dict()  # Pydantic model
+                elif isinstance(obj, dict):
+                    return {k: serialize_value(v) for k, v in obj.items()}
+                elif isinstance(obj, (list, tuple)):
+                    return [serialize_value(item) for item in obj]
+                else:
+                    return obj
+            
+            audit_document = {
+                "request_id": request_id,
+                "timestamp": datetime.utcnow(),
+                "event_type": "case_prediction",
+                "case_name": case_name,
+                "predicted_verdict": predicted_verdict,
+                "confidence": float(confidence),
+                "model_version": model_version,
+                "input_features": serialize_value(input_data),
+                "status": "success"
+            }
+            
+            result = collection.insert_one(audit_document)
+            self.logger.info(f"✅ [AUDIT] Persisted audit log to MongoDB: {result.inserted_id}")
+            return True
+            
+        except PyMongoError as e:
+            self.logger.error(f"❌ [AUDIT] MongoDB error persisting audit log: {e}")
+            return False
+        except Exception as e:
+            self.logger.error(f"❌ [AUDIT] Error persisting audit log: {e}")
+            return False
+    
+    @staticmethod
+    def save_case_prediction(
+        request_id: str,
+        case_name: str,
+        predicted_verdict: str,
+        confidence: float,
+        verdict_id: int,
+        risk_level: str,
+        risk_assessment: Dict[str, Any],
+        input_data: Dict[str, Any],
+        probabilities: Dict[str, float],
+        model_version: str = "current"
+    ) -> bool:
+        """
+        Save a case prediction result to MongoDB case_predictions collection.
+        
+        Args:
+            request_id: Unique prediction request ID
+            case_name: Name of the case
+            predicted_verdict: The predicted verdict
+            confidence: Confidence score (0-1)
+            verdict_id: Numeric ID of the verdict
+            risk_level: Risk level (low/medium/high/very_high)
+            risk_assessment: Risk assessment details
+            input_data: Input features
+            probabilities: Probability distribution for all verdicts
+            model_version: Version of the model used
+            
+        Returns:
+            True if saved successfully, False otherwise
+        """
+        if not HAS_DB_CONNECTION:
+            logger.warning("[PREDICTION] Database connection not available - prediction not persisted")
+            return False
+        
+        try:
+            collection = get_collection("case_predictions")
+            
+            # Convert Pydantic models to dictionaries for MongoDB serialization
+            def serialize_value(obj):
+                """Convert Pydantic models and other objects to JSON-serializable format"""
+                if hasattr(obj, 'dict'):
+                    return obj.dict()  # Pydantic model
+                elif isinstance(obj, dict):
+                    return {k: serialize_value(v) for k, v in obj.items()}
+                elif isinstance(obj, (list, tuple)):
+                    return [serialize_value(item) for item in obj]
+                else:
+                    return obj
+            
+            prediction_document = {
+                "request_id": request_id,
+                "timestamp": datetime.utcnow(),
+                "case_name": case_name,
+                "predicted_verdict": predicted_verdict,
+                "verdict_id": verdict_id,
+                "confidence": float(confidence),
+                "risk_level": risk_level,
+                "risk_assessment": serialize_value(risk_assessment),
+                "input_features": serialize_value(input_data),
+                "verdict_probabilities": serialize_value(probabilities),
+                "model_version": model_version,
+                "status": "success"
+            }
+            
+            result = collection.insert_one(prediction_document)
+            logger.info(f"✅ [PREDICTION] Saved prediction to MongoDB: {result.inserted_id}")
+            return True
+            
+        except PyMongoError as e:
+            logger.error(f"❌ [PREDICTION] MongoDB error saving prediction: {e}")
+            return False
+        except Exception as e:
+            logger.error(f"❌ [PREDICTION] Error saving prediction: {e}")
+            return False
     
     def log_error(
         self,

@@ -274,24 +274,17 @@ Be thorough and specific to {jurisdiction} law."""
             # Call LLM service
             raw_response = get_legal_response(prompt, language=language)
             
-            # Parse response
-            parsed = parse_llm_output(raw_response)
+            # Extract JSON directly from response (don't use chatbot parser)
+            # LLM is instructed to return JSON format
+            analysis = self._extract_json_from_response(raw_response)
             
-            # Extract summary field
-            if isinstance(parsed, dict):
-                summary = parsed.get("summary", "{}")
-            else:
-                summary = "{}"
-            
-            # Try to parse summary as JSON
-            try:
-                analysis = json.loads(summary) if isinstance(summary, str) else summary
-            except:
+            if not analysis:
+                # Fallback if JSON extraction fails
                 analysis = {
                     "risk_level": "Medium",
-                    "is_illegal": False,
-                    "applicable_laws": parsed.get("laws", []),
-                    "penalties": parsed.get("suggestions", []),
+                    "is_illegal": None,
+                    "applicable_laws": [],
+                    "penalties": [],
                     "civil_exposure": "Unknown",
                     "criminal_exposure": "Unknown",
                     "reasons_risky": [],
@@ -311,6 +304,32 @@ Be thorough and specific to {jurisdiction} law."""
                 "civil_exposure": "Unknown",
                 "criminal_exposure": "Unknown"
             }
+
+    def _extract_json_from_response(self, response: str) -> Optional[Dict[str, Any]]:
+        """Extract JSON from LLM response"""
+        if not response:
+            return None
+        
+        # Try extracting JSON from response
+        try:
+            # First, try direct parsing
+            return json.loads(response)
+        except:
+            pass
+        
+        # Try finding JSON in the response text
+        try:
+            start_idx = response.find("{")
+            end_idx = response.rfind("}") + 1
+            
+            if start_idx != -1 and end_idx > start_idx:
+                json_str = response[start_idx:end_idx]
+                return json.loads(json_str)
+        except:
+            pass
+        
+        # If all fails, return None
+        return None
 
     def _extract_action_features(
         self,

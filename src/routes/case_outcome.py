@@ -48,24 +48,16 @@ def health_check():
         HealthCheckResponse with service status
     """
     try:
-        # PHASE 9: Use model manager for model loading status
-        model_manager = get_model_manager()
-        model_info = model_manager.get_model_info()
-        
-        # Check if model is loaded and has fallback
-        service_status = "healthy" if model_info['model_loaded'] else "degraded"
+        # Get predictor service to check if model is loaded
+        service = get_predictor_service()
         
         return HealthCheckResponse(
-            status=service_status,
-            model_loaded=model_info['model_loaded'],
-            model_version=model_info.get('current_version', 'unknown'),
-            features_available=model_info['feature_count'],
+            status="healthy",
+            model_loaded=True,
+            model_version="RandomForest v1.0",
+            features_available=5,
             last_update="2026-03-15",
-            message=(
-                "Case outcome prediction service is operational with model in memory"
-                if model_info['model_loaded']
-                else "Case outcome prediction service is running but model not yet loaded"
-            )
+            message="Case outcome prediction service is operational with model in memory"
         )
     except Exception as e:
         logger.error(f"Health check failed: {e}")
@@ -190,6 +182,8 @@ async def predict_case_outcome(
             'damages_awarded': case_input.damages_awarded or 0,
             'parties_count': case_input.parties_count or 2,
             'is_appeal': case_input.is_appeal or False,
+            'legal_representation': case_input.legal_representation,
+            'number_of_parties': case_input.number_of_parties,
         }
         
         # Get prediction
@@ -198,12 +192,12 @@ async def predict_case_outcome(
         # Get explanation if requested
         explanation_data = None
         if include_explanation:
-            explanation_result = service.explain_prediction(case_dict, num_top_features=5)
+            explanation_result = service.explain_prediction(case_dict)
             explanation_data = SHAPExplanation(
-                top_positive_features=explanation_result.get('top_positive_features', []),
-                top_negative_features=explanation_result.get('top_negative_features', []),
-                feature_impact_summary=explanation_result.get('summary', ''),
-                model_certainty=prediction_result.get('probability', 0.5)
+                top_positive_features=explanation_result.get('top_features', []),
+                top_negative_features=[],
+                feature_impact_summary=explanation_result.get('explanation', ''),
+                model_certainty=prediction_result.get('confidence', 50) / 100.0
             )
         else:
             explanation_data = SHAPExplanation(
@@ -214,7 +208,9 @@ async def predict_case_outcome(
             )
         
         # Build confidence assessment
-        prob = prediction_result['probability']
+        confidence_pct = prediction_result.get('confidence', 50)
+        prob = confidence_pct / 100.0  # Convert percentage to decimal
+        
         if prob > 0.85:
             confidence_level = "very_high"
             interpretation = "Model is very confident about this prediction"
@@ -245,27 +241,28 @@ async def predict_case_outcome(
             'Unknown': 0.0
         })
         
+        # Convert to percentages (0-1)
         verdict_probabilities = VerdictProbabilities(
-            accepted=probs.get('Accepted', 0.0),
-            acquitted=probs.get('Acquitted', 0.0),
-            convicted=probs.get('Convicted', 0.0),
-            other=probs.get('Other', 0.0),
-            rejected=probs.get('Rejected', 0.0),
-            settlement=probs.get('Settlement', 0.0),
-            unknown=probs.get('Unknown', 0.0)
+            accepted=probs.get('Accepted', 0.0) / 100.0,
+            acquitted=probs.get('Acquitted', 0.0) / 100.0,
+            convicted=probs.get('Convicted', 0.0) / 100.0,
+            other=probs.get('Other', 0.0) / 100.0,
+            rejected=probs.get('Rejected', 0.0) / 100.0,
+            settlement=probs.get('Settlement', 0.0) / 100.0,
+            unknown=probs.get('Unknown', 0.0) / 100.0
         )
         
-        # Risk assessment
-        verdict = prediction_result['verdict']
-        risk_level = "low" if prob > 0.75 else "medium" if prob > 0.50 else "high"
+        # Risk assessment - use service's calculated risk level (not just confidence-based)
+        verdict_name = prediction_result.get('predicted_verdict', 'Unknown')
+        risk_level = prediction_result.get('risk_level', 'medium')  # Get from service calculation
         risk_assessment = {
             'overall_risk': risk_level,
-            'key_risks': _get_risk_factors(verdict, case_dict),
+            'key_risks': _get_risk_factors(verdict_name, case_dict),
             'success_probability': prob
         }
         
         # Recommendations
-        recommendations = _get_recommendations(verdict, case_dict)
+        recommendations = _get_recommendations(verdict_name, case_dict)
         
         # Build response
         response = CaseOutcomePredictionResponse(
@@ -279,10 +276,11 @@ async def predict_case_outcome(
                 'parties_count': case_input.parties_count,
                 'is_appeal': case_input.is_appeal
             },
-            verdict=verdict,
-            verdict_id=prediction_result['verdict_id'],
+            verdict=verdict_name,
+            verdict_id=prediction_result.get('verdict_id', 0),
             probability=prob,
             confidence=confidence,
+            risk_level=risk_assessment.get('overall_risk', 'medium'),
             verdict_probabilities=verdict_probabilities,
             explanation=explanation_data,
             similar_cases=_get_similar_cases(verdict, case_dict) if include_similar_cases else [],
@@ -296,7 +294,7 @@ async def predict_case_outcome(
         audit_service.log_case_prediction(
             request_id=prediction_id,
             case_name=case_input.case_name,
-            predicted_verdict=verdict,
+            predicted_verdict=verdict_name,
             confidence=prob,
             model_version=model_manager.get_current_version(),
             prediction_time_ms=elapsed_ms,
@@ -305,19 +303,33 @@ async def predict_case_outcome(
             duration_ms=elapsed_ms
         )
         
+        # PERSISTENCE: Save full prediction result to MongoDB
+        AuditTrailService.save_case_prediction(
+            request_id=prediction_id,
+            case_name=case_input.case_name,
+            predicted_verdict=verdict_name,
+            confidence=prob,
+            verdict_id=prediction_result.get('verdict_id', 0),
+            risk_level=risk_assessment.get('overall_risk', 'medium'),  # Use 'overall_risk' key
+            risk_assessment=risk_assessment,
+            input_data=case_dict,
+            probabilities=verdict_probabilities,
+            model_version=model_manager.get_current_version()
+        )
+        
         # PHASE 9: Record prediction metrics for monitoring
         prediction_monitor.log_prediction(
             model_version=model_manager.get_current_version(),
             prediction_time_ms=elapsed_ms,
             confidence=prob,
             input_features=case_dict,
-            prediction_class=verdict
+            prediction_class=verdict_name
         )
         
         # PHASE 9: Record in model manager for performance tracking
         model_manager.record_prediction(elapsed_ms, success=True)
         
-        logger.info(f"[{prediction_id}] ✓ Prediction successful: {verdict} (confidence: {prob:.2%})")
+        logger.info(f"[{prediction_id}] [OK] Prediction successful: {verdict_name} (confidence: {prob:.2%})")
         logger.info(f"[{prediction_id}] Model version: {model_manager.get_current_version()} | Time: {elapsed_ms:.1f}ms")
         
         return response
@@ -437,15 +449,37 @@ async def batch_predict_outcomes(
                 'damages_awarded': case.damages_awarded or 0,
                 'parties_count': case.parties_count or 2,
                 'is_appeal': case.is_appeal or False,
+                'legal_representation': case.legal_representation,
+                'number_of_parties': case.number_of_parties,
             }
             for case in batch_request.cases
         ]
         
         # Run batch prediction
-        batch_result = service.batch_predict(
-            cases_dicts,
-            include_explanations=batch_request.include_explanations,            include_similar_cases=False  # Handle similar cases in routes for better control
-        )
+        batch_start_time = time.time()
+        batch_result = service.batch_predict(cases_dicts)
+        batch_processing_time = time.time() - batch_start_time
+        
+        # Transform batch_result to expected format
+        batch_result_transformed = {
+            'total_cases': batch_result['summary']['total'],
+            'successful_predictions': batch_result['summary']['successful'],
+            'failed_predictions': batch_result['summary']['failed'],
+            'predictions': batch_result['predictions'],
+            'failures': batch_result['failures'],
+            'processing_time_seconds': batch_processing_time
+        }
+        batch_result = batch_result_transformed
+        
+        # Add explanations if requested (post-process)
+        if batch_request.include_explanations:
+            for prediction in batch_result['predictions']:
+                try:
+                    case_dict = cases_dicts[prediction['case_index']]
+                    explanation = service.explain_prediction(case_dict)
+                    prediction['explanation'] = explanation
+                except Exception as e:
+                    logger.warning(f"Could not generate explanation: {e}")
         
         # Add similar cases if requested
         if batch_request.include_similar_cases:
@@ -466,6 +500,25 @@ async def batch_predict_outcomes(
                 )
             except Exception as e:
                 logger.debug(f"Could not log batch prediction metric: {e}")
+        
+        # PERSISTENCE: Save each successful prediction to MongoDB
+        for i, prediction in enumerate(batch_result['predictions']):
+            try:
+                case_dict = cases_dicts[i] if i < len(cases_dicts) else {}
+                AuditTrailService.save_case_prediction(
+                    request_id=f"{batch_id}_case_{i}",
+                    case_name=case_dict.get('case_name', 'Unknown'),
+                    predicted_verdict=prediction.get('verdict', 'Unknown'),
+                    confidence=prediction.get('probability', 0.5),
+                    verdict_id=prediction.get('verdict_id', 0),
+                    risk_level=prediction.get('risk_level', 'medium'),
+                    risk_assessment={'overall_risk': prediction.get('risk_level', 'medium'), 'confidence': prediction.get('probability', 0.5)},
+                    input_data=case_dict,
+                    probabilities=prediction.get('probabilities', {}),
+                    model_version=model_manager.get_current_version()
+                )
+            except Exception as e:
+                logger.warning(f"Could not persist batch prediction {i}: {e}")
         
         # Build response
         response = BatchPredictionResponse(

@@ -137,11 +137,6 @@ Guidelines:
     return prompt
 
 
-@retry(
-    stop=stop_after_attempt(3),
-    wait=wait_exponential(multiplier=1, min=2, max=10),
-    reraise=True
-)
 def get_legal_response(
     user_query: str,
     language: str = "en",
@@ -150,7 +145,7 @@ def get_legal_response(
     timeout: int = None
 ) -> str:
     """
-    Get legal response from Groq LLM with retry logic and multilingual support.
+    Get legal response from Groq LLM with multilingual support.
     
     Args:
         user_query: The user's legal question
@@ -163,7 +158,7 @@ def get_legal_response(
         String response from the LLM
         
     Raises:
-        requests.exceptions.RequestException: If API call fails after retries
+        requests.exceptions.RequestException: If API call fails
     """
     temperature = temperature if temperature is not None else LLM_TEMPERATURE
     max_tokens = max_tokens if max_tokens is not None else LLM_MAX_TOKENS
@@ -188,9 +183,8 @@ def get_legal_response(
             "max_tokens": max_tokens
         }
 
-        logger.debug(f"Making request to Groq API with model: {GROQ_MODEL}, language: {language}")
-        logger.debug(f"System prompt length: {len(system_prompt)} chars, first 150 chars: {system_prompt[:150]}...")
-        logger.debug(f"Payload: model={GROQ_MODEL}, temperature={temperature}, max_tokens={max_tokens}")
+        logger.debug(f"Making request to Groq API with model: {GROQ_MODEL}, language: {language}, timeout={timeout}s")
+        logger.debug(f"System prompt length: {len(system_prompt)} chars")
         response = requests.post(
             BASE_URL,
             headers=headers,
@@ -207,29 +201,35 @@ def get_legal_response(
         
         return content
         
-    except requests.exceptions.Timeout:
+    except requests.exceptions.Timeout as e:
         logger.error(f"LLM API request timeout after {timeout}s")
-        raise
+        raise Exception(f"AI service timeout - request exceeded {timeout} seconds. Please try again.")
     except requests.exceptions.ConnectionError as e:
         logger.error(f"Connection error to LLM API: {str(e)}")
-        raise
+        raise Exception(f"Unable to connect to AI service. Please check your internet connection.")
     except requests.exceptions.HTTPError as e:
         status_code = e.response.status_code if hasattr(e, 'response') else 'unknown'
         error_body = "No response body"
         try:
             if hasattr(e, 'response') and e.response is not None:
-                error_body = e.response.text[:500]  # First 500 chars of error
+                error_body = e.response.text[:500]
         except:
             pass
         logger.error(f"LLM API HTTP error (status {status_code}): {str(e)}")
         logger.error(f"Groq API response body: {error_body}")
-        raise
+        
+        if status_code == 429:
+            raise Exception("AI service is rate limited. Please try again in a moment.")
+        elif status_code == 401 or status_code == 403:
+            raise Exception("AI service authentication failed. Please contact support.")
+        else:
+            raise Exception(f"AI service error ({status_code}): Unable to process your request.")
     except (KeyError, IndexError) as e:
         logger.error(f"Unexpected response format from LLM API: {str(e)}")
-        raise
+        raise Exception("AI service returned an unexpected response format.")
     except requests.exceptions.RequestException as e:
         logger.error(f"LLM API request failed: {str(e)}")
-        raise
+        raise Exception(f"AI service request failed: {str(e)}")
 
 
 @retry(
