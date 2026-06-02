@@ -45,8 +45,8 @@ All colors MUST be HSL.
     /* Custom design tokens */
     --gradient-primary: linear-gradient(135deg, hsl(213 94% 38%), hsl(198 78% 42%));
     --gradient-secondary: linear-gradient(135deg, hsl(198 78% 42%), hsl(183 100% 35%));
-    --gradient-hero: linear-gradient(180deg, hsl(213 94% 98%), hsl(213 94% 95%));
-    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 25% 98%));
+    --gradient-hero: linear-gradient(180deg, hsl(213 94% 96%), hsl(213 94% 92%));
+    --gradient-card: linear-gradient(135deg, hsl(0 0% 100%), hsl(210 25% 97%));
     
     --shadow-sm: 0 1px 2px 0 hsl(222 47% 11% / 0.05);
     --shadow-md: 0 4px 6px -1px hsl(222 47% 11% / 0.1);
@@ -114,8 +114,16 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground antialiased;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    font-family: 'Poppins', 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   }
+  
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Poppins', 'Outfit', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+
+  @import url('https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700;800;900&family=Outfit:wght@400;500;600;700;800;900&display=swap');
   
   /* Custom animations */
   @keyframes fade-up {

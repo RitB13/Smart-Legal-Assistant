@@ -98,8 +98,11 @@ const UploadPage = () => {
       formData.append("file", file);
       
       // Call backend API to process document
-      const response = await fetch("http://localhost:8000/document/analyze", {
+      const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+      const token = localStorage.getItem('sla_token');
+      const response = await fetch(`${apiUrl}/document/analyze`, {
         method: "POST",
+        headers: token ? { 'Authorization': `Bearer ${token}` } : {},
         body: formData,
       });
       

@@ -50,3 +50,13 @@ logs/
 
 # Node modules (for frontend)
 node_modules/
+
+# Raw datasets (large, re-downloadable)
+src/data/CJPE-main/
+src/data/rhetorical-role-baseline-main/
+
+# Large generated model artifacts (regenerate with build_precedent_index.py)
+src/data/mediation_training/models/precedent_index.pkl
+
+# Frontend build output
+frontend/dist/

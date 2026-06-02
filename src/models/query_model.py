@@ -321,7 +321,16 @@ class QueryResponse(BaseModel):
         None,
         description="MongoDB conversation document ID for tracking chat sessions"
     )
-    
+
+    response_type: str = Field(
+        default="chat",
+        description="Type of response: 'chat' (legal advice), 'simulation' (consequence analysis), 'prediction_prompt' (guided prediction)"
+    )
+    simulation_data: Optional[Dict[str, Any]] = Field(
+        None,
+        description="Full simulation result when response_type is 'simulation'"
+    )
+
     class Config:
         json_schema_extra = {
             "example": {

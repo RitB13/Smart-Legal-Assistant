@@ -474,6 +474,59 @@ class DatabaseService:
             self.is_connected = False
             logger.info("Database connection closed")
 
+    # ── Generic collection access (used by mediation and future features) ─────
+
+    def find_one_doc(self, collection_name: str, filter_dict: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+        """Find a single document in any collection."""
+        if not self.is_connected:
+            return None
+        try:
+            result = self.db[collection_name].find_one(filter_dict)
+            if result:
+                result["_id"] = str(result["_id"])
+            return result
+        except Exception as e:
+            logger.error(f"Error in find_one_doc({collection_name}): {e}")
+            return None
+
+    def insert_one_doc(self, collection_name: str, document: Dict[str, Any]) -> bool:
+        """Insert a single document into any collection."""
+        if not self.is_connected:
+            logger.warning(f"DB not connected — insert_one_doc({collection_name}) skipped")
+            return False
+        try:
+            self.db[collection_name].insert_one(document)
+            return True
+        except Exception as e:
+            logger.error(f"Error in insert_one_doc({collection_name}): {e}")
+            return False
+
+    def update_one_doc(self, collection_name: str, filter_dict: Dict[str, Any], update_dict: Dict[str, Any]) -> bool:
+        """Update a single document in any collection."""
+        if not self.is_connected:
+            return False
+        try:
+            self.db[collection_name].update_one(filter_dict, update_dict)
+            return True
+        except Exception as e:
+            logger.error(f"Error in update_one_doc({collection_name}): {e}")
+            return False
+
+    def find_many_docs(self, collection_name: str, filter_dict: Dict[str, Any], limit: int = 50) -> List[Dict[str, Any]]:
+        """Find multiple documents in any collection."""
+        if not self.is_connected:
+            return []
+        try:
+            results = self.db[collection_name].find(filter_dict).limit(limit)
+            docs = []
+            for doc in results:
+                doc["_id"] = str(doc["_id"])
+                docs.append(doc)
+            return docs
+        except Exception as e:
+            logger.error(f"Error in find_many_docs({collection_name}): {e}")
+            return []
+
 
 # Global instance
 _db_instance: Optional[DatabaseService] = None

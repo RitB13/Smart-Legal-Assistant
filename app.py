@@ -4,6 +4,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
 from fastapi.responses import JSONResponse
 from src.routes import chatbot, summarizer, case_outcome, auth_routes, conversation_routes, prediction_routes, chat_intelligence, simulator, database
+from src.routes import mediation as mediation_routes
 from src.middleware.auth_middleware import jwt_auth_middleware
 from config import CORS_ORIGINS, DEBUG
 from src.services.model_manager import get_model_manager
@@ -21,7 +22,8 @@ logger = logging.getLogger(__name__)
 app = FastAPI(
     title="Smart Legal Assistant API",
     description="AI-powered legal assistant for providing legal information and guidance",
-    version="1.0.0"
+    version="1.0.0",
+    swagger_ui_parameters={"persistAuthorization": True},
 )
 
 # Add CORS middleware
@@ -48,6 +50,7 @@ app.include_router(summarizer.router, tags=["Document Summarizer"])
 app.include_router(case_outcome.router, tags=["Case Outcome Prediction"])
 app.include_router(simulator.router, tags=["Consequence Simulator"])
 app.include_router(database.router, prefix="/db", tags=["Database"])
+app.include_router(mediation_routes.router, tags=["AI Mediation"])
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])

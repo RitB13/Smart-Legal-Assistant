@@ -38,6 +38,10 @@ async def jwt_auth_middleware(request: Request, call_next: Callable):
         "/openapi.json",
         "/auth/register",
         "/auth/login",
+        "/auth/verify-otp",
+        "/auth/resend-otp",
+        "/auth/forgot-password",
+        "/auth/reset-password",
     ]
     
     request_path = request.url.path
