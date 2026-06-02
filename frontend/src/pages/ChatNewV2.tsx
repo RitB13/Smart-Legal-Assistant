@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2, CheckCircle2, X, MessageCircle, TrendingUp, Zap, AlertTriangle } from "lucide-react";
+import { Send, Bot, User, Loader2, CheckCircle2, X, MessageCircle, TrendingUp, Zap, AlertTriangle, Scale, ArrowRight } from "lucide-react";
+import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
 
 // Enhanced message type system
@@ -231,6 +232,21 @@ const PredictionResultDisplay = ({ prediction }: { prediction: any }) => (
         </ul>
       </div>
     )}
+
+    {/* Mediation nudge */}
+    <Link
+      to="/mediation/create"
+      className="group flex items-center justify-between gap-3 mt-2 bg-white border border-primary/20 rounded-lg px-4 py-3 hover:border-primary/40 hover:shadow-sm transition-all"
+    >
+      <div className="flex items-center gap-2.5">
+        <Scale className="h-4 w-4 text-primary flex-shrink-0" />
+        <div>
+          <p className="text-sm font-medium text-slate-800">Want to resolve this without going to court?</p>
+          <p className="text-xs text-slate-500">Try AI-mediated dispute resolution — both parties submit privately.</p>
+        </div>
+      </div>
+      <ArrowRight className="h-4 w-4 text-primary flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
+    </Link>
   </div>
 );
 
@@ -263,6 +279,8 @@ const ChatNewV2 = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const chatContainerRef = useRef<HTMLDivElement>(null);
   const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
+  const authToken = localStorage.getItem('sla_token');
+  const authHeader = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
 
   // Auto-scroll to bottom
   const scrollToBottom = () => {
@@ -356,7 +374,7 @@ const ChatNewV2 = () => {
 
       const response = await fetch(`${apiUrl}/query`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeader },
         body: JSON.stringify({ query }),
         signal: controller.signal,
       });
@@ -449,7 +467,7 @@ const ChatNewV2 = () => {
 
       const response = await fetch(`${apiUrl}/consequence-simulator/simulate`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeader },
         body: JSON.stringify({
           action_description: query,
           jurisdiction: "India",
@@ -609,7 +627,7 @@ const ChatNewV2 = () => {
     try {
       const response = await fetch(`${apiUrl}/case-outcome/predict`, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
+        headers: { "Content-Type": "application/json", ...authHeader },
         body: JSON.stringify({
           case_name: context.case_name || "Case",
           case_type: context.case_type || "unknown",

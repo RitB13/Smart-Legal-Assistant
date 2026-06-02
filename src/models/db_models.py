@@ -36,14 +36,18 @@ class UserInDB(UserBase):
     id: str = Field(alias="_id")
     password_hash: str
     is_active: bool = True
+    # OTP email verification fields (Optional for backwards compatibility with existing users)
+    is_verified: bool = False
+    otp_code: Optional[str] = None
+    otp_expires_at: Optional[datetime] = None
     created_at: datetime
     updated_at: datetime
-    
+
     @field_validator('id', mode='before')
     @classmethod
     def convert_objectid_to_str(cls, v):
         return str(v) if v is not None else None
-    
+
     class Config:
         populate_by_name = True
         json_encoders = {

@@ -131,12 +131,117 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
         logger.debug(f"[{request_id}] Mode detection took {mode_time:.2f}s")
         
         mode_rec = mode_result.mode_recommendation
-        
+
         logger.info(
             f"[{request_id}] Query mode: {mode_rec.primary_mode} "
             f"({mode_rec.confidence:.0%} confidence)"
         )
-        
+
+        # Auto-route to consequence simulator when intent is clear
+        if mode_rec.primary_mode == "simulate" and mode_rec.confidence >= 0.70:
+            logger.info(f"[{request_id}] Auto-routing to consequence simulator")
+            try:
+                from src.services.consequence_simulator import get_consequence_simulator
+                import json as _json
+
+                simulator = get_consequence_simulator()
+                action = mode_rec.extracted_action or req.query
+                sim_result = simulator.simulate_planned_action(
+                    action_description=action,
+                    jurisdiction="India",
+                    language=language
+                )
+
+                risk_score_map = {"Low": 20, "Medium": 50, "High": 70, "Critical": 90}
+                risk_label_map = {
+                    "Low": "🟢 Low", "Medium": "🟡 Medium",
+                    "High": "🟠 High", "Critical": "🔴 Critical"
+                }
+                risk_str = sim_result.risk_level.value if hasattr(sim_result.risk_level, "value") else str(sim_result.risk_level)
+                score_val = risk_score_map.get(risk_str, 50)
+                risk_label = risk_label_map.get(risk_str, "🟡 Medium")
+
+                sim_impact = ImpactScoreModel(
+                    overall_score=score_val,
+                    financial_risk_score=score_val,
+                    legal_exposure_score=score_val,
+                    long_term_impact_score=score_val,
+                    rights_lost_score=score_val,
+                    risk_level=risk_label,
+                    breakdown={"consequence_analysis": f"Risk level: {risk_str}"},
+                    key_factors=[r.factor for r in sim_result.key_risks[:3]] if sim_result.key_risks else [],
+                    mitigating_factors=[a.alternative for a in sim_result.safer_alternatives[:2]] if sim_result.safer_alternatives else [],
+                    recommendation=sim_result.explanation[:300] if sim_result.explanation else "Consult a legal professional."
+                )
+
+                try:
+                    sim_dict = _json.loads(sim_result.json())
+                except Exception:
+                    sim_dict = {}
+
+                conv_id = None
+                try:
+                    conv_data = ConversationCreate(user_id="anonymous", title=req.query[:100], language=language)
+                    conv = ConversationService.create_conversation(conv_data)
+                    if conv:
+                        ConversationService.add_message(str(conv.id), role="user", content=req.query, language=language)
+                        ConversationService.add_message(str(conv.id), role="assistant", content=sim_result.explanation or "", language=language)
+                        conv_id = str(conv.id)
+                except Exception as conv_err:
+                    logger.warning(f"[{request_id}] Could not persist simulation conversation: {conv_err}")
+
+                elapsed = time.time() - start_time
+                logger.info(f"[{request_id}] Simulation response ready in {elapsed:.2f}s")
+
+                return QueryResponse(
+                    request_id=request_id,
+                    summary=sim_result.explanation or "Simulation complete.",
+                    laws=[law.name for law in sim_result.applicable_laws] if sim_result.applicable_laws else [],
+                    suggestions=[alt.alternative for alt in sim_result.safer_alternatives] if sim_result.safer_alternatives else [],
+                    impact_score=sim_impact,
+                    language=language,
+                    suggested_mode="simulate",
+                    mode_confidence=mode_rec.confidence,
+                    mode_reasoning=mode_rec.reasoning,
+                    extracted_action=mode_rec.extracted_action,
+                    response_type="simulation",
+                    simulation_data=sim_dict,
+                    conversation_id=conv_id
+                )
+
+            except Exception as sim_err:
+                logger.warning(f"[{request_id}] Simulator failed, falling back to chat: {sim_err}")
+                # Fall through to normal LLM chat flow below
+
+        # Return a lightweight prediction prompt — no LLM call needed
+        if mode_rec.primary_mode == "predict" and mode_rec.confidence >= 0.80:
+            logger.info(f"[{request_id}] Returning prediction_prompt response")
+            return QueryResponse(
+                request_id=request_id,
+                summary="It sounds like you want to know how your case might turn out in court. I can guide you through a quick assessment — just switch to Predict mode and I'll ask you a few structured questions.",
+                laws=[],
+                suggestions=["Switch to Predict mode to get an ML-based case outcome prediction.", "Have your case details ready: case type, jurisdiction, year, and any damages claimed."],
+                impact_score=ImpactScoreModel(
+                    overall_score=0,
+                    financial_risk_score=0,
+                    legal_exposure_score=0,
+                    long_term_impact_score=0,
+                    rights_lost_score=0,
+                    risk_level="Assessment not performed",
+                    breakdown={"note": "Use Predict mode for case outcome analysis"},
+                    key_factors=[],
+                    mitigating_factors=[],
+                    recommendation="Switch to Predict mode for a structured case outcome assessment."
+                ),
+                language=language,
+                suggested_mode="predict",
+                mode_confidence=mode_rec.confidence,
+                mode_reasoning=mode_rec.reasoning,
+                extracted_action=mode_rec.extracted_action,
+                response_type="prediction_prompt",
+                conversation_id=None
+            )
+
         # Call LLM for legal analysis
         logger.debug(f"[{request_id}] Calling LLM service for legal analysis...")
         llm_start = time.time()

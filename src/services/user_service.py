@@ -10,7 +10,7 @@ This service provides methods to:
 
 from pymongo.errors import DuplicateKeyError
 from bson import ObjectId
-from datetime import datetime
+from datetime import datetime, timedelta
 import logging
 from typing import Optional
 from src.models.db_models import User, UserCreate, UserInDB
@@ -49,6 +49,9 @@ class UserService:
             "jurisdiction": user_data.jurisdiction,
             "password_hash": password_hash,
             "is_active": True,
+            "is_verified": False,
+            "otp_code": None,
+            "otp_expires_at": None,
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
         }
@@ -220,6 +223,96 @@ class UserService:
             logger.error(f"❌ [USER] Error deleting user: {e}")
             return False
     
+    @staticmethod
+    def set_otp(email: str, otp_code: str, expires_minutes: int = 10) -> bool:
+        """
+        Store an OTP for the user. Overwrites any existing OTP.
+        Used for both email verification and password reset.
+        """
+        collection = get_collection("users")
+        try:
+            result = collection.update_one(
+                {"email": email},
+                {"$set": {
+                    "otp_code": otp_code,
+                    "otp_expires_at": datetime.utcnow() + timedelta(minutes=expires_minutes),
+                    "updated_at": datetime.utcnow()
+                }}
+            )
+            if result.matched_count > 0:
+                logger.debug(f"[USER] OTP set for {email}")
+                return True
+            logger.warning(f"[USER] set_otp — user not found: {email}")
+            return False
+        except Exception as e:
+            logger.error(f"[USER] Error setting OTP for {email}: {e}")
+            return False
+
+    @staticmethod
+    def verify_and_clear_otp(email: str, otp_code: str) -> bool:
+        """
+        Validate OTP and mark user as verified if correct and not expired.
+        Clears the OTP from DB on success.
+
+        Returns True if OTP is valid and not expired, False otherwise.
+        """
+        collection = get_collection("users")
+        try:
+            user_dict = collection.find_one({"email": email})
+            if not user_dict:
+                logger.warning(f"[USER] verify_otp — user not found: {email}")
+                return False
+
+            stored_otp = user_dict.get("otp_code")
+            expires_at = user_dict.get("otp_expires_at")
+
+            if not stored_otp or stored_otp != otp_code:
+                logger.warning(f"[USER] verify_otp — invalid OTP for {email}")
+                return False
+
+            if not expires_at or datetime.utcnow() > expires_at:
+                logger.warning(f"[USER] verify_otp — OTP expired for {email}")
+                return False
+
+            # Valid — mark verified and clear OTP
+            collection.update_one(
+                {"email": email},
+                {"$set": {
+                    "is_verified": True,
+                    "otp_code": None,
+                    "otp_expires_at": None,
+                    "updated_at": datetime.utcnow()
+                }}
+            )
+            logger.info(f"[USER] Email verified for {email}")
+            return True
+
+        except Exception as e:
+            logger.error(f"[USER] Error verifying OTP for {email}: {e}")
+            return False
+
+    @staticmethod
+    def update_password(email: str, new_password_hash: str) -> bool:
+        """Update a user's password hash. Used after successful OTP-based password reset."""
+        collection = get_collection("users")
+        try:
+            result = collection.update_one(
+                {"email": email},
+                {"$set": {
+                    "password_hash": new_password_hash,
+                    "otp_code": None,
+                    "otp_expires_at": None,
+                    "updated_at": datetime.utcnow()
+                }}
+            )
+            success = result.matched_count > 0
+            if success:
+                logger.info(f"[USER] Password updated for {email}")
+            return success
+        except Exception as e:
+            logger.error(f"[USER] Error updating password for {email}: {e}")
+            return False
+
     @staticmethod
     def get_user_stats(user_id: str) -> dict:
         """
