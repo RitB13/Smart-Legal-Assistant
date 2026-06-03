@@ -1,34 +1,40 @@
 """
-Email Service — sends OTP emails via Gmail SMTP.
+Email Service — sends OTP emails via Brevo API (HTTP) or Gmail SMTP fallback.
 
-Uses Python's built-in smtplib so no extra dependencies needed.
-Reads credentials from SMTP_EMAIL and SMTP_APP_PASSWORD env vars.
+Production (HF Spaces): uses Brevo HTTP API (port 443, always open).
+Local development: falls back to Gmail SMTP if BREVO_API_KEY is not set.
+
+Environment variables:
+  BREVO_API_KEY     — Brevo transactional API key (production)
+  SMTP_EMAIL        — Gmail address (local fallback)
+  SMTP_APP_PASSWORD — Gmail App Password (local fallback)
 """
 
 import smtplib
 import random
 import logging
 import os
+import requests as _requests
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
-from typing import Optional
 
 logger = logging.getLogger(__name__)
 
-SMTP_HOST = "smtp.gmail.com"
-SMTP_PORT = 587
-SMTP_EMAIL = os.getenv("SMTP_EMAIL", "")
+BREVO_API_KEY   = os.getenv("BREVO_API_KEY", "")
+SMTP_EMAIL      = os.getenv("SMTP_EMAIL", "")
 SMTP_APP_PASSWORD = os.getenv("SMTP_APP_PASSWORD", "")
-SMTP_FROM_NAME = os.getenv("SMTP_FROM_NAME", "Smart Legal Assistant")
+SMTP_FROM_NAME  = os.getenv("SMTP_FROM_NAME", "Smart Legal Assistant")
+SMTP_HOST       = "smtp.gmail.com"
+SMTP_PORT       = 587
+
+BREVO_API_URL   = "https://api.brevo.com/v3/smtp/email"
 
 
 def generate_otp(length: int = 6) -> str:
-    """Generate a cryptographically random numeric OTP."""
     return "".join([str(random.SystemRandom().randint(0, 9)) for _ in range(length)])
 
 
 def _build_otp_email_html(otp: str, purpose: str, user_name: str) -> str:
-    """Build a clean HTML email body for OTP delivery."""
     action_labels = {
         "verification": ("Verify Your Email", "to complete your registration"),
         "password_reset": ("Reset Your Password", "to reset your password"),
@@ -75,26 +81,51 @@ def _build_otp_email_html(otp: str, purpose: str, user_name: str) -> str:
 """
 
 
-def send_otp_email(
-    to_email: str,
-    otp: str,
-    user_name: str = "User",
-    purpose: str = "verification"
-) -> bool:
-    """
-    Send an OTP email via Gmail SMTP.
+def _send_via_brevo(to_email: str, otp: str, user_name: str, purpose: str) -> bool:
+    subject_map = {
+        "verification": "Your Smart Legal Assistant verification code",
+        "password_reset": "Reset your Smart Legal Assistant password",
+    }
+    subject = subject_map.get(purpose, "Your OTP code")
 
-    Args:
-        to_email: Recipient email address
-        otp: The 6-digit OTP string
-        user_name: Recipient's name for personalization
-        purpose: 'verification' or 'password_reset'
+    payload = {
+        "sender": {"name": SMTP_FROM_NAME, "email": SMTP_EMAIL or "noreply@smartlegalassistant.com"},
+        "to": [{"email": to_email, "name": user_name}],
+        "subject": subject,
+        "htmlContent": _build_otp_email_html(otp, purpose, user_name),
+        "textContent": (
+            f"Hi {user_name},\n\n"
+            f"Your OTP code is: {otp}\n\n"
+            f"This code expires in 10 minutes.\n\n"
+            f"— Smart Legal Assistant"
+        ),
+    }
 
-    Returns:
-        True if sent successfully, False otherwise
-    """
+    try:
+        resp = _requests.post(
+            BREVO_API_URL,
+            headers={
+                "accept": "application/json",
+                "api-key": BREVO_API_KEY,
+                "content-type": "application/json",
+            },
+            json=payload,
+            timeout=15,
+        )
+        if resp.status_code in (200, 201):
+            logger.info(f"[EMAIL] Brevo: OTP sent to {to_email} (purpose: {purpose})")
+            return True
+        else:
+            logger.error(f"[EMAIL] Brevo error {resp.status_code}: {resp.text[:200]}")
+            return False
+    except Exception as e:
+        logger.error(f"[EMAIL] Brevo request failed: {e}")
+        return False
+
+
+def _send_via_smtp(to_email: str, otp: str, user_name: str, purpose: str) -> bool:
     if not SMTP_EMAIL or not SMTP_APP_PASSWORD:
-        logger.error("[EMAIL] SMTP_EMAIL or SMTP_APP_PASSWORD not configured in .env")
+        logger.error("[EMAIL] SMTP credentials not configured")
         return False
 
     subject_map = {
@@ -107,15 +138,10 @@ def send_otp_email(
     msg["Subject"] = subject
     msg["From"] = f"{SMTP_FROM_NAME} <{SMTP_EMAIL}>"
     msg["To"] = to_email
-
-    plain_text = (
-        f"Hi {user_name},\n\n"
-        f"Your OTP code is: {otp}\n\n"
-        f"This code expires in 10 minutes.\n\n"
-        f"If you did not request this, ignore this email.\n\n"
-        f"— Smart Legal Assistant"
-    )
-    msg.attach(MIMEText(plain_text, "plain"))
+    msg.attach(MIMEText(
+        f"Hi {user_name},\n\nYour OTP code is: {otp}\n\nExpires in 10 minutes.\n\n— Smart Legal Assistant",
+        "plain"
+    ))
     msg.attach(MIMEText(_build_otp_email_html(otp, purpose, user_name), "html"))
 
     try:
@@ -124,16 +150,22 @@ def send_otp_email(
             server.starttls()
             server.login(SMTP_EMAIL, SMTP_APP_PASSWORD)
             server.sendmail(SMTP_EMAIL, to_email, msg.as_string())
-
-        logger.info(f"[EMAIL] OTP email sent to {to_email} (purpose: {purpose})")
+        logger.info(f"[EMAIL] SMTP: OTP sent to {to_email} (purpose: {purpose})")
         return True
-
     except smtplib.SMTPAuthenticationError:
-        logger.error("[EMAIL] Gmail authentication failed. Check SMTP_APP_PASSWORD in .env")
-        return False
-    except smtplib.SMTPException as e:
-        logger.error(f"[EMAIL] SMTP error sending to {to_email}: {e}")
+        logger.error("[EMAIL] Gmail authentication failed")
         return False
     except Exception as e:
-        logger.error(f"[EMAIL] Unexpected error sending email to {to_email}: {e}")
+        logger.error(f"[EMAIL] SMTP error: {e}")
         return False
+
+
+def send_otp_email(
+    to_email: str,
+    otp: str,
+    user_name: str = "User",
+    purpose: str = "verification",
+) -> bool:
+    if BREVO_API_KEY:
+        return _send_via_brevo(to_email, otp, user_name, purpose)
+    return _send_via_smtp(to_email, otp, user_name, purpose)
