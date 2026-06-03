@@ -7,16 +7,35 @@ on:
 jobs:
   sync-to-hf:
     runs-on: ubuntu-latest
+
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0
-          lfs: true
+          fetch-depth: 1
 
-      - name: Push to Hugging Face Space
+      - name: Remove large files not needed at runtime
+        run: |
+          # Raw datasets — not needed to serve the API
+          rm -f  src/data/case_outcomes/legal_dataset.csv
+          rm -f  src/data/case_outcomes/cleaned_dataset.csv
+          rm -f  src/data/case_outcomes/processed_dataset.csv
+          rm -rf src/data/case_outcomes/split_data/
+          rm -rf src/data/case_outcomes/eda_visualizations/
+          rm -rf src/data/case_outcomes/evaluation/
+          rm -rf src/data/case_outcomes/training_reports/
+          # Keep: production/ and models/ — those run the predictor
+
+      - name: Push clean copy to Hugging Face Space
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          git remote add hf https://ritB13:$HF_TOKEN@huggingface.co/spaces/ritB13/smart-legal-assistant
-          git push hf main --force
+          git config user.email "ritarshi007@gmail.com"
+          git config user.name "Ritarshi Bandyopadhyay"
+
+          # Fresh git init so HF never sees the large-file history
+          git init -b main
+          git add .
+          git commit -m "Deploy to HF Spaces"
+          git push --force \
+            https://ritB13:$HF_TOKEN@huggingface.co/spaces/ritB13/smart-legal-assistant main
