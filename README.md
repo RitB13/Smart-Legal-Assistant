@@ -1,3 +1,13 @@
+---
+title: Smart Legal Assistant
+emoji: ⚖️
+colorFrom: blue
+colorTo: indigo
+sdk: docker
+app_port: 7860
+pinned: false
+---
+
 # Smart Legal Assistant 🏛️
 
 An **AI-powered legal assistance platform** with **multilingual support** for 10+ languages. Ask legal questions in any language and get instant, accurate guidance powered by LLaMA 3.1 (via Groq API).
