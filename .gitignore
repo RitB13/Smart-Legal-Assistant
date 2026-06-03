@@ -55,8 +55,7 @@ node_modules/
 src/data/CJPE-main/
 src/data/rhetorical-role-baseline-main/
 
-# Large generated model artifacts (regenerate with build_precedent_index.py)
-src/data/mediation_training/models/precedent_index.pkl
+# precedent_index.pkl is committed (900KB, needed at runtime)
 
 # Frontend build output
 frontend/dist/
