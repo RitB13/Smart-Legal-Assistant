@@ -14,13 +14,19 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Build clean deploy folder and push to HF
-        env:
-          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install huggingface_hub
+        run: pip install huggingface_hub
+
+      - name: Build clean deploy folder
         run: |
-          # Copy repo into a fresh temp folder (completely separate from .git)
-          mkdir /tmp/hf-deploy
+          mkdir -p /tmp/hf-deploy
           rsync -av --exclude='.git' \
+            --exclude='frontend' \
             --exclude='src/data/case_outcomes/legal_dataset.csv' \
             --exclude='src/data/case_outcomes/cleaned_dataset.csv' \
             --exclude='src/data/case_outcomes/processed_dataset.csv' \
@@ -28,15 +34,25 @@ jobs:
             --exclude='src/data/case_outcomes/eda_visualizations' \
             --exclude='src/data/case_outcomes/evaluation' \
             --exclude='src/data/case_outcomes/training_reports' \
-            --exclude='frontend' \
+            --exclude='src/data/case_outcomes/models' \
             . /tmp/hf-deploy/
 
-          cd /tmp/hf-deploy
+      - name: Upload to HF Space via API
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python - <<'EOF'
+          import os
+          from huggingface_hub import HfApi
 
-          git init -b main
-          git config user.email "ritarshi007@gmail.com"
-          git config user.name "Ritarshi Bandyopadhyay"
-          git add .
-          git commit -m "Deploy to HF Spaces"
-          git push --force \
-            https://ritB13:$HF_TOKEN@huggingface.co/spaces/ritB13/smart-legal-assistant main
+          api = HfApi()
+          api.upload_folder(
+              folder_path="/tmp/hf-deploy",
+              repo_id="ritB13/smart-legal-assistant",
+              repo_type="space",
+              token=os.environ["HF_TOKEN"],
+              commit_message="Deploy from GitHub Actions",
+              ignore_patterns=["__pycache__", "*.pyc", "*.pyo", ".DS_Store"],
+          )
+          print("✅ Upload complete!")
+          EOF
