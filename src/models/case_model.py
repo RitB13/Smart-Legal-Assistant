@@ -15,6 +15,10 @@ class CaseInputModel(BaseModel):
     damages_awarded: Optional[float] = Field(None, ge=0, description="Damages awarded (in rupees)")
     parties_count: Optional[int] = Field(None, ge=1, description="Number of parties involved")
     is_appeal: Optional[bool] = Field(False, description="Whether this case is an appeal")
+    description: Optional[str] = Field(
+        None,
+        description="Full case description or judgment text (improves prediction accuracy)"
+    )
     legal_representation: Optional[str] = Field(
         "unknown",
         description="Legal representation status (both_sides, claimant_only, defendant_only, none, unknown)"

@@ -35,7 +35,7 @@ class MediationService:
         try:
             import os, json as _json
             _meta_path = os.path.normpath(os.path.join(
-                os.path.dirname(__file__), "..", "data", "mediation_training", "models", "fairness_meta.json"
+                os.path.dirname(__file__), "..", "data", "models", "mediation", "fairness_meta.json"
             ))
             with open(_meta_path) as f:
                 self._fairness_meta = _json.load(f)
