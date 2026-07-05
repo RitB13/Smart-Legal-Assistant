@@ -26,19 +26,22 @@ app = FastAPI(
     swagger_ui_parameters={"persistAuthorization": True},
 )
 
-# Add CORS middleware
+# Middleware order matters: add_middleware prepends, so LAST added = FIRST to run.
+# JWT must be inner (added first), CORS must be outer (added second/last).
+
+# 1. JWT middleware — inner layer, runs after CORS
+logger.info("Adding JWT authentication middleware")
+app.add_middleware(BaseHTTPMiddleware, dispatch=jwt_auth_middleware)
+
+# 2. CORS middleware — outer layer, runs first so OPTIONS preflights are handled before JWT
 logger.info(f"Setting up CORS with allowed origins: {CORS_ORIGINS}")
 app.add_middleware(
     CORSMiddleware,
     allow_origins=CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_methods=["*"],
     allow_headers=["*"],
 )
-
-# Add JWT authentication middleware
-logger.info("Adding JWT authentication middleware")
-app.add_middleware(BaseHTTPMiddleware, dispatch=jwt_auth_middleware)
 
 # Include routers
 app.include_router(auth_routes.router, tags=["Authentication"])

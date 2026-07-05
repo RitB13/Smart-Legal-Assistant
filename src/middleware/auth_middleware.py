@@ -30,6 +30,10 @@ async def jwt_auth_middleware(request: Request, call_next: Callable):
     Returns:
         Response from next handler, or error response if token invalid
     """
+    # OPTIONS preflight must reach CORSMiddleware unmodified
+    if request.method == "OPTIONS":
+        return await call_next(request)
+
     # Skip auth for public endpoints
     public_paths = [
         "/health",
