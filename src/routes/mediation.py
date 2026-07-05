@@ -13,6 +13,7 @@ import uuid
 import logging
 from datetime import datetime
 from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
+from pydantic import BaseModel
 
 from src.models.mediation_model import (
     CreateDisputeRequest, CreateDisputeResponse,
@@ -22,6 +23,7 @@ from src.models.mediation_model import (
     UserDisputeListItem
 )
 from src.services.mediation_service import get_mediation_service
+from src.services.llm_service import get_legal_response
 from src.routes.auth_routes import get_current_user
 from src.services.auth_service import TokenData
 
@@ -32,6 +34,49 @@ logger = logging.getLogger(__name__)
 def _generate_invite_code() -> str:
     """Generate an 8-character uppercase invite code."""
     return str(uuid.uuid4()).replace("-", "")[:8].upper()
+
+
+# ─── Voice transcript correction ──────────────────────────────────────────────
+
+class VoiceCorrectRequest(BaseModel):
+    text: str
+
+class VoiceCorrectResponse(BaseModel):
+    corrected: str
+
+@router.post("/voice/correct", response_model=VoiceCorrectResponse)
+def correct_voice_transcript(
+    request: VoiceCorrectRequest,
+    current_user: TokenData = Depends(get_current_user)
+):
+    """
+    Fix speech-to-text transcription errors using the LLM.
+    Called from the frontend after the user stops speaking.
+    """
+    raw = request.text.strip()
+    if not raw:
+        return VoiceCorrectResponse(corrected="")
+
+    prompt = (
+        "You are a transcription corrector for an Indian legal dispute platform. "
+        "The text below was produced by a speech-to-text engine and may contain mishearings — "
+        "words that sound similar but are wrong in context (e.g. 'length' instead of 'lent', "
+        "'bare' instead of 'bear', 'principal' instead of 'principle'). "
+        "Fix ONLY clear transcription mistakes. Do NOT rephrase, summarise, or add information. "
+        "Preserve all names, amounts, dates, and the speaker's original meaning exactly. "
+        "Return ONLY the corrected text — no explanation, no quotes, no prefix.\n\n"
+        f"Text: {raw}"
+    )
+
+    try:
+        corrected = get_legal_response(prompt, language="en").strip()
+        # Safety: if LLM returns something much shorter or empty, return original
+        if len(corrected) < len(raw) * 0.5:
+            return VoiceCorrectResponse(corrected=raw)
+        return VoiceCorrectResponse(corrected=corrected)
+    except Exception as e:
+        logger.error(f"[VoiceCorrect] LLM call failed: {e}")
+        return VoiceCorrectResponse(corrected=raw)
 
 
 # ─── Background task (sync — matches existing codebase pattern) ───────────────
@@ -107,7 +152,7 @@ def create_dispute(
         "jurisdiction": request.jurisdiction,
         "state": request.state,
         "language": request.language,
-        "party_a_statement": None,
+        "party_a_statement": request.case_description,
         "party_b_statement": None,
         "prior_context_a": prior_context_a,
         "prior_context_b": None,
@@ -164,10 +209,15 @@ def join_dispute(
             detail="This dispute already has both parties. The invite code cannot be reused."
         )
 
+    new_join_status = (
+        MediationStatus.pending_party_b_statement
+        if dispute.get("party_a_statement")
+        else MediationStatus.pending_statements
+    )
     svc.update_dispute(dispute["dispute_id"], {
         "$set": {
             "party_b_user_id": current_user.user_id,
-            "status": MediationStatus.pending_statements
+            "status": new_join_status
         }
     })
 
@@ -296,6 +346,7 @@ def get_dispute_status(
         party_a_submitted=bool(dispute.get("party_a_statement")),
         party_b_submitted=bool(dispute.get("party_b_statement")),
         party_b_joined=bool(dispute.get("party_b_user_id")),
+        is_party_a=(user_id == dispute["party_a_user_id"]),
         created_at=dispute["created_at"],
         completed_at=completed_at
     )

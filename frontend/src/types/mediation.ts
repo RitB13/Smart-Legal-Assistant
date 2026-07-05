@@ -23,6 +23,7 @@ export interface DisputeStatusResponse {
   party_a_submitted: boolean;
   party_b_submitted: boolean;
   party_b_joined: boolean;
+  is_party_a: boolean;
   created_at: string;
   completed_at?: string;
 }

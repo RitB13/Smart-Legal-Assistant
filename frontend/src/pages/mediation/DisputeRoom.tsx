@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 import { useParams, useLocation, useNavigate } from 'react-router-dom';
 import {
   Copy, Check, Clock, Users, FileText, Loader2,
-  ArrowRight, AlertCircle, Brain, ChevronRight,
+  ArrowRight, AlertCircle, Brain, ChevronRight, Mic, MicOff, Sparkles,
 } from 'lucide-react';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
@@ -32,7 +32,16 @@ export default function DisputeRoom() {
   const [submitted, setSubmitted] = useState(false);
   const [loadError, setLoadError] = useState('');
 
-  const pollRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const pollRef        = useRef<ReturnType<typeof setInterval> | null>(null);
+  const recognitionRef = useRef<any>(null);
+
+  const [isListening,     setIsListening]     = useState(false);
+  const [voiceSupported,  setVoiceSupported]  = useState(false);
+  const [voiceError,      setVoiceError]      = useState('');
+  const [interimText,     setInterimText]     = useState('');
+  const [hasUsedVoice,    setHasUsedVoice]    = useState(false);
+  const [correcting,      setCorrecting]      = useState(false);
+  const [fixStatus,       setFixStatus]       = useState<'idle'|'fixed'|'error'>('idle');
 
   const fetchStatus = useCallback(async () => {
     if (!id) return;
@@ -60,6 +69,85 @@ export default function DisputeRoom() {
     pollRef.current = setInterval(fetchStatus, POLL_INTERVAL);
     return () => { if (pollRef.current) clearInterval(pollRef.current); };
   }, [fetchStatus]);
+
+  useEffect(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    setVoiceSupported(!!SR);
+    return () => { recognitionRef.current?.abort(); };
+  }, []);
+
+  function toggleVoice() {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+
+    setVoiceError('');
+    const recognition = new SR();
+    recognition.continuous     = true;
+    recognition.interimResults = true;
+    recognition.lang           = 'en-IN';
+
+    recognition.onresult = (event: any) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          setStatement(prev => prev + (prev.trim() ? ' ' : '') + transcript.trim());
+          setInterimText('');
+          setHasUsedVoice(true);
+          setFixStatus('idle');
+        } else {
+          interim += transcript;
+        }
+      }
+      if (interim) setInterimText(interim);
+    };
+
+    recognition.onerror = (event: any) => {
+      const msgs: Record<string, string> = {
+        'not-allowed':         'Microphone access denied. Please allow microphone in your browser settings.',
+        'service-not-allowed': 'This browser blocks speech recognition. Please use Chrome or Edge instead of Brave.',
+        'network':             'Brave browser blocks Google\'s speech service. Please use Chrome or Edge for voice input.',
+        'no-speech':           'No speech detected. Please try again.',
+        'aborted':             '',
+      };
+      const msg = msgs[event.error] ?? `Voice input is not supported in this browser (${event.error}). Please use Chrome or Edge.`;
+      if (msg) setVoiceError(msg);
+      setIsListening(false);
+      setInterimText('');
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      setInterimText('');
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }
+
+  async function fixTranscript() {
+    if (!statement.trim() || correcting) return;
+    setCorrecting(true);
+    setFixStatus('idle');
+    try {
+      const res = await apiFetch<{ corrected: string }>('/mediation/voice/correct', {
+        method: 'POST',
+        body: { text: statement },
+      });
+      setStatement(res.corrected);
+      setFixStatus('fixed');
+    } catch {
+      setFixStatus('error');
+    } finally {
+      setCorrecting(false);
+    }
+  }
 
   async function handleSubmitStatement(e: React.FormEvent) {
     e.preventDefault();
@@ -113,7 +201,7 @@ export default function DisputeRoom() {
   }
 
   const disputeStatus: DisputeStatus = status.status;
-  const userIsPartyA = locationState?.is_party_a ?? false;
+  const userIsPartyA = status.is_party_a;
   const iHaveSubmitted = userIsPartyA ? status.party_a_submitted : status.party_b_submitted;
 
   return (
@@ -206,21 +294,86 @@ export default function DisputeRoom() {
 
                 <form onSubmit={handleSubmitStatement} className="space-y-4">
                   <div>
-                    <div className="flex justify-between mb-1.5">
+                    <div className="flex items-center justify-between mb-1.5">
                       <label className="text-xs font-medium text-slate-700">Your statement</label>
-                      <span className={`text-xs ${statement.trim().length >= 50 ? 'text-green-600' : 'text-slate-400'}`}>
-                        {statement.trim().length} / 50+ chars
-                      </span>
+                      <div className="flex items-center gap-2">
+                        {voiceSupported && (
+                          <button
+                            type="button"
+                            onClick={toggleVoice}
+                            title={isListening ? 'Stop recording' : 'Speak your statement'}
+                            className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md border transition-all ${
+                              isListening
+                                ? 'bg-red-50 text-red-600 border-red-300 animate-pulse'
+                                : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            {isListening
+                              ? <><MicOff className="h-3 w-3" /> Stop</>
+                              : <><Mic className="h-3 w-3" /> Speak</>
+                            }
+                          </button>
+                        )}
+                        <span className={`text-xs ${statement.trim().length >= 50 ? 'text-green-600' : 'text-slate-400'}`}>
+                          {statement.trim().length} / 50+ chars
+                        </span>
+                      </div>
                     </div>
                     <textarea
                       value={statement}
                       onChange={e => { setStatement(e.target.value); setSubmitError(''); }}
                       rows={8}
                       placeholder="Describe the situation from your perspective. Include: what happened, when it happened, amounts involved, evidence you have (receipts, messages, agreements), and what you believe is a fair resolution."
-                      className="w-full px-3 py-3 text-sm border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 resize-none leading-relaxed"
+                      className={`w-full px-3 py-3 text-sm border rounded-lg focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 resize-none leading-relaxed ${
+                        isListening ? 'border-red-300 ring-2 ring-red-100' : 'border-slate-200'
+                      }`}
                     />
+                    {isListening && (
+                      <div className="mt-1.5 flex items-start gap-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                        <span className="mt-0.5 flex-shrink-0 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                        <span>
+                          Listening… speak clearly in English
+                          {interimText && (
+                            <span className="text-slate-500 ml-1">
+                              — <em>"{interimText.slice(0, 80)}{interimText.length > 80 ? '…' : ''}"</em>
+                            </span>
+                          )}
+                        </span>
+                      </div>
+                    )}
+                    {!isListening && hasUsedVoice && (
+                      <div className="mt-1.5 flex items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={fixTranscript}
+                          disabled={correcting}
+                          className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-all disabled:opacity-60 ${
+                            fixStatus === 'fixed'
+                              ? 'border-green-200 bg-green-50 text-green-700'
+                              : fixStatus === 'error'
+                              ? 'border-red-200 bg-red-50 text-red-700'
+                              : 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100'
+                          }`}
+                        >
+                          {correcting
+                            ? <><Loader2 className="h-3 w-3 animate-spin" /> Fixing…</>
+                            : fixStatus === 'fixed'
+                            ? <><Check className="h-3 w-3" /> Fixed — fix again?</>
+                            : fixStatus === 'error'
+                            ? <><Sparkles className="h-3 w-3" /> Retry fix</>
+                            : <><Sparkles className="h-3 w-3" /> Fix transcription errors</>
+                          }
+                        </button>
+                        <span className="text-xs text-slate-400">
+                          {fixStatus === 'error' ? 'Correction failed — check server logs' : 'AI corrects mishearings'}
+                        </span>
+                      </div>
+                    )}
                   </div>
 
+                  {voiceError && (
+                    <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{voiceError}</p>
+                  )}
                   {submitError && (
                     <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{submitError}</p>
                   )}

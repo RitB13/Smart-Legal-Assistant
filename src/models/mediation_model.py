@@ -147,6 +147,7 @@ class DisputeStatusResponse(BaseModel):
     party_a_submitted: bool
     party_b_submitted: bool
     party_b_joined: bool
+    is_party_a: bool = True
     created_at: datetime
     completed_at: Optional[datetime] = None
 
