@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Loader2, Info } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Info, Mic, MicOff, Sparkles, Check } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import Layout from '@/components/Layout';
 import type { CreateDisputeResponse } from '@/types/mediation';
@@ -14,6 +14,91 @@ export default function CreateDispute() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
+  const recognitionRef   = useRef<any>(null);
+  const descriptionRef   = useRef('');   // tracks current case_description for voice handler
+  const [isListening,     setIsListening]     = useState(false);
+  const [voiceSupported,  setVoiceSupported]  = useState(false);
+  const [voiceError,      setVoiceError]      = useState('');
+  const [interimText,     setInterimText]     = useState('');
+  const [hasUsedVoice,    setHasUsedVoice]    = useState(false);
+  const [correcting,      setCorrecting]      = useState(false);
+  const [fixStatus,       setFixStatus]       = useState<'idle'|'fixed'|'error'>('idle');
+
+  useEffect(() => {
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    setVoiceSupported(!!SR);
+    return () => { recognitionRef.current?.abort(); };
+  }, []);
+
+  function toggleVoice() {
+    if (isListening) {
+      recognitionRef.current?.stop();
+      return;
+    }
+    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SR) return;
+
+    setVoiceError('');
+    const recognition = new SR();
+    recognition.continuous     = true;
+    recognition.interimResults = true;
+    recognition.lang           = 'en-IN';
+
+    recognition.onresult = (event: any) => {
+      let interim = '';
+      for (let i = event.resultIndex; i < event.results.length; i++) {
+        const transcript = event.results[i][0].transcript;
+        if (event.results[i].isFinal) {
+          const current = descriptionRef.current;
+          set('case_description', current + (current.trim() ? ' ' : '') + transcript.trim());
+          setInterimText('');
+          setHasUsedVoice(true);
+          setFixStatus('idle');
+        } else {
+          interim += transcript;
+        }
+      }
+      if (interim) setInterimText(interim);
+    };
+
+    recognition.onerror = (event: any) => {
+      setVoiceError(
+        event.error === 'not-allowed'
+          ? 'Microphone access denied. Please allow microphone access in your browser settings.'
+          : 'Voice input error. Please try again.'
+      );
+      setIsListening(false);
+      setInterimText('');
+    };
+
+    recognition.onend = () => {
+      setIsListening(false);
+      setInterimText('');
+    };
+
+    recognitionRef.current = recognition;
+    recognition.start();
+    setIsListening(true);
+  }
+
+  async function fixTranscript() {
+    if (!form.case_description.trim() || correcting) return;
+    setCorrecting(true);
+    setFixStatus('idle');
+    try {
+      const res = await apiFetch<{ corrected: string }>('/mediation/voice/correct', {
+        method: 'POST',
+        body: { text: form.case_description },
+      });
+      set('case_description', res.corrected);
+      setFixStatus('fixed');
+    } catch {
+      setFixStatus('error');
+    } finally {
+      setCorrecting(false);
+    }
+  }
+
   const [form, setForm] = useState({
     case_description: '',
     case_type: '',
@@ -23,6 +108,7 @@ export default function CreateDispute() {
   });
 
   function set(field: keyof typeof form, value: string) {
+    if (field === 'case_description') descriptionRef.current = value;
     setForm(f => ({ ...f, [field]: value }));
     setError('');
   }
@@ -127,17 +213,78 @@ export default function CreateDispute() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-slate-700">Your account of the dispute</label>
-              <span className={`text-xs ${descValid ? 'text-green-600' : 'text-slate-400'}`}>
-                {form.case_description.length} / 50+ chars
-              </span>
+              <div className="flex items-center gap-2">
+                {voiceSupported && (
+                  <button
+                    type="button"
+                    onClick={toggleVoice}
+                    title={isListening ? 'Stop recording' : 'Speak your account'}
+                    className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md border transition-all ${
+                      isListening
+                        ? 'bg-red-50 text-red-600 border-red-300 animate-pulse'
+                        : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
+                    }`}
+                  >
+                    {isListening
+                      ? <><MicOff className="h-3 w-3" /> Stop</>
+                      : <><Mic className="h-3 w-3" /> Speak</>
+                    }
+                  </button>
+                )}
+                <span className={`text-xs ${descValid ? 'text-green-600' : 'text-slate-400'}`}>
+                  {form.case_description.length} / 50+ chars
+                </span>
+              </div>
             </div>
             <textarea
               value={form.case_description}
               onChange={e => set('case_description', e.target.value)}
               rows={6}
               placeholder="Describe the situation in your own words. Include dates, amounts, what happened, and what outcome you're looking for. Be specific — the more detail you provide, the more accurate the AI mediation will be."
-              className="w-full px-3 py-3 text-sm border border-slate-200 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 resize-none leading-relaxed"
+              className={`w-full px-3 py-3 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 resize-none leading-relaxed ${
+                isListening ? 'border-red-300 ring-2 ring-red-100' : 'border-slate-200'
+              }`}
             />
+            {isListening && (
+              <div className="mt-1.5 flex items-start gap-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                <span className="mt-0.5 flex-shrink-0 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span>
+                  Listening… speak clearly in English
+                  {interimText && (
+                    <span className="text-slate-500 ml-1">
+                      — <em>"{interimText.slice(0, 80)}{interimText.length > 80 ? '…' : ''}"</em>
+                    </span>
+                  )}
+                </span>
+              </div>
+            )}
+            {!isListening && hasUsedVoice && (
+              <div className="mt-1.5 flex items-center gap-2">
+                <button
+                  type="button"
+                  onClick={fixTranscript}
+                  disabled={correcting}
+                  className={`flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-md border transition-all disabled:opacity-60 ${
+                    fixStatus === 'fixed' ? 'border-green-200 bg-green-50 text-green-700'
+                    : fixStatus === 'error' ? 'border-red-200 bg-red-50 text-red-700'
+                    : 'border-violet-200 bg-violet-50 text-violet-700 hover:bg-violet-100'
+                  }`}
+                >
+                  {correcting
+                    ? <><Loader2 className="h-3 w-3 animate-spin" /> Fixing…</>
+                    : fixStatus === 'fixed' ? <><Check className="h-3 w-3" /> Fixed — fix again?</>
+                    : fixStatus === 'error' ? <><Sparkles className="h-3 w-3" /> Retry fix</>
+                    : <><Sparkles className="h-3 w-3" /> Fix transcription errors</>
+                  }
+                </button>
+                <span className="text-xs text-slate-400">
+                  {fixStatus === 'error' ? 'Correction failed — check server' : 'AI corrects mishearings'}
+                </span>
+              </div>
+            )}
+            {voiceError && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mt-1.5">{voiceError}</p>
+            )}
             <p className="text-xs text-slate-400 mt-1.5">
               The other party will not see this. Only the AI mediator sees both sides.
             </p>
