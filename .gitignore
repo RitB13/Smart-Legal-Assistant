@@ -54,8 +54,14 @@ node_modules/
 # Raw datasets (large, re-downloadable)
 src/data/CJPE-main/
 src/data/rhetorical-role-baseline-main/
+src/data/processed/
+src/data/il_tur/
+src/data/jud_ipl/
+src/data/nyayaanumana/
 
-# precedent_index.pkl is committed (900KB, needed at runtime)
+# Large models — stored on HF Hub, downloaded at startup via download_models.py
+src/data/models/inlegalbert/
+src/data/models/precedent/
 
 # Frontend build output
 frontend/dist/
