@@ -1,18 +1,11 @@
 """
-Precedent Service — Semantic Similar-Case Retrieval
-=====================================================
-Loads the InLegalBERT embedding index built by build_precedent_index.py and
-provides fast cosine-similarity search over indexed Indian court cases.
+Precedent Service — TF-IDF + SVD Semantic Search
+=================================================
+Loads the pre-built TF-IDF/SVD index over 82k Indian court cases and
+provides fast cosine-similarity search.
 
-Architecture:
-  - Index: pre-computed L2-normalised embeddings (N, 768) stored in a .pkl file
-  - Query : embed dispute description → cosine similarity → top-K results
-  - Model : law-ai/InLegalBERT (BERT-base trained on Indian legal text)
-
-When the ILDC full dataset (34k+ cases) is added tomorrow:
-  1. Run build_precedent_index.py again — it rebuilds the index automatically.
-  2. Restart the server — the service reloads from the new index file.
-  No code changes needed.
+Index is built by: src/scripts/build_precedent_index.py
+Index location:    src/data/mediation_training/models/precedent_index.pkl
 """
 
 import os
@@ -20,80 +13,64 @@ import pickle
 import logging
 import numpy as np
 from typing import List, Optional, Dict, Any
+from sklearn.preprocessing import normalize
 
 logger = logging.getLogger(__name__)
 
-_MODEL_DIR  = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), "..", "data", "mediation_training", "models")
+_INDEX_PATH = os.path.normpath(
+    os.path.join(
+        os.path.dirname(__file__),
+        "..", "data", "models", "precedent", "precedent_index.pkl"
+    )
 )
-_INDEX_PATH = os.path.join(_MODEL_DIR, "precedent_index.pkl")
-
-MAX_TOKENS = 512
 
 
 class PrecedentService:
-    """
-    Loads the pre-built InLegalBERT precedent index and answers
-    nearest-neighbour queries for dispute case descriptions.
-    """
-
     def __init__(self):
-        self._index: Optional[Dict[str, Any]] = None
-        self._tokenizer = None
-        self._model     = None
-        self._available = False
+        self._index:      Optional[Dict[str, Any]] = None
+        self._vectorizer  = None
+        self._svd         = None
+        self._embeddings: Optional[np.ndarray] = None
+        self._available   = False
         self._load()
 
     def _load(self):
         if not os.path.exists(_INDEX_PATH):
-            logger.warning("[Precedent] Index file not found — similar_precedents will be empty. "
-                           "Run build_precedent_index.py to create it.")
+            logger.warning(
+                "[Precedent] Index not found at %s — run "
+                "src/scripts/build_precedent_index.py to create it. "
+                "similar_precedents will be empty until then.",
+                _INDEX_PATH,
+            )
             return
-
         try:
             with open(_INDEX_PATH, "rb") as f:
                 self._index = pickle.load(f)
 
-            model_name = self._index.get("model", "law-ai/InLegalBERT")
-            logger.info(f"[Precedent] Loading tokenizer/model: {model_name}")
-
-            from transformers import AutoTokenizer, AutoModel
-            self._tokenizer = AutoTokenizer.from_pretrained(model_name)
-            self._model     = AutoModel.from_pretrained(model_name)
-            self._model.eval()
+            self._vectorizer  = self._index["vectorizer"]
+            self._svd         = self._index["svd"]
+            self._embeddings  = self._index["embeddings"]   # (N, SVD_DIMS), float32, L2-normed
 
             n = self._index.get("n_cases", 0)
-            logger.info(f"[Precedent] Index loaded — {n} cases, model ready.")
+            model = self._index.get("model", "unknown")
+            logger.info("[Precedent] Index loaded — %s cases, model=%s", f"{n:,}", model)
             self._available = True
-
         except Exception as e:
-            logger.error(f"[Precedent] Failed to load index or model: {e}")
+            logger.error("[Precedent] Failed to load index: %s", e)
 
     @property
     def available(self) -> bool:
         return self._available
 
     def _embed(self, text: str) -> np.ndarray:
-        """Embed a single text string → L2-normalised (768,) vector."""
-        import torch
-
-        encoded = self._tokenizer(
-            text,
-            padding=True,
-            truncation=True,
-            max_length=MAX_TOKENS,
-            return_tensors="pt",
-        )
-        with torch.no_grad():
-            output = self._model(**encoded)
-
-        hidden   = output.last_hidden_state          # (1, T, 768)
-        mask     = encoded["attention_mask"]          # (1, T)
-        mask_exp = mask.unsqueeze(-1).float()
-        pooled   = (hidden * mask_exp).sum(dim=1) / mask_exp.sum(dim=1).clamp(min=1e-9)
-        vec      = pooled.squeeze(0).cpu().numpy()   # (768,)
-        norm     = np.linalg.norm(vec)
-        return vec / max(norm, 1e-9)
+        """
+        Convert a query string to an L2-normalised (SVD_DIMS,) dense vector
+        using the same TF-IDF → SVD pipeline used to build the index.
+        """
+        tfidf_vec = self._vectorizer.transform([text[:3000]])
+        svd_vec   = self._svd.transform(tfidf_vec).astype(np.float32)
+        normed    = normalize(svd_vec, norm="l2")
+        return normed[0]   # (SVD_DIMS,)
 
     def search(
         self,
@@ -105,29 +82,26 @@ class PrecedentService:
         Find the top-K most similar precedent cases for a query string.
 
         Args:
-            query            : Dispute description or summary text.
-            case_type_filter : Optional case category to bias results
-                               ("Criminal", "Civil", etc.). If provided,
-                               matching cases get a 10% score boost.
-            top_k            : Number of results to return.
+            query:            Dispute description or case summary text.
+            case_type_filter: Optional category to boost (e.g. "IPL Case").
+                              Matching cases get a 10% score boost.
+            top_k:            Number of results to return.
 
         Returns:
-            List of dicts: [{ case_name, case_type, summary, outcome, similarity }]
+            List of dicts: [{case_name, case_type, summary, outcome, similarity}]
             Empty list if the index is not available.
         """
         if not self._available:
             return []
 
         try:
-            query_vec  = self._embed(query)                        # (768,)
-            embeddings = self._index["embeddings"]                 # (N, 768)
-            scores     = embeddings @ query_vec                    # (N,) cosine similarity
+            query_vec = self._embed(query)                     # (SVD_DIMS,)
+            scores    = self._embeddings @ query_vec           # (N,) cosine similarity
 
-            # Optional category boost
             if case_type_filter:
                 for i, c in enumerate(self._index["corpus"]):
                     if c.get("case_type", "").lower() == case_type_filter.lower():
-                        scores[i] = min(scores[i] * 1.10, 1.0)
+                        scores[i] = min(float(scores[i]) * 1.10, 1.0)
 
             top_indices = np.argsort(scores)[::-1][:top_k]
             corpus      = self._index["corpus"]
@@ -136,40 +110,43 @@ class PrecedentService:
             for idx in top_indices:
                 c = corpus[idx]
                 results.append({
-                    "case_name":  c.get("case_name", "Unknown"),
-                    "case_type":  c.get("case_type", "Unknown"),
-                    "summary":    c.get("summary", ""),
-                    "outcome":    c.get("outcome", ""),
+                    "case_name":  c.get("case_name",  "Unknown"),
+                    "case_type":  c.get("case_type",  "Unknown"),
+                    "summary":    c.get("summary",    ""),
+                    "outcome":    c.get("outcome",    ""),
                     "similarity": round(float(scores[idx]), 4),
                 })
 
-            logger.debug(f"[Precedent] Query returned {len(results)} results "
-                         f"(top sim={results[0]['similarity']:.3f} if any)")
+            if results:
+                logger.debug(
+                    "[Precedent] Query returned %d results (top_sim=%.3f)",
+                    len(results), results[0]["similarity"]
+                )
             return results
 
         except Exception as e:
-            logger.error(f"[Precedent] Search failed: {e}", exc_info=True)
+            logger.error("[Precedent] Search failed: %s", e, exc_info=True)
             return []
 
     def format_for_report(self, results: List[Dict[str, Any]]) -> List[str]:
         """
-        Format search results as human-readable strings for the MediationReport
-        similar_precedents field.
+        Format search results as human-readable strings for mediation reports.
         """
         formatted = []
         for r in results:
-            name     = r.get("case_name", "Unknown case")
-            c_type   = r.get("case_type", "")
-            outcome  = r.get("outcome", "").strip()
-            sim      = r.get("similarity", 0)
-            line = f"{name}"
+            name    = r.get("case_name", "Unknown case")
+            c_type  = r.get("case_type", "")
+            outcome = r.get("outcome", "").strip()
+            sim     = r.get("similarity", 0.0)
+
+            line = name
             if c_type:
                 line += f" [{c_type}]"
             if outcome:
-                short_outcome = outcome[:120].rstrip()
+                short = outcome[:120].rstrip()
                 if len(outcome) > 120:
-                    short_outcome += "..."
-                line += f" — {short_outcome}"
+                    short += "..."
+                line += f" — {short}"
             line += f" (similarity: {sim:.2f})"
             formatted.append(line)
         return formatted

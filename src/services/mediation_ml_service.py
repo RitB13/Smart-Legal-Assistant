@@ -29,7 +29,7 @@ from src.models.mediation_model import SettlementRange
 logger = logging.getLogger(__name__)
 
 _MODEL_DIR = os.path.normpath(
-    os.path.join(os.path.dirname(__file__), "..", "data", "mediation_training", "models")
+    os.path.join(os.path.dirname(__file__), "..", "data", "models", "mediation")
 )
 
 # ─── Legal vocabulary (matches training script exactly) ───────────────────────

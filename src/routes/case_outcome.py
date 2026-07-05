@@ -184,6 +184,7 @@ async def predict_case_outcome(
             'is_appeal': case_input.is_appeal or False,
             'legal_representation': case_input.legal_representation,
             'number_of_parties': case_input.number_of_parties,
+            'description': case_input.description or '',
         }
         
         # Get prediction
