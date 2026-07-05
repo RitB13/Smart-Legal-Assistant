@@ -1,0 +1,29 @@
+{
+  "best_model": "LogisticRegression",
+  "results": {
+    "LogisticRegression": {
+      "dev_f1": 0.3620889741876024,
+      "test_accuracy": 0.40703517587939697,
+      "test_f1_weighted": 0.4087302247328748,
+      "test_f1_macro": 0.30145546341914387
+    },
+    "LinearSVC": {
+      "dev_f1": 0.34503408076481806,
+      "test_accuracy": 0.4152581087254454,
+      "test_f1_weighted": 0.4238578482176289,
+      "test_f1_macro": 0.3457887922540744
+    },
+    "LightGBM": {
+      "dev_f1": 0.34010162333596555,
+      "test_accuracy": 0.4042941982640475,
+      "test_f1_weighted": 0.4113246453122643,
+      "test_f1_macro": 0.31108306134379876
+    },
+    "RandomForest": {
+      "dev_f1": 0.2703936379366388,
+      "test_accuracy": 0.2873458200091366,
+      "test_f1_weighted": 0.2908739103254137,
+      "test_f1_macro": 0.232019017984847
+    }
+  }
+}
