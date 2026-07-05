@@ -1,0 +1,23 @@
+{
+  "best_model": "LinearSVC",
+  "results": {
+    "LogisticRegression": {
+      "dev_f1": 0.679643170757596,
+      "test_accuracy": 0.6772714323785368,
+      "test_f1_weighted": 0.6772867225724856,
+      "test_f1_macro": 0.6772273300504128
+    },
+    "LinearSVC": {
+      "dev_f1": 0.6830056610181603,
+      "test_accuracy": 0.6804050763193927,
+      "test_f1_weighted": 0.6804230738143628,
+      "test_f1_macro": 0.6803715191172329
+    },
+    "LightGBM": {
+      "dev_f1": 0.6690925800363812,
+      "test_accuracy": 0.6697543627491522,
+      "test_f1_weighted": 0.668921720826164,
+      "test_f1_macro": 0.6686159725701986
+    }
+  }
+}
