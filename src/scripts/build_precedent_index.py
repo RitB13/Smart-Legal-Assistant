@@ -101,12 +101,13 @@ def build_corpus_entry(row: pd.Series, text: str, summary_text: str) -> dict:
     case_name = derive_case_name(row_id, text, source)
     case_type = SOURCE_TYPE.get(source, source)
 
-    # Summary: use summary field if available, else first 300 chars of text
+    # Summary: use summary field if available, else first 800 chars of text.
+    # 800 chars gives enough context to read in the UI without truncating mid-sentence.
     if summary_text and len(summary_text) > 20:
-        display_summary = summary_text[:300]
+        display_summary = summary_text[:800]
         outcome         = summary_text[-200:] if len(summary_text) > 400 else ""
     else:
-        display_summary = text[:300]
+        display_summary = text[:800]
         outcome         = ""
 
     return {
@@ -125,7 +126,7 @@ def main():
     OUTPUT_DIR.mkdir(parents=True, exist_ok=True)
 
     logger.info(f"Loading corpus: {CORPUS_CSV}")
-    df = pd.read_csv(CORPUS_CSV, dtype=str).fillna("")
+    df = pd.read_csv(CORPUS_CSV, dtype=object, engine="c", low_memory=False).fillna("")
     logger.info(f"  {len(df):,} documents — sources: {df['source'].value_counts().to_dict()}")
 
     # Parse text fields

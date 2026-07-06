@@ -221,10 +221,24 @@ class CaseOutcomePredictorService:
             )
 
             SPECIAL = {"[CLS]", "[SEP]", "[PAD]", "<s>", "</s>", "<pad>"}
+
+            # Merge consecutive BERT subword tokens into whole words before scoring.
+            # e.g. ["securit", "##isation"] → ("securitisation", avg_score)
+            # This prevents partial tokens like "securit" appearing as features.
+            merged: list = []
+            for tok, score in zip(tokens, cls_attn):
+                if tok in SPECIAL:
+                    continue
+                if tok.startswith("##") and merged:
+                    word, sc_sum, count = merged[-1]
+                    merged[-1] = (word + tok[2:], sc_sum + float(score), count + 1)
+                else:
+                    merged.append((tok, float(score), 1))
+
             token_scores = [
-                (tok.lstrip("#"), float(score))
-                for tok, score in zip(tokens, cls_attn)
-                if tok not in SPECIAL and len(tok.lstrip("#")) >= 2
+                (word, sc_sum / count)
+                for word, sc_sum, count in merged
+                if len(word) >= 3
             ]
             token_scores.sort(key=lambda x: x[1], reverse=True)
 
@@ -432,8 +446,18 @@ class CaseOutcomePredictorService:
 
     @staticmethod
     def _risk(verdict: str, confidence_pct: float) -> str:
-        if confidence_pct < 40:
-            return "very_high"
-        if verdict == "Accepted":
-            return "low" if confidence_pct >= 70 else "medium"
-        return "high" if confidence_pct >= 70 else "very_high"
+        """
+        Risk from the PETITIONER's perspective.
+        Accepted at low confidence is still very risky — near coin-flip territory.
+        Any Rejected verdict carries high or very-high risk.
+        """
+        if verdict == "Rejected":
+            return "very_high" if confidence_pct >= 65 else "high"
+        # Accepted:
+        if confidence_pct >= 80:
+            return "low"
+        if confidence_pct >= 70:
+            return "medium"
+        if confidence_pct >= 60:
+            return "high"
+        return "very_high"   # < 60% Accepted ≈ coin flip — very risky
