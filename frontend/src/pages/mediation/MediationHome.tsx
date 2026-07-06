@@ -60,7 +60,7 @@ export default function MediationHome() {
 
   return (
     <Layout>
-      <div className="max-w-3xl mx-auto px-4 py-12">
+      <div className="max-w-3xl mx-auto px-4 pb-12 pt-6">
         {/* Header */}
         <div className="mb-10">
           <div className="flex items-center gap-2 text-primary mb-3">

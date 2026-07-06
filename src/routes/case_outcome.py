@@ -185,27 +185,59 @@ async def predict_case_outcome(
             'legal_representation': case_input.legal_representation,
             'number_of_parties': case_input.number_of_parties,
             'description': case_input.description or '',
+            'role': case_input.role or 'petitioner',
+            'relief_sought': case_input.relief_sought or '',
         }
-        
+
+        # Petition text composition — when role + relief_sought are provided (from the
+        # guided predictor UI) we convert the user's plain-language statement into
+        # formal Indian legal petition language before feeding to InLegalBERT.
+        # This bridges the gap between informal user text and the court-document
+        # register the model was trained on, improving prediction accuracy significantly.
+        if case_input.role and case_input.relief_sought and case_dict['description']:
+            try:
+                composed_text = service.compose_petition_text(
+                    statement=case_dict['description'],
+                    relief_sought=case_dict['relief_sought'],
+                    role=case_dict['role'],
+                    jurisdiction=case_dict['jurisdiction_state'],
+                    case_type=case_dict['case_type'],
+                )
+                case_dict['description'] = composed_text
+                logger.info(
+                    "[%s] Petition text composed (%d chars) — using for InLegalBERT",
+                    prediction_id, len(composed_text)
+                )
+            except Exception as e:
+                logger.warning("[%s] Petition composition skipped: %s", prediction_id, e)
+
         # Get prediction
         prediction_result = service.predict_outcome(case_dict)
         
+        # LLM enrichment — runs in parallel with explanation logic
+        llm_enrichment = None
+        try:
+            llm_enrichment = service.enrich_with_llm(prediction_result, case_dict)
+            logger.info(f"[{prediction_id}] LLM enrichment complete")
+        except Exception as e:
+            logger.warning(f"[{prediction_id}] LLM enrichment skipped: {e}")
+
         # Get explanation if requested
         explanation_data = None
         if include_explanation:
             explanation_result = service.explain_prediction(case_dict)
             explanation_data = SHAPExplanation(
-                top_positive_features=explanation_result.get('top_features', []),
-                top_negative_features=[],
-                feature_impact_summary=explanation_result.get('explanation', ''),
-                model_certainty=prediction_result.get('confidence', 50) / 100.0
+                top_positive_features=explanation_result.get('top_positive_features', []),
+                top_negative_features=explanation_result.get('top_negative_features', []),
+                feature_impact_summary=explanation_result.get('summary', ''),
+                model_certainty=explanation_result.get('model_certainty', prediction_result.get('confidence', 50) / 100.0)
             )
         else:
             explanation_data = SHAPExplanation(
                 top_positive_features=[],
                 top_negative_features=[],
                 feature_impact_summary="Explanation not requested",
-                model_certainty=prediction_result.get('probability', 0.5)
+                model_certainty=prediction_result.get('confidence', 50) / 100.0
             )
         
         # Build confidence assessment
@@ -262,8 +294,12 @@ async def predict_case_outcome(
             'success_probability': prob
         }
         
-        # Recommendations
-        recommendations = _get_recommendations(verdict_name, case_dict)
+        # Recommendations — use LLM-generated ones if available, else static fallback
+        recommendations = (
+            llm_enrichment.get('recommendations', [])
+            if llm_enrichment
+            else _get_recommendations(verdict_name, case_dict)
+        )
         
         # Build response
         response = CaseOutcomePredictionResponse(
@@ -284,9 +320,10 @@ async def predict_case_outcome(
             risk_level=risk_assessment.get('overall_risk', 'medium'),
             verdict_probabilities=verdict_probabilities,
             explanation=explanation_data,
-            similar_cases=_get_similar_cases(verdict, case_dict) if include_similar_cases else [],
+            similar_cases=_get_similar_cases(verdict_name, case_dict) if include_similar_cases else [],
             risk_assessment=risk_assessment,
             recommendations=recommendations,
+            llm_analysis=llm_enrichment,
             timestamp=request_time
         )
         
@@ -613,6 +650,7 @@ async def explain_prediction(
         
         # Get explanation
         explanation = service.explain_prediction(case_dict, num_top_features=10)
+
         
         response = {
             'explanation_id': explanation_id,
@@ -672,14 +710,14 @@ async def get_model_info(request: Request) -> Dict[str, Any]:
         info = service.get_model_info()
         
         return {
-            'model_type': info['model_type'],
-            'model_loaded': info['model_loaded'],
-            'feature_count': info['feature_count'],
-            'sample_features': info['feature_names'],
+            'model_type':      info['model_type'],
+            'model_loaded':    info['model_loaded'],
+            'feature_count':   info['feature_count'],
+            'sample_features': info.get('feature_names', []),
             'verdict_classes': info['verdict_classes'],
-            'shap_available': info['shap_available'],
-            'metadata': info['metadata'],
-            'timestamp': datetime.utcnow().isoformat()
+            'shap_available':  info.get('shap_available', False),
+            'metadata':        info.get('metadata', {}),
+            'timestamp':       datetime.utcnow().isoformat()
         }
         
     except Exception as e:
@@ -995,10 +1033,10 @@ def get_monitoring_dashboard():
 
 
 @router.get(
-    "/model-info",
+    "/deployment-info",
     status_code=200,
-    summary="Model Information",
-    description="Get current model version and deployment information"
+    summary="Deployment Information",
+    description="Get current model version and deployment information from model manager"
 )
 def get_model_information():
     """

@@ -1,954 +1,318 @@
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Loader2, CheckCircle2, X, MessageCircle, TrendingUp, Zap, AlertTriangle, Scale, ArrowRight } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Send, Bot, User, Loader2, MessageCircle, Zap } from "lucide-react";
 import Layout from "../components/Layout";
 
-// Enhanced message type system
-type MessageType = "text" | "options" | "input" | "numeric_input" | "prediction_result" | "appeal_option";
+// ── Types ─────────────────────────────────────────────────────────────────────
+
+type ChatMode = "chat" | "simulate";
 
 interface Message {
   id: string;
   text: string;
   sender: "user" | "bot";
   timestamp: Date;
-  type: MessageType;
-  data?: {
-    options?: string[];
-    fieldName?: string;
-    inputType?: string;
-    prediction?: any;
-  };
 }
 
-interface CaseContext {
-  case_name?: string;
-  case_type?: string;
-  jurisdiction_state?: string;
-  year?: number;
-  damages_awarded?: number;
-  is_appeal?: boolean;
-  parties_count?: number;
-}
+// ── Welcome messages per mode ─────────────────────────────────────────────────
 
-// Prediction steps configuration - DATASET DRIVEN
-// Case types and jurisdictions must match the preprocessing pipeline in LightGBM model
-const PREDICTION_STEPS = [
-  {
-    step: 1,
-    fieldName: "case_name",
-    question: "What is the name or title of your case? (e.g., State vs John Doe)",
-    type: "text_input",
-    required: true,
-  },
-  {
-    step: 2,
-    fieldName: "case_type",
-    question: "What type of case is this?",
-    type: "options",
-    // Options derived from preprocessing pipeline - case_outcome_predictor_service.py
-    options: [
-      "Criminal Complaint",
-      "Property Dispute",
-      "Dowry Harassment",
-      "Harassment (Civil)",
-      "Divorce (Contested)",
-      "Divorce (Mutual Consent)",
-      "Writ Petition",
-      "Appeal",
-    ],
-    required: true,
-  },
-  {
-    step: 3,
-    fieldName: "jurisdiction_state",
-    question: "Which state/jurisdiction is this case in? (e.g., Delhi, Mumbai, Bangalore)",
-    type: "text_input",
-    required: true,
-    hint: "e.g., Delhi, Maharashtra, Karnataka, Tamil Nadu, Uttar Pradesh",
-  },
-  {
-    step: 4,
-    fieldName: "year",
-    question: "What year was the case filed or decided?",
-    type: "numeric_input",
-    required: true,
-    hint: "Year between 1950 and 2100",
-  },
-  {
-    step: 5,
-    fieldName: "damages_awarded",
-    question: "Were damages awarded or claimed? (Enter amount in rupees, or 0 if none)",
-    type: "numeric_input",
-    required: false,
-    hint: "Enter numeric value in rupees",
-  },
-  {
-    step: 6,
-    fieldName: "is_appeal",
-    question: "Is this case an appeal or review of a previous verdict?",
-    type: "appeal_option",
-    required: false,
-    options: ["Appeal or Review", "Original Case"],
-    hint: "Select whether this is an appeal/review or an original case",
-  },
-];
-
-// Reusable Components
-const OptionButtons = ({
-  options,
-  onSelect,
-  isLoading,
-}: {
-  options: string[];
-  onSelect: (option: string) => void;
-  isLoading?: boolean;
-}) => (
-  <div className="flex flex-wrap gap-2 mt-3">
-    {options.map((option) => (
-      <button
-        key={option}
-        onClick={() => onSelect(option)}
-        disabled={isLoading}
-        className="px-4 py-2 rounded-lg bg-blue-50 text-blue-900 hover:bg-blue-100 transition-colors disabled:opacity-50 border border-blue-300 text-sm font-medium hover:shadow-md"
-      >
-        {option}
-      </button>
-    ))}
-  </div>
-);
-
-// Mode Selection Card Component - for welcome screen with descriptions
-const ModeSelectionCard = ({
-  onSelect,
-  isLoading,
-}: {
-  onSelect: (mode: "chat" | "predict" | "simulate") => void;
-  isLoading?: boolean;
-}) => {
-  const modes = [
-    {
-      id: "chat",
-      title: "Chat & Get Legal Guidance",
-      description: "Ask questions about legal situations, understand your rights, and receive AI-powered legal explanations and guidance.",
-      icon: MessageCircle,
-    },
-    {
-      id: "predict",
-      title: "Predict Case Outcome",
-      description: "Provide details about a legal case and get an AI-based prediction of the likely verdict with confidence and explanation.",
-      icon: TrendingUp,
-    },
-    {
-      id: "simulate",
-      title: "Consequence Simulator",
-      description: "Describe a planned action and see the potential legal consequences before you act. Understand risks and applicable laws.",
-      icon: Zap,
-    },
-  ];
-
-  return (
-    <div className="grid grid-cols-3 gap-4 mt-4 w-full">
-      {modes.map((mode) => {
-        const IconComponent = mode.icon;
-        return (
-          <button
-            key={mode.id}
-            onClick={() => onSelect(mode.id as "chat" | "predict" | "simulate")}
-            disabled={isLoading}
-            className="group relative py-4 px-5 rounded-xl border-2 border-gray-200 bg-gradient-to-br from-white to-gray-50 hover:border-blue-400 hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed text-left hover:bg-blue-50"
-          >
-            <div className="flex flex-col items-start gap-2">
-              <div className="p-2 rounded-lg bg-blue-100 group-hover:bg-blue-200 transition-colors">
-                <IconComponent className="w-5 h-5 text-blue-600" />
-              </div>
-              <div className="flex-1 w-full">
-                <h3 className="font-bold text-base text-foreground group-hover:text-blue-700 transition-colors">
-                  {mode.title}
-                </h3>
-                <p className="text-xs text-muted-foreground mt-1 leading-snug">
-                  {mode.description}
-                </p>
-              </div>
-            </div>
-          </button>
-        );
-      })}
-    </div>
-  );
+const WELCOME: Record<ChatMode, string> = {
+  chat:
+    "Hello! I'm your Smart Legal Assistant. Ask me anything about legal situations, your rights, applicable laws, or any legal matter under Indian law. I'm here to help you understand your options.",
+  simulate:
+    "Consequence Simulator is active. Describe a planned action or situation and I'll analyse the potential legal consequences, applicable statutes, penalties, and safer alternatives — before you act.",
 };
 
-// Map UI-friendly case type names to backend values
-const mapCaseTypeToBackend = (uiCaseType: string): string => {
-  const caseTypeMap: Record<string, string> = {
-    "Criminal Complaint": "criminal_complaint",
-    "Property Dispute": "property_dispute",
-    "Dowry Harassment": "dowry_harassment",
-    "Harassment (Civil)": "harassment_civil",
-    "Divorce (Contested)": "divorce_contested",
-    "Divorce (Mutual Consent)": "divorce_mutual",
-    "Writ Petition": "writ_petition",
-    "Appeal": "appeal",
-  };
-  return caseTypeMap[uiCaseType] || uiCaseType.toLowerCase().replace(/\s+/g, "_");
-};
-
-const PredictionResultDisplay = ({ prediction }: { prediction: any }) => (
-  <div className="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-lg p-4 mt-3 space-y-3">
-    <div className="flex items-center gap-2">
-      <CheckCircle2 className="w-5 h-5 text-green-600" />
-      <h3 className="font-bold text-green-900">Case Outcome Prediction</h3>
-    </div>
-
-    <div className="grid grid-cols-2 gap-4">
-      <div>
-        <p className="text-sm text-green-700 font-medium">Predicted Verdict</p>
-        <p className="text-lg font-bold text-green-900">{prediction.verdict}</p>
-      </div>
-      <div>
-        <p className="text-sm text-green-700 font-medium">Confidence</p>
-        <p className="text-lg font-bold text-green-900">
-          {(prediction.probability * 100).toFixed(1)}%
-        </p>
-      </div>
-    </div>
-
-    {prediction.confidence && (
-      <div>
-        <p className="text-sm text-green-700 font-medium">Risk Level</p>
-        <p className="text-foreground">{prediction.confidence.level}</p>
-      </div>
-    )}
-
-    {prediction.recommendations && prediction.recommendations.length > 0 && (
-      <div>
-        <p className="text-sm text-green-700 font-medium mb-2">Recommendations</p>
-        <ul className="space-y-1">
-          {prediction.recommendations.slice(0, 3).map((rec: string, idx: number) => (
-            <li key={idx} className="text-sm text-foreground flex items-start gap-2">
-              <span className="text-green-600 mt-1">•</span>
-              <span>{rec}</span>
-            </li>
-          ))}
-        </ul>
-      </div>
-    )}
-
-    {/* Mediation nudge */}
-    <Link
-      to="/mediation/create"
-      className="group flex items-center justify-between gap-3 mt-2 bg-white border border-primary/20 rounded-lg px-4 py-3 hover:border-primary/40 hover:shadow-sm transition-all"
-    >
-      <div className="flex items-center gap-2.5">
-        <Scale className="h-4 w-4 text-primary flex-shrink-0" />
-        <div>
-          <p className="text-sm font-medium text-slate-800">Want to resolve this without going to court?</p>
-          <p className="text-xs text-slate-500">Try AI-mediated dispute resolution — both parties submit privately.</p>
-        </div>
-      </div>
-      <ArrowRight className="h-4 w-4 text-primary flex-shrink-0 group-hover:translate-x-0.5 transition-transform" />
-    </Link>
-  </div>
-);
+// ── Component ─────────────────────────────────────────────────────────────────
 
 const ChatNewV2 = () => {
-  // Window scroll initialization
-  useEffect(() => {
-    window.scrollTo({ top: 0, behavior: "auto" });
-  }, []);
+  useEffect(() => { window.scrollTo({ top: 0, behavior: "auto" }); }, []);
 
-  // State management
+  const [mode, setMode]         = useState<ChatMode>("chat");
   const [messages, setMessages] = useState<Message[]>([
     {
-      id: "welcome",
-      text: "Welcome to Smart Legal Assistant",
-      sender: "bot",
+      id:        "welcome",
+      text:      WELCOME.chat,
+      sender:    "bot",
       timestamp: new Date(),
-      type: "options",
-      data: {
-        options: ["Chat & Get Legal Guidance", "Predict Case Outcome", "Consequence Simulator"],
-      },
     },
   ]);
+  const [inputText, setInputText]   = useState("");
+  const [isLoading, setIsLoading]   = useState(false);
 
-  const [mode, setMode] = useState<"chat" | "predict" | "simulate" | null>(null);
-  const [caseContext, setCaseContext] = useState<CaseContext>({});
-  const [currentStep, setCurrentStep] = useState(0);
-  const [inputText, setInputText] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
+  const messagesEndRef    = useRef<HTMLDivElement>(null);
+  const inputRef          = useRef<HTMLInputElement>(null);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const chatContainerRef = useRef<HTMLDivElement>(null);
-  const apiUrl = import.meta.env.VITE_API_URL || "http://localhost:8000";
-  const authToken = localStorage.getItem('sla_token');
-  const authHeader = authToken ? { 'Authorization': `Bearer ${authToken}` } : {};
-
-  // Auto-scroll to bottom
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
-  };
+  const apiUrl    = import.meta.env.VITE_API_URL || "http://localhost:8000";
+  const authToken = localStorage.getItem("sla_token");
+  const authHeader = authToken ? { Authorization: `Bearer ${authToken}` } : {};
 
   useEffect(() => {
-    scrollToBottom();
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  // Handle mode selection (welcome screen)
-  const handleModeSelection = async (selectedMode: "chat" | "predict" | "simulate") => {
-    setMode(selectedMode);
-
-    // Add user selection to messages
-    const modeText = selectedMode === "chat" ? "Chat & Get Legal Guidance" : selectedMode === "predict" ? "Predict Case Outcome" : "Consequence Simulator";
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      text: modeText,
-      sender: "user",
+  // Switch mode — append a bot message announcing the switch
+  const switchMode = (next: ChatMode) => {
+    if (next === mode || isLoading) return;
+    setMode(next);
+    setInputText("");
+    const switchMsg: Message = {
+      id:        Date.now().toString(),
+      text:      WELCOME[next],
+      sender:    "bot",
       timestamp: new Date(),
-      type: "text",
     };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages(prev => [...prev, switchMsg]);
+    setTimeout(() => inputRef.current?.focus(), 50);
+  };
 
-    if (selectedMode === "chat") {
-      // Chat mode - show instructions
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "Great! 📚 I'm here to help you with legal questions. Ask me anything about your legal situation, rights, or any legal matter. I can provide guidance on various areas of law.",
-        sender: "bot",
-        timestamp: new Date(),
-        type: "text",
-      };
-      setMessages((prev) => [...prev, botMsg]);
-    } else if (selectedMode === "predict") {
-      // Prediction mode - start guided questions
-      setCurrentStep(0);
-      const firstQuestion = PREDICTION_STEPS[0];
+  // ── API calls ────────────────────────────────────────────────────────────
 
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        text: firstQuestion.question,
-        sender: "bot",
-        timestamp: new Date(),
-        type: firstQuestion.type as any,
-        data: {
-          fieldName: firstQuestion.fieldName,
-          inputType: firstQuestion.type,
-          options: firstQuestion.options,
-        },
-      };
-      setMessages((prev) => [...prev, botMsg]);
-    } else if (selectedMode === "simulate") {
-      // Simulate mode - ask for planned action
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "⚡ Consequence Simulator\n\nDescribe your planned action or what you want to do. I'll analyze the potential legal consequences and risks based on applicable laws.\n\nFor example: 'I want to record a phone call with my business partner' or 'What happens if I don't pay my property taxes?'",
-        sender: "bot",
-        timestamp: new Date(),
-        type: "text",
-      };
-      setMessages((prev) => [...prev, botMsg]);
+  const callChat = async (query: string) => {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 60000);
+    try {
+      const res = await fetch(`${apiUrl}/query`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body:    JSON.stringify({ query }),
+        signal:  controller.signal,
+      });
+      clearTimeout(tid);
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const data = await res.json();
+      return data.summary || "I can help with that. Could you provide more details?";
+    } catch (e) {
+      clearTimeout(tid);
+      if (e instanceof Error && e.name === "AbortError")
+        return "The request timed out. Please try again.";
+      return "Sorry, I couldn't reach the server. Please try again.";
     }
   };
 
-  // Handle chat mode - send query to backend
-  const handleChatMessage = async (query: string) => {
+  const callSimulate = async (query: string) => {
+    const controller = new AbortController();
+    const tid = setTimeout(() => controller.abort(), 60000);
+    try {
+      const res = await fetch(`${apiUrl}/consequence-simulator/simulate`, {
+        method:  "POST",
+        headers: { "Content-Type": "application/json", ...authHeader },
+        body:    JSON.stringify({ action_description: query, jurisdiction: "India", language: "en" }),
+        signal:  controller.signal,
+      });
+      clearTimeout(tid);
+      if (!res.ok) throw new Error(`Server error ${res.status}`);
+      const d = await res.json();
+
+      let text = d.explanation || "Unable to generate analysis.";
+      if (d.risk_level) {
+        const pct = Math.round((d.confidence_score || 0) * 100);
+        text += `\n\nRisk Level: ${d.risk_level}  (Confidence: ${pct}%)`;
+      }
+      if (d.applicable_laws?.length)
+        text += `\n\nApplicable Laws:\n${d.applicable_laws.map((l: any) => `• ${l.name}${l.section ? ` — ${l.section}` : ""}`).join("\n")}`;
+      if (d.penalties?.length)
+        text += `\n\nPotential Penalties:\n${d.penalties.map((p: any) => `• ${p.description} (${p.severity})`).join("\n")}`;
+      if (d.safer_alternatives?.length)
+        text += `\n\nSafer Alternatives:\n${d.safer_alternatives.map((a: any) => `• ${a.alternative}: ${a.explanation}`).join("\n")}`;
+
+      return text;
+    } catch (e) {
+      clearTimeout(tid);
+      if (e instanceof Error && e.name === "AbortError")
+        return "The analysis timed out. Please try again with a simpler query.";
+      return "Sorry, the consequence analysis failed. Please try again.";
+    }
+  };
+
+  // ── Send ─────────────────────────────────────────────────────────────────
+
+  const handleSend = async () => {
+    const text = inputText.trim();
+    if (!text || isLoading) return;
+
     const userMsg: Message = {
-      id: Date.now().toString(),
-      text: query,
-      sender: "user",
+      id:        Date.now().toString(),
+      text,
+      sender:    "user",
       timestamp: new Date(),
-      type: "text",
     };
-    setMessages((prev) => [...prev, userMsg]);
+    setMessages(prev => [...prev, userMsg]);
     setInputText("");
     setIsLoading(true);
 
-    let timeoutId: NodeJS.Timeout | null = null;
+    const reply = mode === "simulate" ? await callSimulate(text) : await callChat(text);
 
-    try {
-      // Create abort controller with 60 second timeout
-      const controller = new AbortController();
-      timeoutId = setTimeout(() => {
-        console.log("Chat request timeout");
-        controller.abort();
-      }, 60000);
-
-      console.log("[ChatNewV2] Sending query:", query.substring(0, 50) + "...");
-
-      const response = await fetch(`${apiUrl}/query`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader },
-        body: JSON.stringify({ query }),
-        signal: controller.signal,
-      });
-
-      if (timeoutId) clearTimeout(timeoutId);
-
-      console.log("[ChatNewV2] Response received:", response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("[ChatNewV2] Response parsed successfully");
-        const botMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          text: data.summary || "I'll help you with this legal matter.",
-          sender: "bot",
-          timestamp: new Date(),
-          type: "text",
-        };
-        setMessages((prev) => [...prev, botMsg]);
-      } else {
-        console.error("[ChatNewV2] Query failed with status:", response.status);
-        const errorMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          text: `Sorry, I encountered an error (${response.status}). Please try again.`,
-          sender: "bot",
-          timestamp: new Date(),
-          type: "text",
-        };
-        setMessages((prev) => [...prev, errorMsg]);
-      }
-    } catch (error) {
-      console.error("[ChatNewV2] Chat error:", error);
-      let errorText = "Sorry, an error occurred while processing your request.";
-      if (error instanceof Error) {
-        if (error.name === "AbortError") {
-          errorText = "Request timeout - the service took too long to respond. Please try again.";
-        } else {
-          errorText = `Error: ${error.message}`;
-        }
-      }
-      const errorMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        text: errorText,
-        sender: "bot",
-        timestamp: new Date(),
-        type: "text",
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      if (timeoutId) clearTimeout(timeoutId);
-      console.log("[ChatNewV2] Setting isLoading to false");
-      setIsLoading(false);
-    }
-  };
-
-  // Handle simulate mode - send query to consequence simulator
-  const handleSimulateMessage = async (query: string) => {
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      text: query,
-      sender: "user",
+    const botMsg: Message = {
+      id:        (Date.now() + 1).toString(),
+      text:      reply,
+      sender:    "bot",
       timestamp: new Date(),
-      type: "text",
     };
-    setMessages((prev) => [...prev, userMsg]);
-    setInputText("");
-    setIsLoading(true);
-
-    // Add analyzing message
-    const analyzingMsg: Message = {
-      id: (Date.now() + 1).toString(),
-      text: "⚙️ Analyzing consequences and legal risks...",
-      sender: "bot",
-      timestamp: new Date(),
-      type: "text",
-    };
-    setMessages((prev) => [...prev, analyzingMsg]);
-
-    let timeoutId: NodeJS.Timeout | null = null;
-
-    try {
-      // Create abort controller with 60 second timeout
-      const controller = new AbortController();
-      timeoutId = setTimeout(() => {
-        console.log("Simulate request timeout");
-        controller.abort();
-      }, 60000);
-
-      console.log("[ChatNewV2] Sending simulate query:", query.substring(0, 50) + "...");
-
-      const response = await fetch(`${apiUrl}/consequence-simulator/simulate`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader },
-        body: JSON.stringify({
-          action_description: query,
-          jurisdiction: "India",
-          language: "en"
-        }),
-        signal: controller.signal,
-      });
-
-      if (timeoutId) clearTimeout(timeoutId);
-
-      console.log("[ChatNewV2] Simulate response received:", response.status);
-
-      if (response.ok) {
-        const data = await response.json();
-        console.log("[ChatNewV2] Simulate response parsed successfully");
-        
-        // Create a formatted response message from ConsequenceSimulationResult
-        let responseText = data.explanation || "Unable to generate analysis";
-        
-        if (data.risk_level) {
-          const confidencePercent = Math.round((data.confidence_score || 0) * 100);
-          responseText += `\n\n📊 Risk Level: ${data.risk_level} (Confidence: ${confidencePercent}%)`;
-        }
-        
-        if (data.applicable_laws && data.applicable_laws.length > 0) {
-          responseText += `\n\n⚖️ Applicable Laws:\n${data.applicable_laws.map((law: any) => `• ${law.name}${law.section ? ` - ${law.section}` : ''}`).join("\n")}`;
-        }
-        
-        if (data.penalties && data.penalties.length > 0) {
-          responseText += `\n\n⚠️ Potential Penalties:\n${data.penalties.map((penalty: any) => `• ${penalty.description} (${penalty.severity})`).join("\n")}`;
-        }
-        
-        if (data.safer_alternatives && data.safer_alternatives.length > 0) {
-          responseText += `\n\n✅ Safer Alternatives:\n${data.safer_alternatives.map((alt: any) => `• ${alt.alternative}: ${alt.explanation}`).join("\n")}`;
-        }
-
-        const botMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          text: responseText,
-          sender: "bot",
-          timestamp: new Date(),
-          type: "text",
-        };
-        setMessages((prev) => [...prev, botMsg]);
-      } else {
-        console.error("[ChatNewV2] Simulate failed with status:", response.status);
-        const errorMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          text: `Sorry, the analysis failed (${response.status}). Please try again.`,
-          sender: "bot",
-          timestamp: new Date(),
-          type: "text",
-        };
-        setMessages((prev) => [...prev, errorMsg]);
-      }
-    } catch (error) {
-      console.error("[ChatNewV2] Simulate error:", error);
-      let errorText = "Sorry, I couldn't analyze the consequences. Please try again.";
-      if (error instanceof Error) {
-        if (error.name === "AbortError") {
-          errorText = "The analysis took too long. Please try again with a simpler query.";
-        } else {
-          errorText = `Analysis error: ${error.message}`;
-        }
-      }
-      const errorMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        text: errorText,
-        sender: "bot",
-        timestamp: new Date(),
-        type: "text",
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      if (timeoutId) clearTimeout(timeoutId);
-      console.log("[ChatNewV2] Setting isLoading to false (simulate)");
-      setIsLoading(false);
-    }
-  };
-
-  // Handle prediction step answer
-  const handlePredictionAnswer = async (answer: string | number | boolean) => {
-    const currentStepConfig = PREDICTION_STEPS[currentStep];
-
-    // Add user answer to messages
-    let displayAnswer = answer.toString();
-    if (currentStepConfig.type === "appeal_option") {
-      displayAnswer = answer.toString();
-    }
-
-    const userMsg: Message = {
-      id: Date.now().toString(),
-      text: displayAnswer,
-      sender: "user",
-      timestamp: new Date(),
-      type: "text",
-    };
-    setMessages((prev) => [...prev, userMsg]);
-
-    // Update context - apply mapping for case_type field and handle appeal option
-    let processedValue: any = answer;
-    if (currentStepConfig.fieldName === "case_type" && typeof answer === "string") {
-      processedValue = mapCaseTypeToBackend(answer);
-    } else if (currentStepConfig.fieldName === "is_appeal" && typeof answer === "string") {
-      // Map appeal option to boolean: "Appeal or Review" -> true, "Original Case" -> false
-      processedValue = answer === "Appeal or Review" ? true : false;
-    }
-
-    const updatedContext = {
-      ...caseContext,
-      [currentStepConfig.fieldName]: processedValue,
-    };
-    setCaseContext(updatedContext);
-
-    // Move to next step or predict
-    if (currentStep < PREDICTION_STEPS.length - 1) {
-      // More questions
-      const nextStep = currentStep + 1;
-      setCurrentStep(nextStep);
-
-      const nextStepConfig = PREDICTION_STEPS[nextStep];
-      const botMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        text: nextStepConfig.question,
-        sender: "bot",
-        timestamp: new Date(),
-        type: nextStepConfig.type as any,
-        data: {
-          fieldName: nextStepConfig.fieldName,
-          inputType: nextStepConfig.type,
-          options: nextStepConfig.options,
-        },
-      };
-      setMessages((prev) => [...prev, botMsg]);
-    } else {
-      // All questions answered - call predict API
-      await callPredictAPI(updatedContext);
-    }
-
-    setInputText("");
-  };
-
-  // Call case outcome prediction API
-  const callPredictAPI = async (context: CaseContext) => {
-    setIsLoading(true);
-
-    // Add processing message
-    const processingMsg: Message = {
-      id: Date.now().toString(),
-      text: "🔍 Analyzing your case and generating prediction...",
-      sender: "bot",
-      timestamp: new Date(),
-      type: "text",
-    };
-    setMessages((prev) => [...prev, processingMsg]);
-
-    try {
-      const response = await fetch(`${apiUrl}/case-outcome/predict`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json", ...authHeader },
-        body: JSON.stringify({
-          case_name: context.case_name || "Case",
-          case_type: context.case_type || "unknown",
-          year: context.year || new Date().getFullYear(),
-          jurisdiction_state: context.jurisdiction_state || "unknown",
-          damages_awarded: context.damages_awarded || 0,
-          parties_count: context.parties_count || 2,
-          is_appeal: context.is_appeal || false,
-        }),
-      });
-
-      if (response.ok) {
-        const prediction = await response.json();
-
-        // Add prediction result message
-        const resultMsg: Message = {
-          id: (Date.now() + 1).toString(),
-          text: `Prediction for: ${context.case_name}`,
-          sender: "bot",
-          timestamp: new Date(),
-          type: "prediction_result",
-          data: { prediction },
-        };
-        setMessages((prev) => [...prev, resultMsg]);
-
-        // Add follow-up message
-        const followupMsg: Message = {
-          id: (Date.now() + 2).toString(),
-          text: "Would you like to ask any legal questions about this case, or would you like to start a new prediction?",
-          sender: "bot",
-          timestamp: new Date(),
-          type: "text",
-        };
-        setMessages((prev) => [...prev, followupMsg]);
-      } else {
-        throw new Error("Prediction failed");
-      }
-    } catch (error) {
-      console.error("Prediction error:", error);
-      const errorMsg: Message = {
-        id: (Date.now() + 1).toString(),
-        text: "Sorry, I couldn't generate the prediction. Please try again.",
-        sender: "bot",
-        timestamp: new Date(),
-        type: "text",
-      };
-      setMessages((prev) => [...prev, errorMsg]);
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Main send handler
-  const handleSend = () => {
-    if (!inputText.trim()) return;
-
-    if (mode === "chat") {
-      handleChatMessage(inputText);
-    } else if (mode === "simulate") {
-      handleSimulateMessage(inputText);
-    } else if (mode === "predict" && currentStep < PREDICTION_STEPS.length) {
-      const currentStepConfig = PREDICTION_STEPS[currentStep];
-
-      // Validate input based on type
-      if (currentStepConfig.type === "numeric_input") {
-        const numValue = parseFloat(inputText);
-        if (isNaN(numValue)) {
-          alert("Please enter a valid number");
-          return;
-        }
-        handlePredictionAnswer(numValue);
-      } else if (currentStepConfig.type === "text_input") {
-        if (inputText.trim().length === 0) {
-          alert("Please enter a value");
-          return;
-        }
-        handlePredictionAnswer(inputText.trim());
-      }
-    }
+    setMessages(prev => [...prev, botMsg]);
+    setIsLoading(false);
   };
 
   const handleKeyPress = (e: React.KeyboardEvent) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      handleSend();
-    }
+    if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
   };
 
-  // Render message content based on type
-  const renderMessageContent = (message: Message) => {
-    switch (message.type) {
-      case "options":
-        // Check if this is a mode selection (welcome screen) vs prediction question
-        if (message.data?.options?.includes("Chat & Get Legal Guidance")) {
-          // Mode selection - render with ModeSelectionCard
-          return <ModeSelectionCard onSelect={handleModeSelection} isLoading={isLoading} />;
-        }
-        // Regular option buttons
-        return (
-          <div>
-            <p className="text-sm mb-3">{message.text}</p>
-            {message.data?.options && (
-              <OptionButtons
-                options={message.data.options}
-                onSelect={(option) => handlePredictionAnswer(option)}
-                isLoading={isLoading}
-              />
-            )}
-          </div>
-        );
-
-      case "appeal_option":
-        return (
-          <div>
-            <p className="text-sm mb-3">{message.text}</p>
-            {message.data?.options && (
-              <OptionButtons
-                options={message.data.options}
-                onSelect={(option) => handlePredictionAnswer(option)}
-                isLoading={isLoading}
-              />
-            )}
-          </div>
-        );
-
-      case "prediction_result":
-        return (
-          message.data?.prediction && <PredictionResultDisplay prediction={message.data.prediction} />
-        );
-
-      default:
-        return <p className="text-sm whitespace-pre-wrap">{message.text}</p>;
-    }
-  };
-
-  // Input placeholder based on current state
-  const getInputPlaceholder = (): string => {
-    if (mode === "simulate") return "Describe your planned action...";
-    if (!mode) return "Select an option...";
-    if (mode === "chat") return "Ask a legal question...";
-
-    const currentStepConfig = PREDICTION_STEPS[currentStep];
-    if (currentStepConfig?.type === "text_input") return "Enter case name...";
-    if (currentStepConfig?.type === "numeric_input") return "Enter a number...";
-    return "Your answer...";
-  };
-
-  // Check if should show input or options
-  const lastMessage = messages[messages.length - 1];
-  const shouldShowOptions =
-    lastMessage?.type === "options" && lastMessage?.data?.options
-      ? lastMessage.data.options
-      : null;
-
-  const shouldShowNumericInput =
-    lastMessage?.type === "numeric_input" &&
-    PREDICTION_STEPS[currentStep]?.type === "numeric_input";
-
-  const shouldShowAppealOption =
-    lastMessage?.type === "appeal_option";
+  // ── Render ────────────────────────────────────────────────────────────────
 
   return (
     <Layout>
-      <div className="min-h-[calc(100vh-200px)] flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 py-8">
+      <div className="min-h-screen flex flex-col bg-gradient-to-br from-blue-50 via-white to-purple-50 -mt-16 pt-24 pb-8">
         <div className="container mx-auto px-4 max-w-3xl flex-1 flex flex-col">
+
           {/* Header */}
           <div className="text-center mb-6 animate-fade-up">
             <h1 className="text-4xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
-              Smart Legal Assistant
+              Legal Assistant
             </h1>
-            <p className="text-lg text-muted-foreground">
-              Chat for guidance or predict case outcomes with AI-powered analysis
+            <p className="text-muted-foreground text-sm">
+              Ask legal questions or simulate the consequences of a planned action
             </p>
           </div>
 
-          {/* Chat Container */}
+          {/* Mode toggle */}
+          <div className="flex justify-center mb-4 animate-fade-up">
+            <div className="inline-flex bg-gray-100 rounded-xl p-1 gap-1">
+              <button
+                onClick={() => switchMode("chat")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  mode === "chat"
+                    ? "bg-white shadow-sm text-blue-700 border border-blue-100"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <MessageCircle className="w-4 h-4" />
+                Legal Q&amp;A
+              </button>
+              <button
+                onClick={() => switchMode("simulate")}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all ${
+                  mode === "simulate"
+                    ? "bg-white shadow-sm text-purple-700 border border-purple-100"
+                    : "text-gray-500 hover:text-gray-700"
+                }`}
+              >
+                <Zap className="w-4 h-4" />
+                Consequence Simulator
+              </button>
+            </div>
+          </div>
+
+          {/* Chat window */}
           <div className="flex-1 flex flex-col rounded-2xl border-2 border-gray-200 bg-white shadow-xl hover:shadow-2xl transition-shadow duration-300 overflow-hidden">
-            {/* Chat Messages Area */}
-            <div
-              ref={chatContainerRef}
-              className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-blue-300 scrollbar-track-gray-100"
-            >
-              {messages.map((message, index) => (
+
+            {/* Messages */}
+            <div className="flex-1 overflow-y-auto p-6 space-y-4 scrollbar-thin scrollbar-thumb-blue-200 scrollbar-track-gray-100">
+              {messages.map((msg, idx) => (
                 <div
-                  key={message.id}
-                  className={`flex ${message.sender === "user" ? "justify-end" : "justify-start"} animate-fade-up`}
-                  style={{ animationDelay: `${index * 0.05}s` }}
+                  key={msg.id}
+                  className={`flex ${msg.sender === "user" ? "justify-end" : "justify-start"} animate-fade-up`}
+                  style={{ animationDelay: `${idx * 0.03}s` }}
                 >
-                  <div
-                    className={`flex max-w-[85%] ${
-                      message.sender === "user" ? "flex-row-reverse" : "flex-row"
-                    } items-start gap-3`}
-                  >
+                  <div className={`flex max-w-[85%] ${msg.sender === "user" ? "flex-row-reverse" : "flex-row"} items-start gap-3`}>
                     {/* Avatar */}
                     <div
-                      className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
-                        message.sender === "user"
-                          ? "bg-gradient-to-br from-blue-500 to-purple-500 text-white"
-                          : "bg-gradient-to-br from-green-400 to-blue-500 text-white"
+                      className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                        msg.sender === "user"
+                          ? "bg-gradient-to-br from-blue-500 to-purple-500"
+                          : mode === "simulate"
+                          ? "bg-gradient-to-br from-purple-400 to-pink-500"
+                          : "bg-gradient-to-br from-green-400 to-blue-500"
                       }`}
                     >
-                      {message.sender === "user" ? (
-                        <User className="h-4 w-4" />
-                      ) : (
-                        <Bot className="h-4 w-4" />
-                      )}
+                      {msg.sender === "user"
+                        ? <User className="h-4 w-4 text-white" />
+                        : <Bot className="h-4 w-4 text-white" />
+                      }
                     </div>
 
-                    {/* Message bubble */}
+                    {/* Bubble */}
                     <div
                       className={`rounded-2xl px-4 py-3 ${
-                        message.sender === "user"
+                        msg.sender === "user"
                           ? "bg-gradient-to-br from-blue-500 to-purple-600 text-white rounded-br-none shadow-md"
-                          : message.type === "prediction_result"
-                          ? "bg-transparent"
                           : "bg-gray-100 text-foreground rounded-bl-none shadow-sm"
                       }`}
                     >
-                      {renderMessageContent(message)}
-                      {message.type === "text" && (
-                        <p className="text-xs mt-2 opacity-70">
-                          {message.timestamp.toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                      )}
+                      <p className="text-sm whitespace-pre-wrap leading-relaxed">{msg.text}</p>
+                      <p className="text-xs mt-1.5 opacity-60">
+                        {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
+                      </p>
                     </div>
                   </div>
                 </div>
               ))}
 
+              {/* Typing indicator */}
               {isLoading && (
                 <div className="flex justify-start animate-fade-up">
                   <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-green-400 to-blue-500 flex items-center justify-center">
+                    <div className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${
+                      mode === "simulate"
+                        ? "bg-gradient-to-br from-purple-400 to-pink-500"
+                        : "bg-gradient-to-br from-green-400 to-blue-500"
+                    }`}>
                       <Bot className="h-4 w-4 text-white" />
                     </div>
                     <div className="bg-gray-100 rounded-2xl rounded-bl-none px-4 py-3 shadow-sm">
-                      <div className="flex space-x-2">
-                        <div
-                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "0ms" }}
-                        />
-                        <div
-                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "150ms" }}
-                        />
-                        <div
-                          className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
-                          style={{ animationDelay: "300ms" }}
-                        />
+                      <div className="flex space-x-1.5">
+                        {[0, 150, 300].map(delay => (
+                          <div
+                            key={delay}
+                            className="w-2 h-2 bg-gray-400 rounded-full animate-bounce"
+                            style={{ animationDelay: `${delay}ms` }}
+                          />
+                        ))}
                       </div>
                     </div>
                   </div>
                 </div>
               )}
-
               <div ref={messagesEndRef} />
             </div>
 
-            {/* Input Section */}
+            {/* Input bar */}
             <div className="border-t border-gray-200 bg-gray-50 p-4 flex-shrink-0">
-              {shouldShowOptions && mode === null ? (
-                // Mode selection options - handled by ModeSelectionCard in renderMessageContent
-                <div></div>
-              ) : shouldShowAppealOption && mode === "predict" ? (
-                // Appeal option buttons for prediction
-                <OptionButtons
-                  options={PREDICTION_STEPS[currentStep]?.options || []}
-                  onSelect={(option) => handlePredictionAnswer(option)}
-                  isLoading={isLoading}
-                />
-              ) : shouldShowNumericInput && mode === "predict" ? (
-                // Numeric input for damages/year
-                <div className="flex space-x-2">
+              <div className="flex gap-2">
                 <input
-                  type="number"
-                  value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
-                  onKeyPress={handleKeyPress}
-                  placeholder={getInputPlaceholder()}
-                  className="flex-1 px-4 py-3 rounded-lg border-2 border-gray-300 bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                />
-                <button
-                  onClick={handleSend}
-                  disabled={!inputText.trim() || isLoading}
-                  className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 text-white hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
-                >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )}
-                </button>
-              </div>
-              ) : (
-                // Regular text input
-                <div className="flex space-x-2">
-                <input
+                  ref={inputRef}
                   type="text"
                   value={inputText}
-                  onChange={(e) => setInputText(e.target.value)}
+                  onChange={e => setInputText(e.target.value)}
                   onKeyPress={handleKeyPress}
-                  placeholder={getInputPlaceholder()}
                   disabled={isLoading}
-                  className="flex-1 px-4 py-3 rounded-lg border-2 border-gray-300 bg-white text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50"
+                  placeholder={
+                    mode === "simulate"
+                      ? "Describe your planned action or situation…"
+                      : "Ask a legal question…"
+                  }
+                  className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-blue-400 focus:border-transparent transition-all disabled:opacity-50"
                 />
                 <button
                   onClick={handleSend}
                   disabled={!inputText.trim() || isLoading}
-                  className="inline-flex items-center justify-center rounded-lg bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 text-white hover:shadow-lg transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 px-4 py-3 text-white hover:shadow-lg transition-all duration-300 disabled:opacity-40 disabled:cursor-not-allowed"
                 >
-                  {isLoading ? (
-                    <Loader2 className="h-5 w-5 animate-spin" />
-                  ) : (
-                    <Send className="h-5 w-5" />
-                  )}
+                  {isLoading
+                    ? <Loader2 className="h-5 w-5 animate-spin" />
+                    : <Send className="h-5 w-5" />
+                  }
                 </button>
               </div>
-              )}
+
+              {/* Mode hint */}
+              <p className="text-xs text-gray-400 mt-2 text-center">
+                {mode === "simulate"
+                  ? "Describing a planned action? Switch to Consequence Simulator above for richer analysis."
+                  : "Want to predict a case outcome? Visit the"
+                }
+                {mode === "chat" && (
+                  <a href="/predict" className="text-blue-500 hover:underline ml-1">Case Outcome Predictor →</a>
+                )}
+              </p>
             </div>
           </div>
         </div>
