@@ -9,6 +9,7 @@ Index location:    src/data/mediation_training/models/precedent_index.pkl
 """
 
 import os
+import re
 import pickle
 import logging
 import numpy as np
@@ -16,6 +17,20 @@ from typing import List, Optional, Dict, Any
 from sklearn.preprocessing import normalize
 
 logger = logging.getLogger(__name__)
+
+
+def _clean_ocr_spacing(text: str) -> str:
+    """
+    Collapse OCR character-level spacing artifacts.
+    'r e s p o n d e n t s' → 'respondents'
+    'j u d g m e n t' → 'judgment'
+    Matches runs of 3+ single letters each separated by a single space.
+    """
+    return re.sub(
+        r'(?<![A-Za-z])([A-Za-z](?: [A-Za-z]){2,})(?![A-Za-z])',
+        lambda m: m.group(0).replace(" ", ""),
+        text
+    )
 
 _INDEX_PATH = os.path.normpath(
     os.path.join(
@@ -110,9 +125,9 @@ class PrecedentService:
             for idx in top_indices:
                 c = corpus[idx]
                 results.append({
-                    "case_name":  c.get("case_name",  "Unknown"),
+                    "case_name":  _clean_ocr_spacing(c.get("case_name", "Unknown")),
                     "case_type":  c.get("case_type",  "Unknown"),
-                    "summary":    c.get("summary",    ""),
+                    "summary":    _clean_ocr_spacing(c.get("summary",   "")),
                     "outcome":    c.get("outcome",    ""),
                     "similarity": round(float(scores[idx]), 4),
                 })
