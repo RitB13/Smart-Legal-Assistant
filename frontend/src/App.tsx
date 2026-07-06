@@ -14,6 +14,7 @@ import VerifyOtp from "./pages/VerifyOtp";
 import UploadPage from "./pages/Upload";
 import ChatNewV2 from "./pages/ChatNewV2";
 import CasePredictor from "./pages/CasePredictor";
+import PredictionHistory from "./pages/PredictionHistory";
 import RightsPage from "./pages/Rights";
 import NotFound from "./pages/NotFound";
 import MediationHome from "./pages/mediation/MediationHome";
@@ -51,7 +52,8 @@ const App = () => (
 
             {/* Protected routes */}
             <Route path="/chat"    element={<ProtectedRoute><ChatNewV2 /></ProtectedRoute>} />
-            <Route path="/predict" element={<ProtectedRoute><CasePredictor /></ProtectedRoute>} />
+            <Route path="/predict"      element={<ProtectedRoute><CasePredictor /></ProtectedRoute>} />
+            <Route path="/predictions"  element={<ProtectedRoute><PredictionHistory /></ProtectedRoute>} />
             <Route path="/upload"  element={<ProtectedRoute><UploadPage /></ProtectedRoute>} />
 
             {/* Mediation routes — all protected */}

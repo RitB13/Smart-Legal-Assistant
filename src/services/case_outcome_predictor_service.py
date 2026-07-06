@@ -58,7 +58,8 @@ class CaseOutcomePredictorService:
 
             logger.info("[Outcome] Loading InLegalBERT model...")
             self.model = AutoModelForSequenceClassification.from_pretrained(
-                str(MODEL_DIR), local_files_only=True
+                str(MODEL_DIR), local_files_only=True,
+                attn_implementation="eager",  # sdpa does not support output_attentions=True
             )
             self.model.eval()
             self.model.cpu()
@@ -368,7 +369,8 @@ class CaseOutcomePredictorService:
             '  "key_factors": ["<factor influencing prediction 1>", "<factor 2>", "<factor 3>"],\n'
             '  "risk_assessment": "<1-2 sentences: practical implications of the risk level>",\n'
             '  "recommendations": ["<concrete next step 1>", "<next step 2>", "<next step 3>"],\n'
-            f'  "confidence_note": "<1 sentence on what {confidence:.0f}% confidence means practically>"\n'
+            f'  "confidence_note": "<1 sentence on what {confidence:.0f}% confidence means practically>",\n'
+            '  "counter_arguments": ["<respondent\'s strongest legal argument 1>", "<argument 2>", "<argument 3>"]\n'
             "}"
         )
 
@@ -419,9 +421,9 @@ class CaseOutcomePredictorService:
                 "base_model":    "law-ai/InLegalBERT",
                 "task":          "binary_outcome_classification",
                 "dataset":       "NyayaAnumana + IL-TUR CJPE (ILDC) + Jud-IPL",
-                "test_accuracy": "72.8%",
-                "f1_weighted":   "72.0%",
-                "f1_macro":      "69.5%",
+                "test_accuracy": "68.0%",
+                "f1_weighted":   "67.6%",
+                "f1_macro":      "67.7%",
                 "model_dir":     str(MODEL_DIR),
             },
         }

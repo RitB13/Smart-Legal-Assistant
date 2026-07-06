@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Scale, Menu, X, LogOut, User, ChevronDown } from 'lucide-react';
+import { Scale, Menu, X, LogOut, User, ChevronDown, History } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 
@@ -94,6 +94,13 @@ export default function Header() {
                         <p className="text-xs font-semibold text-slate-800 truncate">{user?.name}</p>
                         <p className="text-xs text-slate-400 truncate">{user?.email}</p>
                       </div>
+                      <Link
+                        to="/predictions"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors"
+                      >
+                        <History className="h-4 w-4" /> My Predictions
+                      </Link>
                       <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-red-600 transition-colors"
@@ -150,6 +157,17 @@ export default function Header() {
             ))}
             <div className="border-t border-slate-100 pt-2 mt-2">
               <div className="px-3 py-1 text-xs text-slate-400 font-medium">{user?.email}</div>
+              <Link
+                to="/predictions"
+                onClick={() => setMobileOpen(false)}
+                className={`block px-3 py-2.5 text-sm rounded-lg transition-colors ${
+                  isActive('/predictions')
+                    ? 'bg-primary/8 text-primary font-medium'
+                    : 'text-slate-600 hover:bg-slate-50'
+                }`}
+              >
+                My Predictions
+              </Link>
               <button
                 onClick={handleLogout}
                 className="w-full text-left px-3 py-2.5 text-sm text-red-600 hover:bg-red-50 rounded-lg transition-colors flex items-center gap-2"
