@@ -29,6 +29,14 @@ class CaseInputModel(BaseModel):
         le=10,
         description="Number of parties involved in the case (1-10)"
     )
+    role: Optional[str] = Field(
+        None,
+        description="Role of the person submitting: 'petitioner' or 'respondent'"
+    )
+    relief_sought: Optional[str] = Field(
+        None,
+        description="Plain-language description of what outcome the person is seeking"
+    )
     
     class Config:
         json_schema_extra = {
@@ -113,6 +121,7 @@ class CaseOutcomePredictionResponse(BaseModel):
     similar_cases: List[SimilarCase] = Field(default_factory=list, description="Most similar historical cases")
     risk_assessment: Dict[str, Any] = Field(..., description="Risk assessment based on prediction")
     recommendations: List[str] = Field(default_factory=list, description="Recommendations based on prediction")
+    llm_analysis: Optional[Dict[str, Any]] = Field(None, description="LLM-generated legal analysis enriching the ML prediction")
     timestamp: datetime = Field(default_factory=datetime.utcnow, description="When prediction was made")
     
     class Config:

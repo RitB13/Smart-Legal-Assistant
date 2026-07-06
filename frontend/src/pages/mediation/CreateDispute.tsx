@@ -15,7 +15,8 @@ export default function CreateDispute() {
   const [error, setError] = useState('');
 
   const recognitionRef   = useRef<any>(null);
-  const descriptionRef   = useRef('');   // tracks current case_description for voice handler
+  const descriptionRef   = useRef('');    // tracks current case_description for voice handler
+  const shouldListenRef  = useRef(false); // intent flag — survives onend/onerror closures
   const [isListening,     setIsListening]     = useState(false);
   const [voiceSupported,  setVoiceSupported]  = useState(false);
   const [voiceError,      setVoiceError]      = useState('');
@@ -30,15 +31,10 @@ export default function CreateDispute() {
     return () => { recognitionRef.current?.abort(); };
   }, []);
 
-  function toggleVoice() {
-    if (isListening) {
-      recognitionRef.current?.stop();
-      return;
-    }
+  function startRecognition() {
     const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR) return;
+    if (!SR || !shouldListenRef.current) return;
 
-    setVoiceError('');
     const recognition = new SR();
     recognition.continuous     = true;
     recognition.interimResults = true;
@@ -62,23 +58,52 @@ export default function CreateDispute() {
     };
 
     recognition.onerror = (event: any) => {
-      setVoiceError(
-        event.error === 'not-allowed'
-          ? 'Microphone access denied. Please allow microphone access in your browser settings.'
-          : 'Voice input error. Please try again.'
-      );
+      // no-speech and aborted are non-fatal — let onend handle the restart
+      if (event.error === 'no-speech' || event.error === 'aborted') return;
+
+      shouldListenRef.current = false;
       setIsListening(false);
       setInterimText('');
+
+      if (event.error === 'not-allowed') {
+        setVoiceError('Microphone access denied. Please allow microphone access in your browser settings.');
+      } else if (event.error === 'network') {
+        setVoiceError('Voice input is not supported in this browser. Please use Chrome or Edge.');
+      } else {
+        setVoiceError(`Voice error: ${event.error}. Please try again.`);
+      }
     };
 
     recognition.onend = () => {
-      setIsListening(false);
       setInterimText('');
+      if (shouldListenRef.current) {
+        // Session ended naturally — restart immediately for continuous recording
+        setTimeout(() => startRecognition(), 120);
+      } else {
+        setIsListening(false);
+      }
     };
 
     recognitionRef.current = recognition;
-    recognition.start();
+    try {
+      recognition.start();
+    } catch {
+      setTimeout(() => startRecognition(), 200);
+    }
+  }
+
+  function toggleVoice() {
+    if (isListening) {
+      shouldListenRef.current = false;
+      recognitionRef.current?.stop();
+      setIsListening(false);
+      setInterimText('');
+      return;
+    }
+    setVoiceError('');
+    shouldListenRef.current = true;
     setIsListening(true);
+    startRecognition();
   }
 
   async function fixTranscript() {
@@ -151,7 +176,7 @@ export default function CreateDispute() {
 
   return (
     <Layout>
-      <div className="max-w-2xl mx-auto px-4 py-12">
+      <div className="max-w-2xl mx-auto px-4 pb-12 pt-6">
         {/* Back */}
         <button
           onClick={() => navigate('/mediation')}
