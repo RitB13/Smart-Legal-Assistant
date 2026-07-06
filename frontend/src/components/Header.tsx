@@ -7,7 +7,6 @@ const NAV_LINKS = [
   { path: '/chat',      label: 'Legal Assistant' },
   { path: '/predict',   label: 'Case Predictor' },
   { path: '/mediation', label: 'Mediation' },
-  { path: '/upload',    label: 'Documents' },
   { path: '/rights',    label: 'Know Your Rights' },
 ];
 
