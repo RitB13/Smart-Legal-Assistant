@@ -1,12 +1,12 @@
-import { FileText, MessageSquare, Shield, ArrowRight, Scale, TrendingUp, Sparkles, CheckCircle, Star } from "lucide-react";
+import { MessageSquare, Shield, ArrowRight, Scale, TrendingUp, Sparkles, CheckCircle, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
 
 const FEATURES = [
   {
     icon: MessageSquare,
-    title: "Legal Chatbot",
-    desc: "Chat with our AI to understand your legal situation and explore your options in plain English.",
+    title: "Legal Assistant",
+    desc: "Ask anything about your legal situation and get clear, plain-language guidance under Indian law.",
     link: "/chat",
     iconBg: "bg-gradient-to-br from-blue-500 to-cyan-500",
     cardBg: "bg-gradient-to-br from-blue-50 to-cyan-50",
@@ -15,36 +15,21 @@ const FEATURES = [
   {
     icon: TrendingUp,
     title: "Case Predictor",
-    desc: "Predict your case outcome using AI trained on thousands of Indian High Court judgments.",
+    desc: "Describe your case and our AI analyses likely outcomes based on real Indian court judgments.",
     link: "/predict",
     iconBg: "bg-gradient-to-br from-violet-500 to-indigo-500",
     cardBg: "bg-gradient-to-br from-violet-50 to-indigo-50",
     border: "hover:border-violet-200",
   },
   {
-    icon: FileText,
-    title: "Document Analysis",
-    desc: "Upload legal documents and get instant plain-language explanations and risk scores.",
-    link: "/upload",
-    iconBg: "bg-gradient-to-br from-teal-500 to-emerald-500",
-    cardBg: "bg-gradient-to-br from-teal-50 to-emerald-50",
-    border: "hover:border-teal-200",
-  },
-  {
     icon: Shield,
     title: "Know Your Rights",
-    desc: "Explore your constitutional and consumer rights under Indian law, clearly explained.",
+    desc: "Explore your constitutional, consumer, and fundamental rights under Indian law — clearly explained.",
     link: "/rights",
     iconBg: "bg-gradient-to-br from-orange-500 to-amber-400",
     cardBg: "bg-gradient-to-br from-orange-50 to-amber-50",
     border: "hover:border-orange-200",
   },
-];
-
-const STATS = [
-  { value: "71,000+", label: "Indian Court Cases" },
-  { value: "72.8%",   label: "Prediction Accuracy" },
-  { value: "5+",      label: "AI Legal Tools" },
 ];
 
 /* ── Faded SVG illustrations ─────────────────────────────────────────────── */
@@ -93,6 +78,53 @@ function Gavel({ className }: { className?: string }) {
   );
 }
 
+function AnimatedScales({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 260 320" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} aria-hidden>
+      {/* Dark mode glow behind the ornament */}
+      <circle
+        cx="130" cy="52" r="44"
+        fill="currentColor"
+        className="hidden dark:block"
+        style={{ animation: 'glow-pulse 3s ease-in-out infinite' }}
+      />
+
+      {/* Everything floats together */}
+      <g style={{ animation: 'scales-float 6s ease-in-out infinite' }}>
+        {/* Base plate + pedestal — static within the float */}
+        <rect x="120" y="278" width="20" height="32" rx="4" fill="currentColor" />
+        <rect x="86" y="272" width="88" height="10" rx="5" fill="currentColor" />
+        {/* Pillar */}
+        <rect x="128" y="60" width="4" height="216" rx="2" fill="currentColor" />
+        {/* Top ornament */}
+        <circle cx="130" cy="52" r="10" fill="currentColor" />
+        <circle cx="130" cy="52" r="5" fill="white" fillOpacity="0.5" />
+
+        {/* Crossbeam — rocks around its center (130, 98) */}
+        <g style={{ animation: 'beam-rock 4s ease-in-out infinite', transformOrigin: '130px 98px' }}>
+          <rect x="22" y="96" width="216" height="5" rx="2.5" fill="currentColor" />
+        </g>
+
+        {/* Left suspension + pan — swings around its center (64, 140) */}
+        <g style={{ animation: 'pan-left-swing 4s ease-in-out infinite', transformOrigin: '64px 140px' }}>
+          <line x1="44" y1="101" x2="44" y2="150" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="5 4" />
+          <line x1="84" y1="101" x2="84" y2="150" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="5 4" />
+          <path d="M24 150 Q64 178 104 150" stroke="currentColor" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+          <line x1="24" y1="150" x2="104" y2="150" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.4" />
+        </g>
+
+        {/* Right suspension + pan — swings counter to left (196, 140) */}
+        <g style={{ animation: 'pan-right-swing 4s ease-in-out infinite', transformOrigin: '196px 140px' }}>
+          <line x1="176" y1="101" x2="176" y2="150" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="5 4" />
+          <line x1="216" y1="101" x2="216" y2="150" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeDasharray="5 4" />
+          <path d="M156 150 Q196 178 236 150" stroke="currentColor" strokeWidth="3.5" fill="none" strokeLinecap="round" />
+          <line x1="156" y1="150" x2="236" y2="150" stroke="currentColor" strokeWidth="1.5" strokeOpacity="0.4" />
+        </g>
+      </g>
+    </svg>
+  );
+}
+
 function LegalDocument({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 160 200" fill="none" xmlns="http://www.w3.org/2000/svg" className={className} aria-hidden>
@@ -131,8 +163,8 @@ const Home = () => {
           <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-indigo-100/40 dark:bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
 
           {/* ── Faded legal illustrations ── */}
-          {/* Scales — right side, large */}
-          <ScalesOfJustice className="absolute right-[-40px] top-1/2 -translate-y-1/2 w-[340px] h-[340px] text-blue-400 opacity-[0.10] pointer-events-none select-none" />
+          {/* Animated scales — right side, large */}
+          <AnimatedScales className="absolute right-[-20px] top-1/2 -translate-y-1/2 w-[320px] h-[380px] text-blue-500 opacity-[0.18] dark:text-blue-400 dark:opacity-[0.14] pointer-events-none select-none" />
           {/* Gavel — bottom left */}
           <Gavel className="absolute left-8 bottom-28 w-[180px] h-[180px] text-blue-500 opacity-[0.09] pointer-events-none select-none" />
           {/* Document — top left */}
@@ -161,8 +193,7 @@ const Home = () => {
 
               {/* Subtitle */}
               <p className="text-lg md:text-xl text-slate-500 dark:text-slate-300 font-medium leading-relaxed max-w-2xl mx-auto mb-10">
-                Your AI-powered guide to legal documents, queries, and rights.
-                Making law accessible for every Indian citizen.
+                Ask legal questions, predict case outcomes, and resolve disputes — all powered by AI trained on Indian law.
               </p>
 
               {/* CTAs */}
@@ -182,15 +213,6 @@ const Home = () => {
                 </Link>
               </div>
 
-              {/* Stats pill */}
-              <div className="inline-flex flex-col sm:flex-row items-center gap-6 sm:gap-10 bg-white/70 backdrop-blur-sm border border-slate-100 rounded-2xl px-8 py-5 shadow-sm dark:bg-slate-800/60 dark:border-slate-700">
-                {STATS.map((s, i) => (
-                  <div key={i} className={`text-center ${i < STATS.length - 1 ? "sm:pr-10 sm:border-r sm:border-slate-200 dark:sm:border-slate-700" : ""}`}>
-                    <div className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{s.value}</div>
-                    <div className="text-xs text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-widest mt-0.5">{s.label}</div>
-                  </div>
-                ))}
-              </div>
 
             </div>
           </div>
@@ -210,10 +232,10 @@ const Home = () => {
             <div className="text-center mb-14">
               <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] mb-3">What We Offer</p>
               <h2 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">
-                Everything you need, legally
+                Four tools, one platform
               </h2>
               <p className="text-lg text-slate-400 max-w-xl mx-auto">
-                From understanding your rights to resolving disputes — our AI handles it all.
+                From understanding your rights to predicting case outcomes — built specifically for Indian law.
               </p>
             </div>
 
@@ -243,7 +265,7 @@ const Home = () => {
             </div>
 
             {/* 4 feature cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               {FEATURES.map((f) => {
                 const Icon = f.icon;
                 return (
@@ -272,9 +294,9 @@ const Home = () => {
           <div className="container mx-auto px-4 max-w-4xl">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12 text-center">
               {[
-                { icon: Star,        text: "Trained on real Indian court data" },
-                { icon: CheckCircle, text: "InLegalBERT — purpose-built legal AI" },
-                { icon: Shield,      text: "Private & secure — data never shared" },
+                { icon: Star,        text: "Built for Indian law & Indian citizens" },
+                { icon: CheckCircle, text: "Powered by InLegalBERT — a legal-domain AI" },
+                { icon: Shield,      text: "Private & secure — your data stays yours" },
               ].map(({ icon: Icon, text }, i) => (
                 <div key={i} className="flex items-center gap-2 text-slate-500 text-sm font-medium">
                   <Icon className="h-4 w-4 text-blue-500 flex-shrink-0" />

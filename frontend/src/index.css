@@ -412,3 +412,29 @@ All colors MUST be HSL.
 .dark .border-b { border-bottom-color: #1a2f52; }
 .dark .border-t { border-top-color: #1a2f52; }
 .dark .divide-y > * + * { border-top-color: #1a2f52; }
+
+/* ── Scales animation ── */
+@keyframes scales-float {
+  0%, 100% { transform: translateY(0px); }
+  50%       { transform: translateY(-14px); }
+}
+
+@keyframes beam-rock {
+  0%, 100% { transform: rotate(-6deg); }
+  50%       { transform: rotate(6deg); }
+}
+
+@keyframes pan-left-swing {
+  0%, 100% { transform: translateY(-12px); }
+  50%       { transform: translateY(12px); }
+}
+
+@keyframes pan-right-swing {
+  0%, 100% { transform: translateY(12px); }
+  50%       { transform: translateY(-12px); }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { opacity: 0.6; }
+  50%       { opacity: 1; }
+}

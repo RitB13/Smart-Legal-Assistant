@@ -19,7 +19,7 @@ import logging
 from src.routes.auth_routes import get_current_user
 from src.services.auth_service import TokenData
 from src.services.conversation_service import ConversationService
-from src.models.db_models import Conversation, MessageInConversation
+from src.models.db_models import Conversation, MessageInConversation, ConversationCreate as DBConversationCreate
 
 logger = logging.getLogger(__name__)
 
@@ -129,10 +129,11 @@ async def create_conversation(
         logger.info(f"[CONV] Creating conversation for user {current_user.user_id}")
         
         conversation = ConversationService.create_conversation(
-            user_id=current_user.user_id,
-            title=request.title or f"Conversation {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-            case_type=request.case_type,
-            jurisdiction=request.jurisdiction
+            DBConversationCreate(
+                user_id=current_user.user_id,
+                title=request.title or f"Conversation {datetime.now().strftime('%Y-%m-%d %H:%M')}",
+                language="en"
+            )
         )
         
         if not conversation:
@@ -148,14 +149,14 @@ async def create_conversation(
             _id=str(conversation.id),
             user_id=str(conversation.user_id),
             title=conversation.title,
-            case_type=conversation.case_type,
-            jurisdiction=conversation.jurisdiction,
+            case_type="general",
+            jurisdiction="india",
             messages=[],
             created_at=conversation.created_at,
             updated_at=conversation.updated_at,
             message_count=0
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -191,7 +192,6 @@ async def get_conversations(
         
         conversations = ConversationService.get_user_conversations(
             user_id=current_user.user_id,
-            skip=skip,
             limit=limit
         )
         
@@ -201,8 +201,8 @@ async def get_conversations(
                 _id=str(conv.id),
                 user_id=str(conv.user_id),
                 title=conv.title,
-                case_type=conv.case_type,
-                jurisdiction=conv.jurisdiction,
+                case_type="general",
+                jurisdiction="india",
                 messages=[],
                 created_at=conv.created_at,
                 updated_at=conv.updated_at,
@@ -263,24 +263,24 @@ async def get_conversation(
                 role=msg.role,
                 content=msg.content,
                 timestamp=msg.timestamp,
-                case_type=msg.case_type,
-                analyzed_entities=msg.analyzed_entities
+                case_type=None,
+                analyzed_entities=None
             )
             for msg in conversation.messages
         ] if conversation.messages else []
-        
+
         return ConversationResponse(
             _id=str(conversation.id),
             user_id=str(conversation.user_id),
             title=conversation.title,
-            case_type=conversation.case_type,
-            jurisdiction=conversation.jurisdiction,
+            case_type="general",
+            jurisdiction="india",
             messages=messages,
             created_at=conversation.created_at,
             updated_at=conversation.updated_at,
             message_count=len(conversation.messages) if conversation.messages else 0
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -347,24 +347,24 @@ async def update_conversation(
                 role=msg.role,
                 content=msg.content,
                 timestamp=msg.timestamp,
-                case_type=msg.case_type,
-                analyzed_entities=msg.analyzed_entities
+                case_type=None,
+                analyzed_entities=None
             )
             for msg in conversation.messages
         ] if conversation.messages else []
-        
+
         return ConversationResponse(
             _id=str(conversation.id),
             user_id=str(conversation.user_id),
             title=conversation.title,
-            case_type=conversation.case_type,
-            jurisdiction=conversation.jurisdiction,
+            case_type="general",
+            jurisdiction="india",
             messages=messages,
             created_at=conversation.created_at,
             updated_at=conversation.updated_at,
             message_count=len(conversation.messages) if conversation.messages else 0
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
@@ -469,11 +469,9 @@ async def add_message_to_conversation(
         
         # Add message to conversation
         conversation = ConversationService.add_message(
-            conversation_id=conversation_id,
+            conv_id=conversation_id,
             role=request.role,
-            content=request.content,
-            case_type=request.case_type,
-            analyzed_entities=request.analyzed_entities
+            content=request.content
         )
         
         if not conversation:
@@ -490,24 +488,24 @@ async def add_message_to_conversation(
                 role=msg.role,
                 content=msg.content,
                 timestamp=msg.timestamp,
-                case_type=msg.case_type,
-                analyzed_entities=msg.analyzed_entities
+                case_type=None,
+                analyzed_entities=None
             )
             for msg in conversation.messages
         ] if conversation.messages else []
-        
+
         return ConversationResponse(
             _id=str(conversation.id),
             user_id=str(conversation.user_id),
             title=conversation.title,
-            case_type=conversation.case_type,
-            jurisdiction=conversation.jurisdiction,
+            case_type="general",
+            jurisdiction="india",
             messages=messages,
             created_at=conversation.created_at,
             updated_at=conversation.updated_at,
             message_count=len(conversation.messages) if conversation.messages else 0
         )
-        
+
     except HTTPException:
         raise
     except Exception as e:
