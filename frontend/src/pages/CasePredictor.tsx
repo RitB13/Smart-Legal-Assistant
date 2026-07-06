@@ -130,6 +130,20 @@ const PredictionResult = ({
     ? llm.recommendations
     : prediction.recommendations || [];
 
+  const confNum            = parseFloat(confPct);
+  const riskLevel          = prediction.risk_level || "";
+  const showMediation      =
+    !isAccepted ||
+    confNum < 70 ||
+    riskLevel === "high" ||
+    riskLevel === "very_high";
+  const mediationHeadline  = !isAccepted
+    ? "The model predicts an unfavorable outcome"
+    : "The model is uncertain about this outcome";
+  const mediationBody      = !isAccepted
+    ? "Going to court carries significant risk here. AI Mediation lets both parties reach a fair settlement privately — faster, cheaper, and without a judge."
+    : "When confidence is below 70%, outcomes can go either way. AI Mediation may give you a faster, more certain resolution than litigation.";
+
   return (
     <div className="space-y-4 animate-fade-up">
       {/* Banner */}
@@ -169,6 +183,42 @@ const PredictionResult = ({
           </p>
         )}
       </div>
+
+      {/* ── Mediation suggestion ─────────────────────────────────────────── */}
+      {showMediation && (
+        <div className="rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-5">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md">
+              <Scale className="w-5 h-5 text-white" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-bold text-indigo-900 mb-1">
+                {mediationHeadline} — consider AI Mediation
+              </p>
+              <p className="text-xs text-indigo-700 leading-relaxed mb-4">
+                {mediationBody}
+              </p>
+              <div className="flex flex-col sm:flex-row gap-2">
+                <Link
+                  to="/mediation/create"
+                  state={{ prediction_id: prediction.prediction_id }}
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl bg-gradient-to-r from-indigo-600 to-purple-600 text-xs font-bold text-white shadow hover:shadow-md hover:opacity-90 transition-all"
+                >
+                  <Scale className="w-3.5 h-3.5" />
+                  Start AI Mediation
+                  <ArrowRight className="w-3.5 h-3.5" />
+                </Link>
+                <Link
+                  to="/mediation"
+                  className="inline-flex items-center justify-center gap-2 px-4 py-2 rounded-xl border border-indigo-200 bg-white text-xs font-medium text-indigo-700 hover:bg-indigo-50 transition-all"
+                >
+                  Learn how it works
+                </Link>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Legal reasoning */}
       {llm?.legal_reasoning && (
