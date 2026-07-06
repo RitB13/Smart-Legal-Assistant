@@ -296,18 +296,21 @@ const CasePredictor = () => {
 
   const textareaRef     = useRef<HTMLTextAreaElement>(null);
   const locationRef     = useRef<HTMLInputElement>(null);
-  const recognitionRef  = useRef<any>(null);
-  const statementRef    = useRef("");    // tracks statement for voice handler closure
-  const shouldListenRef = useRef(false); // intent flag — survives onend/onerror closures
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef   = useRef<Blob[]>([]);
+  const streamRef        = useRef<MediaStream | null>(null);
+  const timerRef         = useRef<ReturnType<typeof setInterval> | null>(null);
+  const statementRef     = useRef("");
 
   // Voice state
-  const [isListening,    setIsListening]    = useState(false);
-  const [voiceSupported, setVoiceSupported] = useState(false);
-  const [voiceError,     setVoiceError]     = useState("");
-  const [interimText,    setInterimText]    = useState("");
-  const [hasUsedVoice,   setHasUsedVoice]   = useState(false);
-  const [correcting,     setCorrecting]     = useState(false);
-  const [fixStatus,      setFixStatus]      = useState<"idle" | "fixed" | "error">("idle");
+  const [isRecording,      setIsRecording]      = useState(false);
+  const [isTranscribing,   setIsTranscribing]   = useState(false);
+  const [voiceSupported,   setVoiceSupported]   = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [voiceError,       setVoiceError]       = useState("");
+  const [hasUsedVoice,     setHasUsedVoice]     = useState(false);
+  const [correcting,       setCorrecting]       = useState(false);
+  const [fixStatus,        setFixStatus]        = useState<"idle" | "fixed" | "error">("idle");
 
   const apiUrl     = import.meta.env.VITE_API_URL || "http://localhost:8000";
   const authToken  = localStorage.getItem("sla_token");
@@ -315,11 +318,17 @@ const CasePredictor = () => {
 
   const progress = Math.round((step / STEP_LABELS.length) * 100);
 
-  // Voice API detection + cleanup
+  // Voice support detection + cleanup
   useEffect(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    setVoiceSupported(!!SR);
-    return () => { recognitionRef.current?.abort(); };
+    setVoiceSupported(
+      typeof MediaRecorder !== "undefined" &&
+      !!navigator.mediaDevices?.getUserMedia
+    );
+    return () => {
+      if (mediaRecorderRef.current?.state !== "inactive") mediaRecorderRef.current?.stop();
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, []);
 
   // Focus management
@@ -337,82 +346,95 @@ const CasePredictor = () => {
     setFixStatus("idle");
   };
 
-  // ── Voice helpers ─────────────────────────────────────────────────────────
+  // ── Voice helpers (MediaRecorder → Groq Whisper) ─────────────────────────
 
-  function startRecognition() {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR || !shouldListenRef.current) return;
+  function getBestMimeType(): string {
+    const types = [
+      "audio/webm;codecs=opus",
+      "audio/webm",
+      "audio/ogg;codecs=opus",
+      "audio/ogg",
+      "audio/mp4",
+    ];
+    for (const t of types) {
+      if (typeof MediaRecorder !== "undefined" && MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return "";
+  }
 
-    const recognition = new SR();
-    recognition.continuous     = true;
-    recognition.interimResults = true;
-    recognition.lang           = "en-IN";
+  function formatTime(s: number): string {
+    const m   = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, "0")}`;
+  }
 
-    recognition.onresult = (event: any) => {
-      let interim = "";
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          const current = statementRef.current;
-          updateStatement(current + (current.trim() ? " " : "") + transcript.trim());
-          setInterimText("");
-          setHasUsedVoice(true);
-        } else {
-          interim += transcript;
-        }
-      }
-      if (interim) setInterimText(interim);
-    };
-
-    recognition.onerror = (event: any) => {
-      // no-speech and aborted are non-fatal — let onend handle the restart
-      if (event.error === "no-speech" || event.error === "aborted") return;
-
-      // Fatal errors — stop and show message
-      shouldListenRef.current = false;
-      setIsListening(false);
-      setInterimText("");
-
-      if (event.error === "not-allowed") {
-        setVoiceError("Microphone access denied. Please allow microphone access in your browser settings.");
-      } else if (event.error === "network") {
-        setVoiceError("Voice input is not supported in this browser. Please use Chrome or Edge.");
-      } else {
-        setVoiceError(`Voice error: ${event.error}. Please try again.`);
-      }
-    };
-
-    recognition.onend = () => {
-      setInterimText("");
-      if (shouldListenRef.current) {
-        // Session ended naturally (pause, network blip, etc.) — restart immediately
-        setTimeout(() => startRecognition(), 120);
-      } else {
-        setIsListening(false);
-      }
-    };
-
-    recognitionRef.current = recognition;
+  async function startRecording() {
+    setVoiceError("");
     try {
-      recognition.start();
-    } catch {
-      // start() throws if called while another session is still active
-      setTimeout(() => startRecognition(), 200);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      const mimeType = getBestMimeType();
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current   = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      recorder.onstop = async () => {
+        const blob = new Blob(audioChunksRef.current, { type: mimeType || "audio/webm" });
+        await transcribeAudio(blob, mimeType || "audio/webm");
+      };
+
+      recorder.start(500);
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      timerRef.current = setInterval(() => setRecordingSeconds(s => s + 1), 1000);
+    } catch (err: any) {
+      if (err.name === "NotAllowedError") {
+        setVoiceError("Microphone access denied. Please allow microphone access in your browser settings.");
+      } else {
+        setVoiceError("Could not access microphone. Please check your device settings.");
+      }
     }
   }
 
-  function toggleVoice() {
-    if (isListening) {
-      shouldListenRef.current = false;
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      setInterimText("");
-      return;
+  function stopRecording() {
+    setIsRecording(false);
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (mediaRecorderRef.current?.state !== "inactive") mediaRecorderRef.current?.stop();
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+  }
+
+  async function transcribeAudio(blob: Blob, mimeType: string) {
+    setIsTranscribing(true);
+    try {
+      const ext      = mimeType.includes("webm") ? "webm" : mimeType.includes("ogg") ? "ogg" : "mp4";
+      const formData = new FormData();
+      formData.append("audio", blob, `recording.${ext}`);
+
+      const res = await fetch(`${apiUrl}/mediation/voice/transcribe`, {
+        method:  "POST",
+        headers: { ...authHeader },
+        body:    formData,
+      });
+      if (!res.ok) throw new Error("Transcription failed");
+
+      const data       = await res.json();
+      const transcript = (data.transcript || "").trim();
+      if (transcript) {
+        const current = statementRef.current;
+        updateStatement(current + (current.trim() ? " " : "") + transcript);
+        setHasUsedVoice(true);
+        setFixStatus("idle");
+      }
+    } catch {
+      setVoiceError("Transcription failed. Please check your connection and try again.");
+    } finally {
+      setIsTranscribing(false);
     }
-    setVoiceError("");
-    shouldListenRef.current = true;
-    setIsListening(true);
-    startRecognition();
   }
 
   async function fixTranscript() {
@@ -605,22 +627,27 @@ const CasePredictor = () => {
                       </div>
 
                       {/* Voice button */}
-                      {voiceSupported && (
+                      {voiceSupported && !isTranscribing && (
                         <button
                           type="button"
-                          onClick={toggleVoice}
-                          title={isListening ? "Stop recording" : "Speak your statement"}
+                          onClick={isRecording ? stopRecording : startRecording}
+                          title={isRecording ? "Stop recording" : "Speak your statement"}
                           className={`flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border transition-all mt-1 ${
-                            isListening
+                            isRecording
                               ? "bg-red-50 text-red-600 border-red-300 animate-pulse"
                               : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
                           }`}
                         >
-                          {isListening
-                            ? <><MicOff className="w-3.5 h-3.5" /> Stop</>
+                          {isRecording
+                            ? <><MicOff className="w-3.5 h-3.5" /> Stop · {formatTime(recordingSeconds)}</>
                             : <><Mic className="w-3.5 h-3.5" /> Speak</>
                           }
                         </button>
+                      )}
+                      {isTranscribing && (
+                        <span className="flex-shrink-0 flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-violet-200 bg-violet-50 text-violet-600 mt-1">
+                          <Loader2 className="w-3.5 h-3.5 animate-spin" /> Transcribing…
+                        </span>
                       )}
                     </div>
 
@@ -650,29 +677,23 @@ const CasePredictor = () => {
                           `I want to recover my dues and seek legal remedy for wrongful termination."`
                         }
                         className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none transition-colors resize-none leading-relaxed ${
-                          isListening
+                          isRecording
                             ? "border-red-300 ring-2 ring-red-100 focus:border-red-400"
                             : "border-gray-200 focus:border-blue-400"
                         }`}
                       />
 
-                      {/* Listening indicator */}
-                      {isListening && (
-                        <div className="flex items-start gap-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-                          <span className="mt-0.5 flex-shrink-0 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                          <span>
-                            Listening… speak clearly in English
-                            {interimText && (
-                              <span className="text-gray-500 ml-1">
-                                — <em>"{interimText.slice(0, 80)}{interimText.length > 80 ? "…" : ""}"</em>
-                              </span>
-                            )}
-                          </span>
+                      {/* Recording indicator */}
+                      {isRecording && (
+                        <div className="flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                          <span className="flex-shrink-0 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                          <span>Recording… speak clearly — <strong>{formatTime(recordingSeconds)}</strong></span>
+                          <span className="ml-auto text-red-400">Press Stop when done</span>
                         </div>
                       )}
 
                       {/* Fix transcription button — shown after voice use, when not recording */}
-                      {!isListening && hasUsedVoice && (
+                      {!isRecording && !isTranscribing && hasUsedVoice && (
                         <div className="flex items-center gap-2">
                           <button
                             type="button"

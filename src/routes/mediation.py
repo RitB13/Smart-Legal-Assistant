@@ -12,7 +12,7 @@ Flow:
 import uuid
 import logging
 from datetime import datetime
-from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks
+from fastapi import APIRouter, HTTPException, status, Depends, BackgroundTasks, UploadFile, File
 from pydantic import BaseModel
 
 from src.models.mediation_model import (
@@ -23,7 +23,7 @@ from src.models.mediation_model import (
     UserDisputeListItem
 )
 from src.services.mediation_service import get_mediation_service
-from src.services.llm_service import get_legal_response
+from src.services.llm_service import get_legal_response, transcribe_audio_bytes
 from src.routes.auth_routes import get_current_user
 from src.services.auth_service import TokenData
 
@@ -77,6 +77,60 @@ def correct_voice_transcript(
     except Exception as e:
         logger.error(f"[VoiceCorrect] LLM call failed: {e}")
         return VoiceCorrectResponse(corrected=raw)
+
+
+# ─── Voice transcription (Groq Whisper) ───────────────────────────────────────
+
+_MIME_TO_EXT: dict = {
+    "audio/webm": "webm",
+    "audio/ogg":  "ogg",
+    "audio/mp4":  "mp4",
+    "audio/mpeg": "mp3",
+    "audio/wav":  "wav",
+    "audio/x-wav": "wav",
+    "audio/flac": "flac",
+}
+
+@router.post("/voice/transcribe")
+async def transcribe_voice(
+    audio: UploadFile = File(...),
+    current_user: TokenData = Depends(get_current_user),
+):
+    """
+    Accept an audio blob from the frontend MediaRecorder, forward to Groq Whisper,
+    and return the transcript.  Works for webm, ogg, mp4, wav — up to ~25 MB / 25 min.
+    """
+    audio_bytes = await audio.read()
+    if not audio_bytes:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="No audio data received.")
+
+    # Strip codec params (e.g. "audio/webm;codecs=opus" → "audio/webm")
+    raw_ct      = (audio.content_type or "audio/webm").split(";")[0].strip().lower()
+    ext         = _MIME_TO_EXT.get(raw_ct, "webm")
+    filename    = f"recording.{ext}"
+    content_type = raw_ct
+
+    logger.info(
+        "[VoiceTranscribe] user=%s  file=%s  size=%d bytes",
+        current_user.user_id, filename, len(audio_bytes),
+    )
+
+    try:
+        transcript = transcribe_audio_bytes(audio_bytes, filename, content_type)
+    except Exception as e:
+        logger.error("[VoiceTranscribe] Groq Whisper error: %s", e)
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Transcription service error. Please try again.",
+        )
+
+    if not transcript:
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="No speech detected in the recording. Please speak more clearly and try again.",
+        )
+
+    return {"transcript": transcript}
 
 
 # ─── Background task (sync — matches existing codebase pattern) ───────────────

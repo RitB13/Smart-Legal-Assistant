@@ -14,96 +14,117 @@ export default function CreateDispute() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  const recognitionRef   = useRef<any>(null);
-  const descriptionRef   = useRef('');    // tracks current case_description for voice handler
-  const shouldListenRef  = useRef(false); // intent flag — survives onend/onerror closures
-  const [isListening,     setIsListening]     = useState(false);
-  const [voiceSupported,  setVoiceSupported]  = useState(false);
-  const [voiceError,      setVoiceError]      = useState('');
-  const [interimText,     setInterimText]     = useState('');
-  const [hasUsedVoice,    setHasUsedVoice]    = useState(false);
-  const [correcting,      setCorrecting]      = useState(false);
-  const [fixStatus,       setFixStatus]       = useState<'idle'|'fixed'|'error'>('idle');
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef   = useRef<Blob[]>([]);
+  const streamRef        = useRef<MediaStream | null>(null);
+  const timerRef         = useRef<ReturnType<typeof setInterval> | null>(null);
+  const descriptionRef   = useRef('');
+  const [isRecording,      setIsRecording]      = useState(false);
+  const [isTranscribing,   setIsTranscribing]   = useState(false);
+  const [voiceSupported,   setVoiceSupported]   = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [voiceError,       setVoiceError]       = useState('');
+  const [hasUsedVoice,     setHasUsedVoice]     = useState(false);
+  const [correcting,       setCorrecting]       = useState(false);
+  const [fixStatus,        setFixStatus]        = useState<'idle'|'fixed'|'error'>('idle');
 
   useEffect(() => {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    setVoiceSupported(!!SR);
-    return () => { recognitionRef.current?.abort(); };
+    setVoiceSupported(
+      typeof MediaRecorder !== 'undefined' &&
+      !!navigator.mediaDevices?.getUserMedia
+    );
+    return () => {
+      if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current?.stop();
+      streamRef.current?.getTracks().forEach(t => t.stop());
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
   }, []);
 
-  function startRecognition() {
-    const SR = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
-    if (!SR || !shouldListenRef.current) return;
+  // ── Voice helpers (MediaRecorder → Groq Whisper) ─────────────────────────
 
-    const recognition = new SR();
-    recognition.continuous     = true;
-    recognition.interimResults = true;
-    recognition.lang           = 'en-IN';
+  function getBestMimeType(): string {
+    const types = [
+      'audio/webm;codecs=opus',
+      'audio/webm',
+      'audio/ogg;codecs=opus',
+      'audio/ogg',
+      'audio/mp4',
+    ];
+    for (const t of types) {
+      if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported(t)) return t;
+    }
+    return '';
+  }
 
-    recognition.onresult = (event: any) => {
-      let interim = '';
-      for (let i = event.resultIndex; i < event.results.length; i++) {
-        const transcript = event.results[i][0].transcript;
-        if (event.results[i].isFinal) {
-          const current = descriptionRef.current;
-          set('case_description', current + (current.trim() ? ' ' : '') + transcript.trim());
-          setInterimText('');
-          setHasUsedVoice(true);
-          setFixStatus('idle');
-        } else {
-          interim += transcript;
-        }
-      }
-      if (interim) setInterimText(interim);
-    };
+  function formatTime(s: number): string {
+    const m   = Math.floor(s / 60);
+    const sec = s % 60;
+    return `${m}:${sec.toString().padStart(2, '0')}`;
+  }
 
-    recognition.onerror = (event: any) => {
-      // no-speech and aborted are non-fatal — let onend handle the restart
-      if (event.error === 'no-speech' || event.error === 'aborted') return;
-
-      shouldListenRef.current = false;
-      setIsListening(false);
-      setInterimText('');
-
-      if (event.error === 'not-allowed') {
-        setVoiceError('Microphone access denied. Please allow microphone access in your browser settings.');
-      } else if (event.error === 'network') {
-        setVoiceError('Voice input is not supported in this browser. Please use Chrome or Edge.');
-      } else {
-        setVoiceError(`Voice error: ${event.error}. Please try again.`);
-      }
-    };
-
-    recognition.onend = () => {
-      setInterimText('');
-      if (shouldListenRef.current) {
-        // Session ended naturally — restart immediately for continuous recording
-        setTimeout(() => startRecognition(), 120);
-      } else {
-        setIsListening(false);
-      }
-    };
-
-    recognitionRef.current = recognition;
+  async function startRecording() {
+    setVoiceError('');
     try {
-      recognition.start();
-    } catch {
-      setTimeout(() => startRecognition(), 200);
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      streamRef.current = stream;
+
+      const mimeType = getBestMimeType();
+      const recorder = new MediaRecorder(stream, mimeType ? { mimeType } : {});
+      mediaRecorderRef.current = recorder;
+      audioChunksRef.current   = [];
+
+      recorder.ondataavailable = (e) => {
+        if (e.data.size > 0) audioChunksRef.current.push(e.data);
+      };
+      recorder.onstop = async () => {
+        const blob = new Blob(audioChunksRef.current, { type: mimeType || 'audio/webm' });
+        await transcribeAudio(blob, mimeType || 'audio/webm');
+      };
+
+      recorder.start(500);
+      setIsRecording(true);
+      setRecordingSeconds(0);
+      timerRef.current = setInterval(() => setRecordingSeconds(s => s + 1), 1000);
+    } catch (err: any) {
+      if (err.name === 'NotAllowedError') {
+        setVoiceError('Microphone access denied. Please allow microphone access in your browser settings.');
+      } else {
+        setVoiceError('Could not access microphone. Please check your device settings.');
+      }
     }
   }
 
-  function toggleVoice() {
-    if (isListening) {
-      shouldListenRef.current = false;
-      recognitionRef.current?.stop();
-      setIsListening(false);
-      setInterimText('');
-      return;
+  function stopRecording() {
+    setIsRecording(false);
+    if (timerRef.current) { clearInterval(timerRef.current); timerRef.current = null; }
+    if (mediaRecorderRef.current?.state !== 'inactive') mediaRecorderRef.current?.stop();
+    streamRef.current?.getTracks().forEach(t => t.stop());
+    streamRef.current = null;
+  }
+
+  async function transcribeAudio(blob: Blob, mimeType: string) {
+    setIsTranscribing(true);
+    try {
+      const ext      = mimeType.includes('webm') ? 'webm' : mimeType.includes('ogg') ? 'ogg' : 'mp4';
+      const formData = new FormData();
+      formData.append('audio', blob, `recording.${ext}`);
+
+      const res = await apiFetch<{ transcript: string }>('/mediation/voice/transcribe', {
+        method: 'POST',
+        body:   formData,
+      });
+      const transcript = (res.transcript || '').trim();
+      if (transcript) {
+        const current = descriptionRef.current;
+        set('case_description', current + (current.trim() ? ' ' : '') + transcript);
+        setHasUsedVoice(true);
+        setFixStatus('idle');
+      }
+    } catch {
+      setVoiceError('Transcription failed. Please check your connection and try again.');
+    } finally {
+      setIsTranscribing(false);
     }
-    setVoiceError('');
-    shouldListenRef.current = true;
-    setIsListening(true);
-    startRecognition();
   }
 
   async function fixTranscript() {
@@ -239,22 +260,27 @@ export default function CreateDispute() {
             <div className="flex items-center justify-between mb-2">
               <label className="block text-sm font-medium text-slate-700">Your account of the dispute</label>
               <div className="flex items-center gap-2">
-                {voiceSupported && (
+                {voiceSupported && !isTranscribing && (
                   <button
                     type="button"
-                    onClick={toggleVoice}
-                    title={isListening ? 'Stop recording' : 'Speak your account'}
+                    onClick={isRecording ? stopRecording : startRecording}
+                    title={isRecording ? 'Stop recording' : 'Speak your account'}
                     className={`flex items-center gap-1 text-xs px-2 py-1 rounded-md border transition-all ${
-                      isListening
+                      isRecording
                         ? 'bg-red-50 text-red-600 border-red-300 animate-pulse'
                         : 'bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100'
                     }`}
                   >
-                    {isListening
-                      ? <><MicOff className="h-3 w-3" /> Stop</>
+                    {isRecording
+                      ? <><MicOff className="h-3 w-3" /> Stop · {formatTime(recordingSeconds)}</>
                       : <><Mic className="h-3 w-3" /> Speak</>
                     }
                   </button>
+                )}
+                {isTranscribing && (
+                  <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-violet-200 bg-violet-50 text-violet-600">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Transcribing…
+                  </span>
                 )}
                 <span className={`text-xs ${descValid ? 'text-green-600' : 'text-slate-400'}`}>
                   {form.case_description.length} / 50+ chars
@@ -267,23 +293,17 @@ export default function CreateDispute() {
               rows={6}
               placeholder="Describe the situation in your own words. Include dates, amounts, what happened, and what outcome you're looking for. Be specific — the more detail you provide, the more accurate the AI mediation will be."
               className={`w-full px-3 py-3 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 resize-none leading-relaxed ${
-                isListening ? 'border-red-300 ring-2 ring-red-100' : 'border-slate-200'
+                isRecording ? 'border-red-300 ring-2 ring-red-100' : 'border-slate-200'
               }`}
             />
-            {isListening && (
-              <div className="mt-1.5 flex items-start gap-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
-                <span className="mt-0.5 flex-shrink-0 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                <span>
-                  Listening… speak clearly in English
-                  {interimText && (
-                    <span className="text-slate-500 ml-1">
-                      — <em>"{interimText.slice(0, 80)}{interimText.length > 80 ? '…' : ''}"</em>
-                    </span>
-                  )}
-                </span>
+            {isRecording && (
+              <div className="mt-1.5 flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                <span className="flex-shrink-0 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+                <span>Recording… speak clearly — <strong>{formatTime(recordingSeconds)}</strong></span>
+                <span className="ml-auto text-red-400">Press Stop when done</span>
               </div>
             )}
-            {!isListening && hasUsedVoice && (
+            {!isRecording && !isTranscribing && hasUsedVoice && (
               <div className="mt-1.5 flex items-center gap-2">
                 <button
                   type="button"
