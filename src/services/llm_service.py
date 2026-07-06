@@ -339,3 +339,44 @@ def get_legal_response_with_jurisdiction(
     except requests.exceptions.RequestException as e:
         logger.error(f"LLM API request failed: {str(e)}")
         raise
+
+
+# ── Whisper transcription ──────────────────────────────────────────────────────
+
+WHISPER_URL = "https://api.groq.com/openai/v1/audio/transcriptions"
+
+
+def transcribe_audio_bytes(audio_bytes: bytes, filename: str, content_type: str) -> str:
+    """
+    Transcribe audio using Groq Whisper (whisper-large-v3).
+
+    Args:
+        audio_bytes:  Raw audio file bytes (webm / ogg / mp4 / wav / mp3)
+        filename:     Filename with correct extension (e.g. 'recording.webm')
+        content_type: MIME type without codec params (e.g. 'audio/webm')
+
+    Returns:
+        Transcript string. Empty string if no speech detected.
+
+    Raises:
+        requests.HTTPError: Non-2xx from Groq API
+        requests.Timeout:   Request exceeded 60 s
+    """
+    response = requests.post(
+        WHISPER_URL,
+        headers={"Authorization": f"Bearer {GROQ_API_KEY}"},
+        files={"file": (filename, audio_bytes, content_type)},
+        data={
+            "model":           "whisper-large-v3",
+            "language":        "en",
+            "response_format": "json",
+            # Domain hint improves accuracy for Indian legal terminology
+            "prompt": (
+                "Legal matter in India. Indian court case, petition, dispute resolution, "
+                "mediation, jurisdiction, affidavit, respondent, petitioner."
+            ),
+        },
+        timeout=60,
+    )
+    response.raise_for_status()
+    return response.json().get("text", "").strip()
