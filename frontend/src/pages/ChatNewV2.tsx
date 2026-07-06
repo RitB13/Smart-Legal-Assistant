@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Send, Bot, User, Loader2, Plus, Trash2, MessageSquare,
-  Menu, X, Scale, Mic, MicOff, PhoneCall, Volume2, Wand2,
+  Menu, X, Scale, Mic, MicOff, PhoneCall, Volume2, Wand2, Paperclip, FileText,
+  PanelLeftClose, PanelLeftOpen, ChevronDown,
 } from "lucide-react";
 import Header from "../components/Header";
 
@@ -63,8 +64,9 @@ const ChatPage = () => {
   const [activeConvId, setActiveConvId]   = useState<string | null>(null);
   const [messages, setMessages]           = useState<ChatMessage[]>([]);
   const [inputText, setInputText]         = useState("");
-  const [isLoading, setIsLoading]         = useState(false);
-  const [sidebarOpen, setSidebarOpen]     = useState(false);
+  const [isLoading, setIsLoading]             = useState(false);
+  const [sidebarOpen, setSidebarOpen]         = useState(false);   // mobile overlay
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // desktop collapse
 
   // ── Voice dictation state ───────────────────────────────────────────────────
   const [isDictating, setIsDictating]       = useState(false);
@@ -79,10 +81,24 @@ const ChatPage = () => {
   const [voiceConvTranscript, setVoiceConvTranscript]   = useState("");
   const [voiceConvError, setVoiceConvError]             = useState("");
 
+  // ── Document upload state ─────────────────────────────────────────────────────
+  const [docFile, setDocFile]                 = useState<File | null>(null);
+  const [extractedDocText, setExtractedDocText] = useState("");
+  const [docLaws, setDocLaws]                 = useState<string[]>([]);
+  const [isDocUploading, setIsDocUploading]   = useState(false);
+  const [docUploadError, setDocUploadError]   = useState("");
+
+  // ── Scroll state ──────────────────────────────────────────────────────────────
+  const [showScrollDown, setShowScrollDown] = useState(false);
+
   // ── Core refs ────────────────────────────────────────────────────────────────
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const inputRef       = useRef<HTMLInputElement>(null);
-  const activeConvRef  = useRef<string | null>(null);
+  const messagesEndRef       = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const inputRef             = useRef<HTMLTextAreaElement>(null);
+  const activeConvRef        = useRef<string | null>(null);
+  const docInputRef          = useRef<HTMLInputElement>(null);
+  // true when the user themselves just sent — ensures we always scroll on send
+  const userJustSentRef      = useRef(false);
 
   // ── Dictation refs ────────────────────────────────────────────────────────────
   const dictRecorderRef  = useRef<MediaRecorder | null>(null);
@@ -134,7 +150,14 @@ const ChatPage = () => {
   // ── Lifecycle ─────────────────────────────────────────────────────────────────
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    // Always scroll when user just sent; otherwise only when already near bottom
+    if (userJustSentRef.current || distFromBottom < 120) {
+      messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+      userJustSentRef.current = false;
+    }
   }, [messages]);
 
   useEffect(() => {
@@ -147,6 +170,17 @@ const ChatPage = () => {
     return () => { cleanupVoiceConv(); };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  // Auto-grow textarea: expands line by line up to MAX_H, then shows scrollbar
+  const MAX_TEXTAREA_H = 108; // ~4 lines with padding; adjust if needed
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = "auto";                          // shrink first so scrollHeight is accurate
+    const h = Math.min(el.scrollHeight, MAX_TEXTAREA_H);
+    el.style.height = `${h}px`;
+    el.style.overflowY = el.scrollHeight > MAX_TEXTAREA_H ? "auto" : "hidden";
+  }, [inputText]);
 
   // ── MongoDB API helpers ───────────────────────────────────────────────────────
 
@@ -232,16 +266,28 @@ const ChatPage = () => {
   // ── Chat actions ──────────────────────────────────────────────────────────────
 
   async function handleSend() {
-    const text = inputText.trim();
-    if (!text || isLoading) return;
+    const typedText = inputText.trim();
+    // Allow send if there's typed text OR an extracted document
+    if ((!typedText && !extractedDocText) || isLoading) return;
+
+    // Combine typed text with extracted document text (same pattern as CasePredictor)
+    const text = [typedText, extractedDocText.trim()]
+      .filter(Boolean)
+      .join("\n\n---\n");
+
     setInputText("");
+    setExtractedDocText("");
+    setDocFile(null);
+    setDocLaws([]);
+    setDocUploadError("");
     setIsLoading(true);
     setHasUsedVoice(false);
     setFixStatus("idle");
+    userJustSentRef.current = true;
 
     let convId = activeConvRef.current;
     if (!convId) {
-      const shortTitle = text.length > 60 ? text.slice(0, 57) + "…" : text;
+      const shortTitle = typedText.length > 60 ? typedText.slice(0, 57) + "…" : typedText || "Document analysis";
       const newId = await createConversation(shortTitle);
       if (newId) {
         convId = newId;
@@ -254,7 +300,9 @@ const ChatPage = () => {
       }
     }
 
-    const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", content: text, timestamp: new Date() };
+    // Show the user-visible text (just what they typed, not the raw extracted blob)
+    const displayText = typedText || `[Document: ${docFile?.name ?? "uploaded file"}]`;
+    const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", content: displayText, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
 
     const reply = await callQuery(text);
@@ -274,6 +322,10 @@ const ChatPage = () => {
     setMessages([]);
     setHasUsedVoice(false);
     setFixStatus("idle");
+    setDocFile(null);
+    setExtractedDocText("");
+    setDocLaws([]);
+    setDocUploadError("");
     setIsLoading(true);
     setSidebarOpen(false);
     await loadConversation(id);
@@ -287,6 +339,10 @@ const ChatPage = () => {
     setHasUsedVoice(false);
     setFixStatus("idle");
     setInputText("");
+    setDocFile(null);
+    setExtractedDocText("");
+    setDocLaws([]);
+    setDocUploadError("");
     setTimeout(() => inputRef.current?.focus(), 50);
   }
 
@@ -299,8 +355,56 @@ const ChatPage = () => {
     if (activeConvRef.current === id) { setActiveConvId(null); setMessages([]); }
   }
 
-  function handleKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
+  function handleKeyDown(e: React.KeyboardEvent<HTMLTextAreaElement>) {
     if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); handleSend(); }
+  }
+
+  function handleMessagesScroll() {
+    const el = messagesContainerRef.current;
+    if (!el) return;
+    const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight;
+    setShowScrollDown(distFromBottom > 120);
+  }
+
+  function scrollToBottom() {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    setShowScrollDown(false);
+  }
+
+  // ── Document Upload ───────────────────────────────────────────────────────────
+
+  async function handleDocUpload(file: File) {
+    setDocUploadError("");
+    setIsDocUploading(true);
+    setDocFile(file);
+    setExtractedDocText("");
+    setDocLaws([]);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${apiUrl}/document/extract-statement`, {
+        method: "POST",
+        headers: authOnlyHeaders(),
+        body: formData,
+      });
+      if (!res.ok) throw new Error(`Upload failed (${res.status})`);
+      const data = await res.json();
+      if (data.statement) setExtractedDocText(data.statement);
+      if (data.detected_laws?.length) setDocLaws(data.detected_laws);
+    } catch {
+      setDocUploadError("Document processing failed. Please try again.");
+      setDocFile(null);
+    } finally {
+      setIsDocUploading(false);
+    }
+  }
+
+  function removeDoc() {
+    setDocFile(null);
+    setExtractedDocText("");
+    setDocLaws([]);
+    setDocUploadError("");
+    if (docInputRef.current) docInputRef.current.value = "";
   }
 
   // ── Voice Dictation ───────────────────────────────────────────────────────────
@@ -727,20 +831,30 @@ const ChatPage = () => {
         {/* ── Sidebar ────────────────────────────────────────────────────────── */}
         <aside
           className={`
-            flex flex-col w-64 flex-shrink-0
+            flex flex-col flex-shrink-0
             border-r border-slate-200 dark:border-slate-700/50
             bg-slate-50 dark:bg-[#0a0f1e]
-            fixed inset-y-0 left-0 z-30 transition-transform duration-300
-            md:relative md:translate-x-0
-            ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+            transition-all duration-300 ease-in-out
+            fixed inset-y-0 left-0 z-30 top-14
+            md:relative md:inset-y-auto md:left-auto md:top-auto
+            ${sidebarOpen ? "translate-x-0 w-64" : "-translate-x-full w-64 md:translate-x-0"}
+            ${sidebarCollapsed ? "md:w-0 md:border-r-0 md:overflow-hidden" : "md:w-64"}
           `}
-          style={{ top: "56px" }}
         >
-          {/* New chat button */}
-          <div className="p-3 flex-shrink-0">
+          {/* Sidebar header: collapse toggle + new chat */}
+          <div className="flex items-center gap-2 p-3 flex-shrink-0">
+            {/* Desktop collapse toggle */}
+            <button
+              onClick={() => setSidebarCollapsed(c => !c)}
+              title="Toggle sidebar"
+              className="hidden md:flex w-8 h-8 items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors flex-shrink-0"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+
             <button
               onClick={handleNewChat}
-              className="w-full flex items-center gap-2 px-3 py-2.5 rounded-lg text-sm font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors"
+              className="flex-1 flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 transition-colors"
             >
               <Plus className="h-4 w-4" />
               New chat
@@ -785,7 +899,27 @@ const ChatPage = () => {
         </aside>
 
         {/* ── Main panel ─────────────────────────────────────────────────────── */}
-        <main className="flex-1 flex flex-col min-w-0 bg-white dark:bg-[#060d1a]">
+        <main className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden bg-white dark:bg-[#060d1a]">
+
+          {/* Desktop top bar — only visible when sidebar is collapsed */}
+          {sidebarCollapsed && (
+            <div className="hidden md:flex items-center gap-2 px-3 py-2 border-b border-slate-200 dark:border-slate-700/50 flex-shrink-0">
+              <button
+                onClick={() => setSidebarCollapsed(false)}
+                title="Open sidebar"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <PanelLeftOpen className="h-4 w-4" />
+              </button>
+              <button
+                onClick={handleNewChat}
+                title="New chat"
+                className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-400 hover:text-slate-600 dark:hover:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <Plus className="h-4 w-4" />
+              </button>
+            </div>
+          )}
 
           {/* Mobile top bar */}
           <div className="md:hidden flex items-center gap-3 px-4 py-3 border-b border-slate-200 dark:border-slate-700/50 flex-shrink-0">
@@ -803,7 +937,11 @@ const ChatPage = () => {
           </div>
 
           {/* Messages — scrolls internally */}
-          <div className="flex-1 overflow-y-auto">
+          <div
+            ref={messagesContainerRef}
+            onScroll={handleMessagesScroll}
+            className="flex-1 overflow-y-auto"
+          >
 
             {messages.length === 0 ? (
               /* ── Empty / welcome state ───────────────────────────────────── */
@@ -888,93 +1026,182 @@ const ChatPage = () => {
             )}
           </div>
 
-          {/* ── Input bar — always pinned at bottom ──────────────────────────── */}
-          <div className="flex-shrink-0 border-t border-slate-200 dark:border-slate-700/50 bg-white dark:bg-[#060d1a] px-4 pt-3 pb-4">
+          {/* ── Scroll-to-bottom button ──────────────────────────────────────── */}
+          {showScrollDown && (
+            <div className="flex-shrink-0 flex justify-center py-1 bg-white dark:bg-[#060d1a]">
+              <button
+                onClick={scrollToBottom}
+                title="Jump to latest message"
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700 shadow-md transition-all"
+              >
+                <ChevronDown className="h-3.5 w-3.5" />
+                Latest message
+              </button>
+            </div>
+          )}
+
+          {/* ── Input area — always pinned at bottom ─────────────────────────── */}
+          <div className="flex-shrink-0 bg-white dark:bg-[#060d1a] px-4 pt-3 pb-4">
             <div className="max-w-3xl mx-auto">
 
-              {/* Status indicators above input */}
-              {isDictating && (
-                <div className="flex items-center gap-2 mb-2 px-1">
-                  <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse" />
-                  <span className="text-xs font-medium text-red-500">Recording…  click mic to stop</span>
-                </div>
-              )}
-              {isTranscribing && !isDictating && (
-                <div className="flex items-center gap-2 mb-2 px-1">
-                  <Loader2 className="h-3 w-3 text-blue-500 animate-spin" />
-                  <span className="text-xs text-blue-500">Transcribing…</span>
-                </div>
-              )}
-              {dictError && (
-                <p className="text-xs text-red-500 mb-2 px-1">{dictError}</p>
-              )}
+              {/* Hidden file input */}
+              <input
+                ref={docInputRef}
+                type="file"
+                accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                className="hidden"
+                onChange={e => {
+                  const f = e.target.files?.[0];
+                  if (f) handleDocUpload(f);
+                  e.target.value = "";
+                }}
+              />
 
-              {/* Input row */}
-              <div className="flex gap-2 items-center">
-                <input
+              {/* ── ChatGPT-style input card ─────────────────────────────────── */}
+              <div className={`rounded-2xl border bg-slate-50 dark:bg-slate-800/80 shadow-sm transition-all ${
+                isDictating
+                  ? "border-red-300 dark:border-red-700 ring-1 ring-red-200 dark:ring-red-800/60"
+                  : "border-slate-200 dark:border-slate-700 focus-within:border-blue-400 dark:focus-within:border-blue-600 focus-within:ring-1 focus-within:ring-blue-300 dark:focus-within:ring-blue-700/50"
+              }`}>
+
+                {/* Document pill — inside card at top */}
+                {docFile && (
+                  <div className="flex items-center gap-2 px-4 pt-3 flex-wrap">
+                    <div className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-xs border ${
+                      isDocUploading
+                        ? "border-blue-200 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-700/40 text-blue-600 dark:text-blue-300"
+                        : extractedDocText
+                        ? "border-green-200 bg-green-50 dark:bg-green-900/20 dark:border-green-700/40 text-green-700 dark:text-green-300"
+                        : "border-red-200 bg-red-50 dark:bg-red-900/20 dark:border-red-700/40 text-red-600 dark:text-red-300"
+                    }`}>
+                      {isDocUploading ? <Loader2 className="h-3 w-3 animate-spin" /> : <FileText className="h-3 w-3" />}
+                      <span className="max-w-[200px] truncate">{docFile.name}</span>
+                      <span className="text-[10px] opacity-60">
+                        {isDocUploading ? "Processing…" : extractedDocText ? "Ready" : "Failed"}
+                      </span>
+                    </div>
+                    {!isDocUploading && (
+                      <button onClick={removeDoc} title="Remove" className="text-slate-400 hover:text-red-500 transition-colors">
+                        <X className="h-3 w-3" />
+                      </button>
+                    )}
+                    {docLaws.length > 0 && (
+                      <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate max-w-[260px]">
+                        {docLaws.slice(0, 3).join(" · ")}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Status banner inside card */}
+                {isDictating && (
+                  <div className="flex items-center gap-2 px-4 pt-3">
+                    <div className="w-2 h-2 rounded-full bg-red-500 animate-pulse flex-shrink-0" />
+                    <span className="text-xs font-medium text-red-500">Recording… tap mic to stop</span>
+                  </div>
+                )}
+                {isTranscribing && !isDictating && (
+                  <div className="flex items-center gap-2 px-4 pt-3">
+                    <Loader2 className="h-3 w-3 text-blue-500 animate-spin flex-shrink-0" />
+                    <span className="text-xs text-blue-500">Transcribing…</span>
+                  </div>
+                )}
+                {(dictError || docUploadError) && (
+                  <p className="text-xs text-red-500 px-4 pt-3">{dictError || docUploadError}</p>
+                )}
+
+                {/* Textarea — auto-grows 1→max rows, then scrolls */}
+                <textarea
                   ref={inputRef}
-                  type="text"
+                  rows={1}
                   value={inputText}
                   onChange={e => { setInputText(e.target.value); if (hasUsedVoice) setFixStatus("idle"); }}
                   onKeyDown={handleKeyDown}
                   disabled={isLoading || isTranscribing}
                   placeholder={isDictating ? "Listening — speak now…" : "Ask a legal question…"}
-                  className="flex-1 px-4 py-3 rounded-xl border border-slate-200 dark:border-slate-600 bg-slate-50 dark:bg-slate-800 text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:opacity-50"
+                  className="w-full px-4 pt-3 pb-2 bg-transparent text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none resize-none leading-relaxed disabled:opacity-50"
+                  style={{ overflowY: "hidden" }}
                 />
 
-                {/* Dictation (voice → text) */}
-                <button
-                  onClick={toggleDictation}
-                  disabled={isTranscribing || isLoading}
-                  title={isDictating ? "Stop recording" : "Dictate — voice to text"}
-                  className={`flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
-                    isDictating
-                      ? "bg-red-500 hover:bg-red-600 text-white shadow-lg shadow-red-500/30"
-                      : "bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700 border border-slate-200 dark:border-slate-700"
-                  }`}
-                >
-                  {isDictating ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
-                </button>
+                {/* Toolbar row — [left: attach + fix] [right: mic + phone + send] */}
+                <div className="flex items-center justify-between px-3 pb-3">
 
-                {/* Voice conversation mode */}
-                <button
-                  onClick={startVoiceConversation}
-                  disabled={isLoading || isDictating || isVoiceConvOpen}
-                  title="Voice conversation — speak and listen hands-free"
-                  className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-xl bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400 hover:bg-violet-100 dark:hover:bg-violet-900/20 hover:text-violet-600 dark:hover:text-violet-400 border border-slate-200 dark:border-slate-700 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
-                >
-                  <PhoneCall className="h-4 w-4" />
-                </button>
+                  {/* Left tools */}
+                  <div className="flex items-center gap-1">
+                    {/* Document upload */}
+                    <button
+                      onClick={() => docInputRef.current?.click()}
+                      disabled={isLoading || isDocUploading}
+                      title="Attach document (PDF / DOCX / image)"
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                        extractedDocText
+                          ? "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20"
+                          : "text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                      }`}
+                    >
+                      {isDocUploading
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <Paperclip className="h-4 w-4" />}
+                    </button>
 
-                {/* Send */}
-                <button
-                  onClick={handleSend}
-                  disabled={!inputText.trim() || isLoading}
-                  aria-label="Send"
-                  className="flex-shrink-0 w-11 h-11 flex items-center justify-center rounded-xl bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
-                >
-                  {isLoading
-                    ? <Loader2 className="h-4 w-4 animate-spin" />
-                    : <Send    className="h-4 w-4" />}
-                </button>
-              </div>
+                    {/* Fix transcription — only after voice input */}
+                    {hasUsedVoice && !isDictating && !isTranscribing && inputText.trim() && (
+                      <button
+                        onClick={fixTranscript}
+                        disabled={fixStatus === "fixing"}
+                        title={fixButtonLabel}
+                        className={`flex items-center gap-1 px-2.5 py-1.5 rounded-lg text-xs font-medium transition-colors disabled:opacity-50 ${
+                          fixStatus === "fixed"
+                            ? "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/20"
+                            : "text-violet-600 dark:text-violet-400 hover:bg-violet-50 dark:hover:bg-violet-900/20"
+                        }`}
+                      >
+                        <Wand2 className="h-3.5 w-3.5" />
+                        <span>{fixStatus === "fixing" ? "Fixing…" : fixStatus === "fixed" ? "Fixed" : "Fix errors"}</span>
+                      </button>
+                    )}
+                  </div>
 
-              {/* Fix transcription errors — visible only after voice input */}
-              {hasUsedVoice && !isDictating && !isTranscribing && inputText.trim() && (
-                <div className="mt-2 flex items-center gap-2">
-                  <button
-                    onClick={fixTranscript}
-                    disabled={fixStatus === "fixing"}
-                    className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium border border-violet-200 dark:border-violet-700/50 bg-violet-50 dark:bg-violet-900/10 text-violet-700 dark:text-violet-300 hover:bg-violet-100 dark:hover:bg-violet-900/20 disabled:opacity-50 transition-colors"
-                  >
-                    <Wand2 className="h-3 w-3" />
-                    {fixButtonLabel}
-                  </button>
-                  {fixStatus === "fixed" && (
-                    <span className="text-[10px] text-green-600 dark:text-green-400">Errors corrected</span>
-                  )}
+                  {/* Right tools */}
+                  <div className="flex items-center gap-1.5">
+                    {/* Mic / dictation */}
+                    <button
+                      onClick={toggleDictation}
+                      disabled={isTranscribing || isLoading}
+                      title={isDictating ? "Stop recording" : "Voice to text"}
+                      className={`w-8 h-8 flex items-center justify-center rounded-lg transition-all disabled:opacity-40 disabled:cursor-not-allowed ${
+                        isDictating
+                          ? "bg-red-500 text-white shadow-md shadow-red-500/40"
+                          : "text-slate-500 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-slate-700"
+                      }`}
+                    >
+                      {isDictating ? <MicOff className="h-4 w-4" /> : <Mic className="h-4 w-4" />}
+                    </button>
+
+                    {/* Voice conversation */}
+                    <button
+                      onClick={startVoiceConversation}
+                      disabled={isLoading || isDictating || isVoiceConvOpen}
+                      title="Voice conversation"
+                      className="w-8 h-8 flex items-center justify-center rounded-lg text-slate-500 dark:text-slate-400 hover:bg-violet-100 dark:hover:bg-violet-900/20 hover:text-violet-600 dark:hover:text-violet-400 transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+                    >
+                      <PhoneCall className="h-4 w-4" />
+                    </button>
+
+                    {/* Send — filled circle like ChatGPT */}
+                    <button
+                      onClick={handleSend}
+                      disabled={(!inputText.trim() && !extractedDocText) || isLoading || isDocUploading}
+                      aria-label="Send"
+                      className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-600 hover:bg-blue-700 text-white disabled:opacity-30 disabled:cursor-not-allowed transition-all shadow-sm"
+                    >
+                      {isLoading
+                        ? <Loader2 className="h-4 w-4 animate-spin" />
+                        : <Send    className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
-              )}
+              </div>
 
               <p className="text-center text-[11px] text-slate-400 dark:text-slate-600 mt-2">
                 AI responses are informational only. Consult a licensed lawyer for legal advice.
