@@ -123,12 +123,12 @@ const Home = () => {
       <div className="relative overflow-hidden -mt-16">
 
         {/* ── Hero ──────────────────────────────────────────────────────────── */}
-        <div className="relative overflow-hidden bg-gradient-to-b from-sky-50 via-blue-50 to-white pt-16 min-h-screen flex items-center">
+        <div className="relative overflow-hidden bg-gradient-to-b from-sky-50 via-blue-50 to-white dark:from-[#060d1a] dark:via-[#080f20] dark:to-[#060d1a] pt-16 min-h-screen flex items-center">
 
           {/* Soft blobs */}
-          <div className="absolute -top-24 -left-24 w-[500px] h-[500px] bg-blue-200/40 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute top-1/2 -right-32 w-[400px] h-[400px] bg-cyan-200/30 rounded-full blur-3xl pointer-events-none" />
-          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-indigo-100/40 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute -top-24 -left-24 w-[500px] h-[500px] bg-blue-200/40 dark:bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute top-1/2 -right-32 w-[400px] h-[400px] bg-cyan-200/30 dark:bg-cyan-500/5 rounded-full blur-3xl pointer-events-none" />
+          <div className="absolute bottom-0 left-1/2 -translate-x-1/2 w-[700px] h-[300px] bg-indigo-100/40 dark:bg-indigo-500/5 rounded-full blur-3xl pointer-events-none" />
 
           {/* ── Faded legal illustrations ── */}
           {/* Scales — right side, large */}
@@ -144,7 +144,7 @@ const Home = () => {
             <div className="mx-auto max-w-3xl text-center">
 
               {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-blue-200 bg-white/80 backdrop-blur-sm text-blue-700 text-sm font-semibold mb-7 shadow-sm">
+              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-blue-200 bg-white/80 backdrop-blur-sm text-blue-700 text-sm font-semibold mb-7 shadow-sm dark:border-blue-500/30 dark:bg-slate-800/80 dark:text-blue-300">
                 <Sparkles className="h-3.5 w-3.5 text-blue-500" />
                 AI-Powered Legal Platform for India
                 <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
@@ -152,7 +152,7 @@ const Home = () => {
 
               {/* Heading */}
               <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-[0.95]">
-                <span className="text-slate-900">Smart Legal</span>
+                <span className="text-slate-900 dark:text-white">Smart Legal</span>
                 <br />
                 <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-500 bg-clip-text text-transparent">
                   Assistant
@@ -160,7 +160,7 @@ const Home = () => {
               </h1>
 
               {/* Subtitle */}
-              <p className="text-lg md:text-xl text-slate-500 font-medium leading-relaxed max-w-2xl mx-auto mb-10">
+              <p className="text-lg md:text-xl text-slate-500 dark:text-slate-300 font-medium leading-relaxed max-w-2xl mx-auto mb-10">
                 Your AI-powered guide to legal documents, queries, and rights.
                 Making law accessible for every Indian citizen.
               </p>
@@ -176,18 +176,18 @@ const Home = () => {
                 </Link>
                 <Link
                   to="/rights"
-                  className="inline-flex items-center justify-center rounded-full border-2 border-slate-200 bg-white px-8 py-4 text-base font-bold text-slate-700 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 hover:scale-105 hover:-translate-y-0.5 transition-all duration-300 shadow-sm"
+                  className="inline-flex items-center justify-center rounded-full border-2 border-slate-200 bg-white px-8 py-4 text-base font-bold text-slate-700 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 hover:scale-105 hover:-translate-y-0.5 transition-all duration-300 shadow-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
                 >
                   Know Your Rights
                 </Link>
               </div>
 
               {/* Stats pill */}
-              <div className="inline-flex flex-col sm:flex-row items-center gap-6 sm:gap-10 bg-white/70 backdrop-blur-sm border border-slate-100 rounded-2xl px-8 py-5 shadow-sm">
+              <div className="inline-flex flex-col sm:flex-row items-center gap-6 sm:gap-10 bg-white/70 backdrop-blur-sm border border-slate-100 rounded-2xl px-8 py-5 shadow-sm dark:bg-slate-800/60 dark:border-slate-700">
                 {STATS.map((s, i) => (
-                  <div key={i} className={`text-center ${i < STATS.length - 1 ? "sm:pr-10 sm:border-r sm:border-slate-200" : ""}`}>
-                    <div className="text-2xl font-black text-slate-900 tabular-nums">{s.value}</div>
-                    <div className="text-xs text-slate-400 font-semibold uppercase tracking-widest mt-0.5">{s.label}</div>
+                  <div key={i} className={`text-center ${i < STATS.length - 1 ? "sm:pr-10 sm:border-r sm:border-slate-200 dark:sm:border-slate-700" : ""}`}>
+                    <div className="text-2xl font-black text-slate-900 dark:text-white tabular-nums">{s.value}</div>
+                    <div className="text-xs text-slate-400 dark:text-slate-500 font-semibold uppercase tracking-widest mt-0.5">{s.label}</div>
                   </div>
                 ))}
               </div>
@@ -197,19 +197,19 @@ const Home = () => {
 
           {/* Bottom wave into white */}
           <div className="absolute bottom-0 left-0 right-0 h-16 overflow-hidden pointer-events-none">
-            <svg viewBox="0 0 1440 64" preserveAspectRatio="none" className="w-full h-full" fill="white">
+            <svg viewBox="0 0 1440 64" preserveAspectRatio="none" className="w-full h-full fill-white dark:fill-[#060d1a]">
               <path d="M0,32 C360,64 1080,0 1440,32 L1440,64 L0,64 Z" />
             </svg>
           </div>
         </div>
 
         {/* ── Features ──────────────────────────────────────────────────────── */}
-        <div className="bg-white">
+        <div className="bg-white dark:bg-[#060d1a]">
           <div className="container mx-auto px-4 py-20 max-w-5xl">
 
             <div className="text-center mb-14">
-              <p className="text-xs font-bold text-blue-600 uppercase tracking-[0.2em] mb-3">What We Offer</p>
-              <h2 className="text-4xl md:text-5xl font-black text-slate-900 mb-4 tracking-tight">
+              <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] mb-3">What We Offer</p>
+              <h2 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">
                 Everything you need, legally
               </h2>
               <p className="text-lg text-slate-400 max-w-xl mx-auto">
@@ -221,7 +221,7 @@ const Home = () => {
             <div className="mb-5">
               <Link
                 to="/mediation"
-                className="group relative flex flex-col sm:flex-row items-start sm:items-center gap-6 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 via-indigo-50/50 to-cyan-50 px-7 py-6 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100/60 transition-all duration-300 overflow-hidden"
+                className="group relative flex flex-col sm:flex-row items-start sm:items-center gap-6 rounded-2xl border border-blue-100 bg-gradient-to-r from-blue-50 via-indigo-50/50 to-cyan-50 px-7 py-6 hover:border-blue-200 hover:shadow-xl hover:shadow-blue-100/60 transition-all duration-300 overflow-hidden dark:border-blue-800/40 dark:from-blue-900/20 dark:via-indigo-900/10 dark:to-blue-900/10 dark:hover:border-blue-700/60 dark:hover:shadow-blue-900/20"
               >
                 <div className="absolute inset-0 opacity-0 group-hover:opacity-100 bg-gradient-to-r from-blue-500/[0.03] to-cyan-500/[0.03] transition-opacity duration-300 pointer-events-none rounded-2xl" />
                 <div className="w-14 h-14 rounded-xl bg-gradient-to-br from-blue-600 to-indigo-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-blue-200/60 group-hover:scale-105 transition-transform">
@@ -229,7 +229,7 @@ const Home = () => {
                 </div>
                 <div className="flex-1 min-w-0 relative z-10">
                   <div className="flex items-center gap-2 mb-1">
-                    <h3 className="font-bold text-slate-900 text-lg">AI-Mediated Dispute Resolution</h3>
+                    <h3 className="font-bold text-slate-900 dark:text-white text-lg">AI-Mediated Dispute Resolution</h3>
                     <span className="text-[10px] font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-2.5 py-0.5 rounded-full">NEW</span>
                   </div>
                   <p className="text-sm text-slate-500 leading-relaxed">
@@ -250,14 +250,14 @@ const Home = () => {
                   <Link
                     key={f.link}
                     to={f.link}
-                    className={`group flex flex-col p-5 rounded-2xl border border-slate-100 ${f.cardBg} ${f.border} hover:shadow-lg transition-all duration-300 hover:-translate-y-1`}
+                    className={`group flex flex-col p-5 rounded-2xl border border-slate-100 ${f.cardBg} ${f.border} hover:shadow-lg transition-all duration-300 hover:-translate-y-1 dark:border-slate-700/60 dark:bg-slate-800/40 dark:hover:bg-slate-800/70 dark:hover:border-slate-600`}
                   >
                     <div className={`w-10 h-10 rounded-xl ${f.iconBg} flex items-center justify-center mb-4 shadow-md group-hover:scale-110 transition-transform duration-300`}>
                       <Icon className="h-5 w-5 text-white" />
                     </div>
-                    <h3 className="font-bold text-slate-900 mb-2 text-sm">{f.title}</h3>
-                    <p className="text-xs text-slate-500 leading-relaxed flex-1">{f.desc}</p>
-                    <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-slate-300 group-hover:text-slate-600 transition-colors">
+                    <h3 className="font-bold text-slate-900 dark:text-white mb-2 text-sm">{f.title}</h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed flex-1">{f.desc}</p>
+                    <div className="mt-4 flex items-center gap-1 text-xs font-semibold text-slate-300 group-hover:text-slate-600 dark:text-slate-600 dark:group-hover:text-blue-400 transition-colors">
                       Open <ArrowRight className="h-3 w-3 transition-transform group-hover:translate-x-0.5" />
                     </div>
                   </Link>
@@ -268,7 +268,7 @@ const Home = () => {
         </div>
 
         {/* ── Trust strip ───────────────────────────────────────────────────── */}
-        <div className="bg-slate-50 border-y border-slate-100 py-8">
+        <div className="bg-slate-50 border-y border-slate-100 py-8 dark:bg-[#06101f] dark:border-slate-800/60">
           <div className="container mx-auto px-4 max-w-4xl">
             <div className="flex flex-col sm:flex-row items-center justify-center gap-6 sm:gap-12 text-center">
               {[

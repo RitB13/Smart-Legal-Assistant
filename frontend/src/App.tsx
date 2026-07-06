@@ -6,6 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { useEffect } from "react";
 import { AuthProvider, useAuth } from "@/context/AuthContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
+import { ThemeProvider } from "@/context/ThemeContext";
 
 import Index from "./pages/Index";
 import Login from "./pages/Login";
@@ -34,38 +35,40 @@ function AuthWatcher() {
 }
 
 const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <AuthProvider>
-          <AuthWatcher />
-          <Routes>
-            {/* Public routes */}
-            <Route path="/"             element={<Index />} />
-            <Route path="/login"        element={<Login />} />
-            <Route path="/register"     element={<Register />} />
-            <Route path="/verify-otp"   element={<VerifyOtp />} />
-            <Route path="/rights"       element={<RightsPage />} />
+  <ThemeProvider>
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
+          <AuthProvider>
+            <AuthWatcher />
+            <Routes>
+              {/* Public routes */}
+              <Route path="/"             element={<Index />} />
+              <Route path="/login"        element={<Login />} />
+              <Route path="/register"     element={<Register />} />
+              <Route path="/verify-otp"   element={<VerifyOtp />} />
+              <Route path="/rights"       element={<RightsPage />} />
 
-            {/* Protected routes */}
-            <Route path="/chat"    element={<ProtectedRoute><ChatNewV2 /></ProtectedRoute>} />
-            <Route path="/predict"      element={<ProtectedRoute><CasePredictor /></ProtectedRoute>} />
-            <Route path="/predictions"  element={<ProtectedRoute><PredictionHistory /></ProtectedRoute>} />
+              {/* Protected routes */}
+              <Route path="/chat"    element={<ProtectedRoute><ChatNewV2 /></ProtectedRoute>} />
+              <Route path="/predict"      element={<ProtectedRoute><CasePredictor /></ProtectedRoute>} />
+              <Route path="/predictions"  element={<ProtectedRoute><PredictionHistory /></ProtectedRoute>} />
 
-            {/* Mediation routes — all protected */}
-            <Route path="/mediation"              element={<ProtectedRoute><MediationHome /></ProtectedRoute>} />
-            <Route path="/mediation/create"       element={<ProtectedRoute><CreateDispute /></ProtectedRoute>} />
-            <Route path="/mediation/:id/room"     element={<ProtectedRoute><DisputeRoom /></ProtectedRoute>} />
-            <Route path="/mediation/:id/result"   element={<ProtectedRoute><DisputeResult /></ProtectedRoute>} />
+              {/* Mediation routes — all protected */}
+              <Route path="/mediation"              element={<ProtectedRoute><MediationHome /></ProtectedRoute>} />
+              <Route path="/mediation/create"       element={<ProtectedRoute><CreateDispute /></ProtectedRoute>} />
+              <Route path="/mediation/:id/room"     element={<ProtectedRoute><DisputeRoom /></ProtectedRoute>} />
+              <Route path="/mediation/:id/result"   element={<ProtectedRoute><DisputeResult /></ProtectedRoute>} />
 
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </AuthProvider>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </AuthProvider>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  </ThemeProvider>
 );
 
 export default App;

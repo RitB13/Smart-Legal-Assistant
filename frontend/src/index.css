@@ -69,47 +69,71 @@ All colors MUST be HSL.
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    /* Deep space cyberpunk legal tech palette */
+    --background: 222 47% 4%;
+    --foreground: 210 80% 94%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 216 50% 7%;
+    --card-foreground: 210 80% 94%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 216 50% 7%;
+    --popover-foreground: 210 80% 94%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 210 100% 62%;
+    --primary-foreground: 220 50% 6%;
+    --primary-hover: 210 100% 70%;
+    --primary-glow: 210 100% 62%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 263 70% 68%;
+    --secondary-foreground: 220 50% 6%;
+    --secondary-hover: 263 70% 75%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 218 40% 12%;
+    --muted-foreground: 214 40% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 263 70% 68%;
+    --accent-foreground: 220 50% 6%;
+    --accent-hover: 263 70% 75%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 70% 55%;
+    --destructive-foreground: 210 80% 94%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 215 45% 17%;
+    --input: 215 45% 17%;
+    --ring: 210 100% 62%;
+
+    --radius: 0.75rem;
+
+    /* Dark design tokens */
+    --gradient-primary: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+    --gradient-secondary: linear-gradient(135deg, #9d79f5 0%, #4facfe 100%);
+    --gradient-hero: linear-gradient(145deg, #060d1a 0%, #09142a 50%, #0d0a2a 100%);
+    --gradient-card: linear-gradient(135deg, #09142a, #0d1a38);
+
+    --shadow-sm: 0 1px 4px 0 rgba(79, 172, 254, 0.08);
+    --shadow-md: 0 4px 16px -2px rgba(79, 172, 254, 0.12);
+    --shadow-lg: 0 10px 40px -8px rgba(79, 172, 254, 0.12), 0 0 0 1px rgba(79, 172, 254, 0.05);
+    --shadow-xl: 0 20px 60px -12px rgba(79, 172, 254, 0.15), 0 0 0 1px rgba(79, 172, 254, 0.06);
+    --shadow-card: 0 4px 40px -4px rgba(79, 172, 254, 0.18), 0 0 0 1px rgba(79, 172, 254, 0.08);
+    --shadow-glow: 0 0 50px rgba(79, 172, 254, 0.3);
+
+    --sidebar-background: 222 47% 5%;
+    --sidebar-foreground: 210 80% 85%;
+    --sidebar-primary: 210 100% 62%;
+    --sidebar-primary-foreground: 220 50% 6%;
+    --sidebar-accent: 218 40% 12%;
+    --sidebar-accent-foreground: 210 80% 85%;
+    --sidebar-border: 215 45% 17%;
+    --sidebar-ring: 210 100% 62%;
   }
 }
 
 @layer base {
   * {
     @apply border-border;
+    transition-property: color, background-color, border-color, box-shadow, fill, stroke;
+    transition-duration: 200ms;
+    transition-timing-function: ease;
   }
 
   body {
@@ -214,3 +238,177 @@ All colors MUST be HSL.
     transition: var(--transition-fast);
   }
 }
+
+/* ── Dark mode: animated deep-space background on body ── */
+.dark body {
+  background: radial-gradient(ellipse at 20% 50%, rgba(79, 172, 254, 0.04) 0%, transparent 50%),
+              radial-gradient(ellipse at 80% 20%, rgba(157, 121, 245, 0.04) 0%, transparent 50%),
+              #060d1a;
+}
+
+/* ── Dark mode: gradient stop overrides ── */
+/* These handle dynamic gradient classes that can't get dark: prefix in JSX */
+.dark .from-sky-50 { --tw-gradient-from: #060f1e var(--tw-gradient-from-position); }
+.dark .from-blue-50 { --tw-gradient-from: #060f28 var(--tw-gradient-from-position); }
+.dark .from-indigo-50 { --tw-gradient-from: #080828 var(--tw-gradient-from-position); }
+.dark .from-violet-50 { --tw-gradient-from: #0e0620 var(--tw-gradient-from-position); }
+.dark .from-teal-50 { --tw-gradient-from: #041818 var(--tw-gradient-from-position); }
+.dark .from-orange-50 { --tw-gradient-from: #1a0e06 var(--tw-gradient-from-position); }
+.dark .from-emerald-50 { --tw-gradient-from: #031a10 var(--tw-gradient-from-position); }
+.dark .via-white { --tw-gradient-via: #080e20 var(--tw-gradient-via-position); }
+.dark .via-blue-50 { --tw-gradient-via: #080f20 var(--tw-gradient-via-position); }
+.dark .to-white { --tw-gradient-to: #060d1a var(--tw-gradient-to-position); }
+.dark .to-blue-50 { --tw-gradient-to: #060f28 var(--tw-gradient-to-position); }
+.dark .to-cyan-50 { --tw-gradient-to: #04181a var(--tw-gradient-to-position); }
+.dark .to-purple-50 { --tw-gradient-to: #0e0620 var(--tw-gradient-to-position); }
+.dark .to-indigo-50 { --tw-gradient-to: #080828 var(--tw-gradient-to-position); }
+.dark .to-emerald-50 { --tw-gradient-to: #031a10 var(--tw-gradient-to-position); }
+.dark .to-amber-50 { --tw-gradient-to: #181008 var(--tw-gradient-to-position); }
+
+/* ── Dark mode: comprehensive Tailwind color overrides ── */
+
+/* Backgrounds */
+.dark .bg-white { background-color: #09142a; }
+.dark .bg-gray-50, .dark .bg-slate-50 { background-color: #060d1a; }
+.dark .bg-gray-100, .dark .bg-slate-100 { background-color: #0d1a2e; }
+.dark .bg-gray-200, .dark .bg-slate-200 { background-color: #142338; }
+.dark .bg-gray-800, .dark .bg-slate-800 { background-color: #1a3050; }
+.dark .bg-gray-900, .dark .bg-slate-900 { background-color: #0a1828; }
+
+/* Tinted accent backgrounds — deep saturated versions */
+.dark .bg-blue-50 { background-color: #060f28; }
+.dark .bg-blue-100 { background-color: #0a1a38; }
+.dark .bg-blue-600 { background-color: #1a6ddb; }
+.dark .bg-green-50 { background-color: #041a10; }
+.dark .bg-green-100 { background-color: #062018; }
+.dark .bg-red-50 { background-color: #1a0608; }
+.dark .bg-red-100 { background-color: #220810; }
+.dark .bg-amber-50 { background-color: #1a1006; }
+.dark .bg-amber-100 { background-color: #20160a; }
+.dark .bg-orange-50 { background-color: #1a0e06; }
+.dark .bg-orange-100 { background-color: #200f08; }
+.dark .bg-purple-50 { background-color: #0e0620; }
+.dark .bg-purple-100 { background-color: #120828; }
+.dark .bg-indigo-50 { background-color: #080828; }
+.dark .bg-indigo-100 { background-color: #0c0c34; }
+.dark .bg-violet-50 { background-color: #0e0620; }
+.dark .bg-teal-50 { background-color: #041818; }
+.dark .bg-pink-50 { background-color: #1a0614; }
+.dark .bg-rose-50 { background-color: #1a0610; }
+.dark .bg-yellow-50 { background-color: #181008; }
+
+/* Gradient overrides */
+.dark .from-blue-50 { --tw-gradient-from: #060f28; }
+.dark .via-white { --tw-gradient-via: #080e20; }
+.dark .to-purple-50 { --tw-gradient-to: #0e0620; }
+.dark .from-indigo-50 { --tw-gradient-from: #080828; }
+
+/* Text colors */
+.dark .text-gray-900, .dark .text-slate-900 { color: #deeeff; }
+.dark .text-gray-800, .dark .text-slate-800 { color: #c8dffc; }
+.dark .text-gray-700, .dark .text-slate-700 { color: #a0c4e8; }
+.dark .text-gray-600, .dark .text-slate-600 { color: #7aa8cc; }
+.dark .text-gray-500, .dark .text-slate-500 { color: #5486a8; }
+.dark .text-gray-400, .dark .text-slate-400 { color: #3d6685; }
+.dark .text-gray-300, .dark .text-slate-300 { color: #2a4e6a; }
+.dark .text-muted-foreground { color: #6a9fc4; }
+
+/* Tinted text colors */
+.dark .text-blue-600 { color: #4facfe; }
+.dark .text-blue-700 { color: #6abcff; }
+.dark .text-blue-800 { color: #82caff; }
+.dark .text-blue-900 { color: #a8daff; }
+.dark .text-blue-500 { color: #3d9ef0; }
+.dark .text-blue-400 { color: #2d88e0; }
+.dark .text-green-600 { color: #34d399; }
+.dark .text-green-700 { color: #4de3a8; }
+.dark .text-green-800 { color: #6fecbc; }
+.dark .text-green-900 { color: #a7f3d8; }
+.dark .text-green-500 { color: #22c55e; }
+.dark .text-red-600 { color: #f87171; }
+.dark .text-red-700 { color: #fca5a5; }
+.dark .text-red-800 { color: #fecaca; }
+.dark .text-red-900 { color: #fee2e2; }
+.dark .text-amber-600 { color: #fbbf24; }
+.dark .text-amber-700 { color: #fcd34d; }
+.dark .text-amber-900 { color: #fef3c7; }
+.dark .text-orange-600 { color: #fb923c; }
+.dark .text-orange-700 { color: #fdba74; }
+.dark .text-orange-900 { color: #fed7aa; }
+.dark .text-purple-600 { color: #a78bfa; }
+.dark .text-purple-700 { color: #c4b5fd; }
+.dark .text-purple-900 { color: #ede9fe; }
+.dark .text-indigo-700 { color: #a5b4fc; }
+.dark .text-indigo-800 { color: #c7d2fe; }
+.dark .text-indigo-900 { color: #e0e7ff; }
+.dark .text-violet-600 { color: #8b5cf6; }
+.dark .text-violet-700 { color: #a78bfa; }
+.dark .text-teal-600 { color: #2dd4bf; }
+.dark .text-pink-700 { color: #f9a8d4; }
+.dark .text-rose-600 { color: #fb7185; }
+
+/* Border colors */
+.dark .border-gray-200, .dark .border-slate-200 { border-color: #1a2f52; }
+.dark .border-gray-100, .dark .border-slate-100 { border-color: #102040; }
+.dark .border-gray-300, .dark .border-slate-300 { border-color: #243d62; }
+.dark .border-blue-100 { border-color: #0a1e48; }
+.dark .border-blue-200 { border-color: #0e2658; }
+.dark .border-blue-300 { border-color: #143070; }
+.dark .border-green-100 { border-color: #052018; }
+.dark .border-green-200 { border-color: #082a20; }
+.dark .border-green-300 { border-color: #0c3828; }
+.dark .border-red-100 { border-color: #2a0a0a; }
+.dark .border-red-200 { border-color: #380e0e; }
+.dark .border-red-300 { border-color: #481414; }
+.dark .border-amber-100 { border-color: #2a1e06; }
+.dark .border-amber-200 { border-color: #382808; }
+.dark .border-orange-100 { border-color: #2a1408; }
+.dark .border-orange-200 { border-color: #381a0a; }
+.dark .border-purple-100 { border-color: #1a0a38; }
+.dark .border-purple-200 { border-color: #240e48; }
+.dark .border-indigo-200 { border-color: #141458; }
+.dark .border-violet-200 { border-color: #1a0e48; }
+.dark .border-teal-200 { border-color: #062824; }
+.dark .border-pink-200 { border-color: #2a0820; }
+.dark .border-rose-100 { border-color: #280810; }
+.dark .border-rose-200 { border-color: #380e18; }
+
+/* Hover overrides */
+.dark .hover\:bg-slate-50:hover { background-color: #0d1a2e; }
+.dark .hover\:bg-slate-100:hover { background-color: #102030; }
+.dark .hover\:bg-gray-50:hover { background-color: #0d1a2e; }
+.dark .hover\:bg-gray-100:hover { background-color: #102030; }
+.dark .hover\:bg-blue-50:hover { background-color: #0a1530; }
+.dark .hover\:bg-orange-50:hover { background-color: #201208; }
+.dark .hover\:bg-red-50:hover { background-color: #200808; }
+.dark .hover\:bg-violet-100:hover { background-color: #180830; }
+.dark .hover\:bg-indigo-50:hover { background-color: #0c0c30; }
+.dark .hover\:text-slate-900:hover { color: #deeeff; }
+.dark .hover\:text-gray-900:hover { color: #deeeff; }
+.dark .hover\:border-slate-300:hover { border-color: #243d62; }
+.dark .hover\:border-gray-300:hover { border-color: #243d62; }
+
+/* Ring / focus */
+.dark .focus\:ring-primary\/20:focus { --tw-ring-color: rgba(79, 172, 254, 0.25); }
+.dark .focus\:border-primary:focus { border-color: #4facfe; }
+
+/* Input / textarea / select backgrounds */
+.dark input, .dark textarea, .dark select {
+  background-color: #09142a;
+  color: #deeeff;
+  border-color: #1a2f52;
+}
+.dark input::placeholder, .dark textarea::placeholder { color: #3d6685; }
+
+/* Vibrant card glow in dark mode */
+.dark .shadow-xl { box-shadow: 0 20px 60px -12px rgba(79, 172, 254, 0.15), 0 0 0 1px rgba(79, 172, 254, 0.06); }
+.dark .shadow-lg { box-shadow: 0 10px 40px -8px rgba(79, 172, 254, 0.12), 0 0 0 1px rgba(79, 172, 254, 0.05); }
+
+/* Backdrop blur glassmorphism */
+.dark .bg-white\/95 { background-color: rgba(9, 20, 42, 0.92) !important; }
+.dark .bg-white\/70 { background-color: rgba(9, 20, 42, 0.7); }
+
+/* Specific component overrides */
+.dark .border-b { border-bottom-color: #1a2f52; }
+.dark .border-t { border-top-color: #1a2f52; }
+.dark .divide-y > * + * { border-top-color: #1a2f52; }
