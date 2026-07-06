@@ -81,7 +81,18 @@ def _enrich_similar_cases(raw_results: list) -> list:
             ']'
         )
 
-        raw_response = get_legal_response(prompt, language="en", max_tokens=1200, temperature=0.15)
+        raw_response = get_legal_response(
+            prompt,
+            language="en",
+            max_tokens=1200,
+            temperature=0.15,
+            timeout=60,
+            system_prompt=(
+                "You are a legal analyst. Respond ONLY with a valid JSON array exactly "
+                "matching the structure the user specifies. "
+                "No extra text, no markdown fences, no prose outside the JSON array."
+            ),
+        )
         cleaned = raw_response.strip()
 
         # Strip markdown fences if the model wrapped the output

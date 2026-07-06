@@ -142,30 +142,35 @@ def get_legal_response(
     language: str = "en",
     temperature: float = None,
     max_tokens: int = None,
-    timeout: int = None
+    timeout: int = None,
+    system_prompt: str = None,
 ) -> str:
     """
     Get legal response from Groq LLM with multilingual support.
-    
+
     Args:
         user_query: The user's legal question
         language: ISO language code (e.g., 'en', 'hi', 'bn'). Defaults to 'en'
         temperature: Sampling temperature (0.0-1.0), defaults to config value
         max_tokens: Maximum tokens in response, defaults to config value
         timeout: Request timeout in seconds, defaults to config value
-        
+        system_prompt: Override the default chatbot system prompt. Use this for
+                       analytical/structured calls so the chatbot JSON format
+                       instruction does not conflict with the user prompt format.
+
     Returns:
         String response from the LLM
-        
+
     Raises:
         requests.exceptions.RequestException: If API call fails
     """
     temperature = temperature if temperature is not None else LLM_TEMPERATURE
     max_tokens = max_tokens if max_tokens is not None else LLM_MAX_TOKENS
     timeout = timeout if timeout is not None else LLM_TIMEOUT
-    
-    # Create language-aware system prompt
-    system_prompt = create_language_aware_prompt(language)
+
+    # Use caller-supplied system prompt, or default chatbot prompt
+    if system_prompt is None:
+        system_prompt = create_language_aware_prompt(language)
     
     try:
         headers = {

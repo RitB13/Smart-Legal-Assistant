@@ -318,7 +318,18 @@ class CaseOutcomePredictorService:
         )
 
         try:
-            raw = get_legal_response(prompt, language="en", max_tokens=400, temperature=0.15)
+            raw = get_legal_response(
+                prompt,
+                language="en",
+                max_tokens=400,
+                temperature=0.15,
+                timeout=60,
+                system_prompt=(
+                    "You are a senior Indian legal writer. Write clear, plain prose in "
+                    "formal judicial English. Output plain text only — no JSON, no "
+                    "markdown, no bullet points, no headings."
+                ),
+            )
             composed = raw.strip()
             if len(composed) >= 80:
                 logger.info("[Outcome] Petition text composed (%d chars)", len(composed))
@@ -389,7 +400,18 @@ class CaseOutcomePredictorService:
         )
 
         try:
-            raw     = get_legal_response(prompt, language="en", max_tokens=1200, temperature=0.2)
+            raw     = get_legal_response(
+                prompt,
+                language="en",
+                max_tokens=1200,
+                temperature=0.2,
+                timeout=60,
+                system_prompt=(
+                    "You are a senior Indian legal analyst. "
+                    "Respond ONLY with valid JSON exactly matching the structure the user specifies. "
+                    "No extra text, no markdown fences, no prose before or after the JSON object."
+                ),
+            )
             cleaned = raw.strip()
             # Strip markdown fences if the LLM wraps JSON in ```
             if "```" in cleaned:
