@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ArrowLeft, ArrowRight, Loader2, Info, Mic, MicOff, Sparkles, Check } from 'lucide-react';
+import { ArrowLeft, ArrowRight, Loader2, Info, Mic, MicOff, Sparkles, Check, Paperclip } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import Layout from '@/components/Layout';
 import type { CreateDisputeResponse } from '@/types/mediation';
@@ -27,6 +27,13 @@ export default function CreateDispute() {
   const [hasUsedVoice,     setHasUsedVoice]     = useState(false);
   const [correcting,       setCorrecting]       = useState(false);
   const [fixStatus,        setFixStatus]        = useState<'idle'|'fixed'|'error'>('idle');
+
+  // Document upload state
+  const [isExtractingDoc,  setIsExtractingDoc]  = useState(false);
+  const [docLaws,          setDocLaws]          = useState<string[]>([]);
+  const [extractedDocText, setExtractedDocText] = useState('');
+  const [docError,         setDocError]         = useState('');
+  const docInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setVoiceSupported(
@@ -160,7 +167,43 @@ export default function CreateDispute() {
   }
 
   const descWords = form.case_description.trim().length;
-  const descValid = descWords >= 50;
+  const descValid = descWords >= 50 || extractedDocText.length > 0;
+
+  async function handleDocUpload(file: File) {
+    setIsExtractingDoc(true);
+    setDocLaws([]);
+    setExtractedDocText('');
+    setDocError('');
+    try {
+      const token = localStorage.getItem('sla_token');
+      const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const formData = new FormData();
+      formData.append('file', file);
+      const res = await fetch(`${apiUrl}/document/extract-statement`, {
+        method:  'POST',
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        body:    formData,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || 'Failed to extract document');
+      }
+      const data = await res.json();
+      if (data.statement) {
+        setExtractedDocText(data.statement);
+      }
+      if (data.detected_laws?.length) {
+        setDocLaws(data.detected_laws);
+      }
+      if (data.language && data.language !== 'en') {
+        set('language', data.language);
+      }
+    } catch (err: any) {
+      setDocError(err.message || 'Document extraction failed. Please try again.');
+    } finally {
+      setIsExtractingDoc(false);
+    }
+  }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -170,8 +213,12 @@ export default function CreateDispute() {
 
     setLoading(true); setError('');
     try {
+      const combinedDescription = [form.case_description.trim(), extractedDocText.trim()]
+        .filter(Boolean)
+        .join('\n\n---\n');
+
       const payload: Record<string, string> = {
-        case_description: form.case_description,
+        case_description: combinedDescription,
         case_type: form.case_type,
         jurisdiction: `India/${form.state}`,
         state: form.state,
@@ -282,6 +329,35 @@ export default function CreateDispute() {
                     <Loader2 className="h-3 w-3 animate-spin" /> Transcribing…
                   </span>
                 )}
+                {!isExtractingDoc && !isTranscribing && (
+                  <>
+                    <button
+                      type="button"
+                      disabled={isExtractingDoc}
+                      onClick={() => docInputRef.current?.click()}
+                      title="Upload a legal document"
+                      className="flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all disabled:opacity-40"
+                    >
+                      <Paperclip className="h-3 w-3" /> Upload
+                    </button>
+                    <input
+                      ref={docInputRef}
+                      type="file"
+                      accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                      className="hidden"
+                      onChange={e => {
+                        const f = e.target.files?.[0];
+                        if (f) handleDocUpload(f);
+                        e.target.value = '';
+                      }}
+                    />
+                  </>
+                )}
+                {isExtractingDoc && (
+                  <span className="flex items-center gap-1 text-xs px-2 py-1 rounded-md border border-blue-200 bg-blue-50 text-blue-600">
+                    <Loader2 className="h-3 w-3 animate-spin" /> Extracting…
+                  </span>
+                )}
                 <span className={`text-xs ${descValid ? 'text-green-600' : 'text-slate-400'}`}>
                   {form.case_description.length} / 50+ chars
                 </span>
@@ -291,11 +367,51 @@ export default function CreateDispute() {
               value={form.case_description}
               onChange={e => set('case_description', e.target.value)}
               rows={6}
-              placeholder="Describe the situation in your own words. Include dates, amounts, what happened, and what outcome you're looking for. Be specific — the more detail you provide, the more accurate the AI mediation will be."
+              placeholder="Optional — type your own account here, or upload a document using the button above. You can also do both."
               className={`w-full px-3 py-3 text-sm border rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 resize-none leading-relaxed ${
                 isRecording ? 'border-red-300 ring-2 ring-red-100' : 'border-slate-200'
               }`}
             />
+
+            {/* Document status */}
+            <div className="flex items-center gap-2 flex-wrap mt-1.5">
+              {isExtractingDoc ? (
+                <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-600">
+                  <Loader2 className="h-3 w-3 animate-spin" />
+                  Extracting document in background…
+                </span>
+              ) : extractedDocText ? (
+                <>
+                  <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-green-200 bg-green-50 text-green-700">
+                    <Check className="h-3 w-3" />
+                    Document attached — will be sent with your account
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => { setExtractedDocText(''); setDocLaws([]); setDocError(''); }}
+                    className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+                  >
+                    ✕ Remove
+                  </button>
+                </>
+              ) : null}
+            </div>
+
+            {docError && (
+              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mt-1.5">{docError}</p>
+            )}
+            {docLaws.length > 0 && (
+              <div className="flex flex-wrap gap-1.5 mt-1.5">
+                {docLaws.map((law, li) => (
+                  <span
+                    key={li}
+                    className="inline-block text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full"
+                  >
+                    {law}
+                  </span>
+                ))}
+              </div>
+            )}
             {isRecording && (
               <div className="mt-1.5 flex items-center gap-2 text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
                 <span className="flex-shrink-0 w-2 h-2 rounded-full bg-red-500 animate-pulse" />

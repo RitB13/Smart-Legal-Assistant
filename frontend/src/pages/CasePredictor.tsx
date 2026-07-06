@@ -5,7 +5,7 @@ import {
   ShieldAlert, Home, Heart, Briefcase, FileText,
   BookOpen, RefreshCw, Gavel,
   Mic, MicOff, Sparkles, Check,
-  ChevronDown, ChevronUp, Library, MessageSquareWarning,
+  ChevronDown, ChevronUp, Library, MessageSquareWarning, Paperclip,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
@@ -530,6 +530,13 @@ const CasePredictor = () => {
   const [correcting,       setCorrecting]       = useState(false);
   const [fixStatus,        setFixStatus]        = useState<"idle" | "fixed" | "error">("idle");
 
+  // Document upload state
+  const [isExtractingDoc,  setIsExtractingDoc]  = useState(false);
+  const [docLaws,          setDocLaws]          = useState<string[]>([]);
+  const [extractedDocText, setExtractedDocText] = useState("");
+  const [docError,         setDocError]         = useState("");
+  const docInputRef = useRef<HTMLInputElement>(null);
+
   const apiUrl     = import.meta.env.VITE_API_URL || "http://localhost:8000";
   const authToken  = localStorage.getItem("sla_token");
   const authHeader = authToken ? { Authorization: `Bearer ${authToken}` } : {};
@@ -676,11 +683,42 @@ const CasePredictor = () => {
     }
   }
 
+  async function handleDocUpload(file: File) {
+    setIsExtractingDoc(true);
+    setDocLaws([]);
+    setExtractedDocText("");
+    setDocError("");
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      const res = await fetch(`${apiUrl}/document/extract-statement`, {
+        method:  "POST",
+        headers: { ...authHeader },
+        body:    formData,
+      });
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.detail || "Failed to extract document");
+      }
+      const data = await res.json();
+      if (data.statement) {
+        setExtractedDocText(data.statement);
+      }
+      if (data.detected_laws?.length) {
+        setDocLaws(data.detected_laws);
+      }
+    } catch (err: any) {
+      setDocError(err.message || "Document extraction failed. Please try again.");
+    } finally {
+      setIsExtractingDoc(false);
+    }
+  }
+
   // ── Handlers ──────────────────────────────────────────────────────────────
 
   const handleStatementNext = () => {
-    if (statement.trim().length < 40) {
-      setError("Please describe your situation in a bit more detail (at least 40 characters).");
+    if (statement.trim().length < 40 && !extractedDocText) {
+      setError("Please describe your situation (at least 40 characters) or upload a document.");
       return;
     }
     setError(null);
@@ -721,7 +759,9 @@ const CasePredictor = () => {
           case_type:          relief.case_type,
           year:               new Date().getFullYear(),
           jurisdiction_state: location.trim(),
-          description:        statement.trim(),
+          description:        [statement.trim(), extractedDocText.trim()]
+                                .filter(Boolean)
+                                .join("\n\n---\n"),
           role:               role,
           relief_sought:      relief.label,
           is_appeal:          relief.is_appeal,
@@ -773,6 +813,10 @@ const CasePredictor = () => {
     setLocation("");
     setPrediction(null);
     setError(null);
+    setDocLaws([]);
+    setExtractedDocText("");
+    setDocError("");
+    setIsExtractingDoc(false);
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -906,13 +950,13 @@ const CasePredictor = () => {
                         value={statement}
                         onChange={e => updateStatement(e.target.value)}
                         onKeyDown={e => {
-                          if (e.key === "Enter" && !e.shiftKey && statement.trim().length >= 40) {
+                          if (e.key === "Enter" && !e.shiftKey && (statement.trim().length >= 40 || extractedDocText)) {
                             e.preventDefault();
                             handleStatementNext();
                           }
                         }}
                         placeholder={
-                          `Example:\n\n"My employer of 5 years terminated me without any notice or valid reason. ` +
+                          `Optional — type your own statement here, or upload a document below.\n\nExample:\n\n"My employer of 5 years terminated me without any notice or valid reason. ` +
                           `They refused to settle my pending salary dues or provide a written explanation. ` +
                           `I have all salary slips and my employment contract as evidence. ` +
                           `I want to recover my dues and seek legal remedy for wrongful termination."`
@@ -970,15 +1014,83 @@ const CasePredictor = () => {
                         </p>
                       )}
 
+                      {/* Document upload row */}
+                      <div className="flex items-center gap-2 flex-wrap">
+                        {isExtractingDoc ? (
+                          <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-blue-200 bg-blue-50 text-blue-600">
+                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                            Extracting document in background…
+                          </span>
+                        ) : extractedDocText ? (
+                          <>
+                            <span className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-green-200 bg-green-50 text-green-700">
+                              <Check className="w-3.5 h-3.5" />
+                              Document attached — will be sent with your statement
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => { setExtractedDocText(""); setDocLaws([]); setDocError(""); }}
+                              className="text-xs text-slate-400 hover:text-red-500 transition-colors"
+                              title="Remove document"
+                            >
+                              ✕ Remove
+                            </button>
+                          </>
+                        ) : (
+                          <button
+                            type="button"
+                            onClick={() => docInputRef.current?.click()}
+                            className="flex items-center gap-1.5 text-xs px-3 py-1.5 rounded-lg border border-slate-200 bg-slate-50 text-slate-600 hover:bg-slate-100 transition-all"
+                          >
+                            <Paperclip className="w-3.5 h-3.5" />
+                            Upload a document (PDF / DOCX)
+                          </button>
+                        )}
+                        <input
+                          ref={docInputRef}
+                          type="file"
+                          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                          className="hidden"
+                          onChange={e => {
+                            const f = e.target.files?.[0];
+                            if (f) handleDocUpload(f);
+                            e.target.value = "";
+                          }}
+                        />
+                      </div>
+
+                      {/* Doc error */}
+                      {docError && (
+                        <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">
+                          {docError}
+                        </p>
+                      )}
+
+                      {/* Laws chips */}
+                      {docLaws.length > 0 && (
+                        <div className="flex flex-wrap gap-1.5">
+                          {docLaws.map((law, li) => (
+                            <span
+                              key={li}
+                              className="inline-block text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full"
+                            >
+                              {law}
+                            </span>
+                          ))}
+                        </div>
+                      )}
+
                       <div className="flex items-center justify-between">
                         <p className="text-xs text-gray-400">
-                          {statement.length < 40
-                            ? `${40 - statement.length} more characters needed`
+                          {extractedDocText
+                            ? `${statement.length > 0 ? statement.length + " chars + " : ""}document attached`
+                            : statement.length < 40
+                            ? `${40 - statement.length} more characters needed, or upload a document`
                             : `${statement.length} characters · Shift+Enter for new line`}
                         </p>
                         <button
                           onClick={handleStatementNext}
-                          disabled={statement.trim().length < 40}
+                          disabled={statement.trim().length < 40 && !extractedDocText}
                           className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-gradient-to-r from-blue-500 to-purple-600 text-white text-sm font-medium disabled:opacity-40 hover:shadow-lg transition-all"
                         >
                           <Send className="w-3.5 h-3.5" />
