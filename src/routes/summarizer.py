@@ -105,7 +105,18 @@ async def extract_statement(file: UploadFile = File(...)):
         statement = ""
         detected_laws: List[str] = []
         try:
-            raw = get_legal_response(prompt, language="en", max_tokens=600, temperature=0.2)
+            raw = get_legal_response(
+                prompt,
+                language="en",
+                max_tokens=600,
+                temperature=0.2,
+                timeout=60,
+                system_prompt=(
+                    "You are a legal assistant. Respond ONLY with valid JSON exactly "
+                    "matching the structure the user specifies. "
+                    "No extra text, no markdown fences, no prose outside the JSON object."
+                ),
+            )
             cleaned = raw.strip()
 
             # Strip markdown fences if present
