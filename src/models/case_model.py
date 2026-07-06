@@ -94,6 +94,7 @@ class SimilarCase(BaseModel):
     verdict: str = Field(..., description="Verdict in similar case")
     similarity_score: float = Field(..., ge=0.0, le=1.0, description="Similarity to input case (0.0-1.0)")
     jurisdiction: str = Field(..., description="Jurisdiction of similar case")
+    summary: Optional[str] = Field(None, description="Brief summary of the case facts")
 
 
 class VerdictProbabilities(BaseModel):

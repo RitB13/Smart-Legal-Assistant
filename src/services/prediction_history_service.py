@@ -93,7 +93,7 @@ class PredictionHistoryService:
             return None
     
     @staticmethod
-    def get_user_predictions(user_id: str, limit: int = 50) -> List[CasePredictionInDB]:
+    def get_user_predictions(user_id: str, skip: int = 0, limit: int = 50) -> List[CasePredictionInDB]:
         """
         Get all predictions for a user, sorted by newest first.
         
@@ -115,7 +115,7 @@ class PredictionHistoryService:
         try:
             predictions = list(collection.find(
                 {"user_id": user_id}
-            ).sort("created_at", DESCENDING).limit(limit))
+            ).sort("created_at", DESCENDING).skip(skip).limit(limit))
             
             logger.info(f"✅ [PRED] Found {len(predictions)} prediction(s) for user")
             return [CasePredictionInDB(**pred) for pred in predictions]

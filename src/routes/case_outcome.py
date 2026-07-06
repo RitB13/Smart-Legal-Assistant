@@ -11,6 +11,7 @@ from src.models.case_model import (
     HealthCheckResponse
 )
 from src.services.case_outcome_predictor_service import get_predictor_service
+from src.services.precedent_service import get_precedent_service
 from src.services.model_manager import get_model_manager
 from src.services.monitoring_service import get_prediction_monitor
 from src.services.audit_trail_service import AuditTrailService
@@ -300,7 +301,42 @@ async def predict_case_outcome(
             if llm_enrichment
             else _get_recommendations(verdict_name, case_dict)
         )
-        
+
+        # Similar precedent cases — TF-IDF/SVD semantic search over 82k Indian judgments.
+        # Gracefully returns [] if the precedent index has not been built yet.
+        similar_cases_raw: List[SimilarCase] = []
+        try:
+            precedent_svc = get_precedent_service()
+            query_text = case_dict.get('description') or case_dict.get('case_name', '')
+            raw_results = precedent_svc.search(
+                query=query_text,
+                case_type_filter=case_dict.get('case_type'),
+                top_k=3,
+            )
+            for i, r in enumerate(raw_results):
+                outcome_raw = r.get('outcome', '')
+                # Normalise to Accepted / Rejected.
+                # Corpus may store labels as int (1/0) or string ("1"/"0"/"accepted"/"rejected")
+                outcome_str = str(outcome_raw).strip().lower()
+                if 'accept' in outcome_str or outcome_str == '1':
+                    verdict_label = 'Accepted'
+                elif 'reject' in outcome_str or outcome_str == '0':
+                    verdict_label = 'Rejected'
+                else:
+                    verdict_label = 'Unknown'
+                similar_cases_raw.append(SimilarCase(
+                    case_id=f"prec_{i+1}",
+                    case_name=r.get('case_name', ''),
+                    case_type=r.get('case_type', case_dict.get('case_type', 'Unknown')),
+                    year=2020,
+                    verdict=verdict_label,
+                    similarity_score=float(r.get('similarity', 0.0)),
+                    jurisdiction=case_dict.get('jurisdiction_state', 'India'),
+                    summary=r.get('summary') or None,
+                ))
+        except Exception as e:
+            logger.warning("[%s] Precedent search skipped: %s", prediction_id, e)
+
         # Build response
         response = CaseOutcomePredictionResponse(
             prediction_id=prediction_id,
@@ -320,7 +356,7 @@ async def predict_case_outcome(
             risk_level=risk_assessment.get('overall_risk', 'medium'),
             verdict_probabilities=verdict_probabilities,
             explanation=explanation_data,
-            similar_cases=_get_similar_cases(verdict_name, case_dict) if include_similar_cases else [],
+            similar_cases=similar_cases_raw,
             risk_assessment=risk_assessment,
             recommendations=recommendations,
             llm_analysis=llm_enrichment,

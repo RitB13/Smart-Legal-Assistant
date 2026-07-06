@@ -5,6 +5,7 @@ import {
   ShieldAlert, Home, Heart, Briefcase, FileText,
   BookOpen, RefreshCw, Gavel,
   Mic, MicOff, Sparkles, Check,
+  ChevronDown, ChevronUp, Zap, Library, MessageSquareWarning,
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
@@ -107,6 +108,26 @@ const ACCENT: Record<string, { border: string; hover: string; icon: string; badg
   purple: { border: "hover:border-purple-400", hover: "hover:bg-purple-50", icon: "text-purple-400 group-hover:text-purple-600", badge: "bg-purple-100 text-purple-700" },
 };
 
+// ── Similar-case title extractor ─────────────────────────────────────────────
+// The NyayaAnumana corpus stores truncated text excerpts in case_name, not
+// proper titles. This function strips judge citations and OCR artifacts to
+// produce a readable 90-char headline from either the case_name or summary.
+function extractCaseTitle(caseName: string, summary: string): string {
+  const words = (caseName || "").split(/\s+/).filter(Boolean);
+  // Detect OCR spaced text: "r e s p o n d e n t s" — >60% of words are ≤2 chars
+  const isOcr =
+    words.length > 3 &&
+    words.filter((w) => w.length <= 2).length / words.length > 0.6;
+  let source = isOcr || !caseName ? summary || "" : caseName || summary || "";
+  // Strip judge citation prefixes like "KURIAN, J. " or "Madan B. Lokur, J. 1. "
+  source = source.replace(/^[\w\s.]+,\s+J\.?\s+/i, "").replace(/^\d+\.\s+/, "").trim();
+  if (!source) return "Case Reference";
+  source = source.charAt(0).toUpperCase() + source.slice(1);
+  if (source.length <= 90) return source;
+  const cut = source.lastIndexOf(" ", 90);
+  return source.slice(0, cut > 40 ? cut : 90) + "…";
+}
+
 // ── Result display ────────────────────────────────────────────────────────────
 
 const PredictionResult = ({
@@ -129,6 +150,9 @@ const PredictionResult = ({
   const recs: string[] = llm?.recommendations?.length
     ? llm.recommendations
     : prediction.recommendations || [];
+
+  const [showCounterArgs, setShowCounterArgs] = useState(false);
+  const [expandedCases, setExpandedCases] = useState<Set<number>>(new Set());
 
   const confNum            = parseFloat(confPct);
   const riskLevel          = prediction.risk_level || "";
@@ -258,6 +282,177 @@ const PredictionResult = ({
                   <li key={i} className="text-xs text-purple-900 flex items-start gap-2">
                     <span className="text-purple-400 flex-shrink-0">▸</span>
                     <span>{factor}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ── Attention saliency ─────────────────────────────────────────────── */}
+      {(() => {
+        const STOPWORDS = new Set([
+          'the','to','a','an','of','in','is','it','and','or','for','with',
+          'this','that','be','as','at','by','on','are','was','were','been',
+          'have','has','had','not','from','but','if','so','do','its','they',
+          'which','who','will','shall','may','any','all','no','their','our',
+          'we','he','she','i','you','your','my','he','she','##s','##ed',
+          'seeks','court','order','case','filed','petition',
+        ]);
+        const seen = new Set<string>();
+        const meaningful = (prediction.explanation?.top_positive_features || [])
+          .filter((f: any) => {
+            const t = (f.feature || '').toLowerCase().replace(/^##/, '');
+            if (t.length < 3 || STOPWORDS.has(t) || seen.has(t)) return false;
+            seen.add(t);
+            return true;
+          })
+          .slice(0, 8);
+        if (!meaningful.length) return null;
+        return (
+          <div className="rounded-xl border border-slate-200 bg-white p-4">
+            <div className="flex items-center gap-2 mb-3">
+              <Zap className="w-4 h-4 text-indigo-500" />
+              <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+                What the Model Focused On
+              </p>
+            </div>
+            <div className="flex flex-wrap gap-2 mb-3">
+              {meaningful.map((f: any, i: number) => {
+                const intensity = Math.max(0.3, Math.min(1, f.impact * 20));
+                return (
+                  <span
+                    key={i}
+                    className="inline-flex items-center px-2.5 py-1 rounded-lg text-xs font-medium border"
+                    style={{
+                      backgroundColor: `rgba(99,102,241,${intensity * 0.15})`,
+                      borderColor: `rgba(99,102,241,${intensity * 0.4})`,
+                      color: intensity > 0.6 ? "#3730a3" : "#4f46e5",
+                    }}
+                  >
+                    {f.feature.replace(/^##/, '')}
+                  </span>
+                );
+              })}
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* ── Similar precedent cases ─────────────────────────────────────────── */}
+      {prediction.similar_cases?.length > 0 && (
+        <div className="rounded-xl border border-slate-200 bg-white p-4">
+          <div className="flex items-center gap-2 mb-3">
+            <Library className="w-4 h-4 text-blue-500" />
+            <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
+              Similar Past Cases
+            </p>
+          </div>
+          <div className="space-y-2">
+            {prediction.similar_cases.map((c: any, i: number) => {
+              const isAcceptedCase = c.verdict === "Accepted";
+              const isRejectedCase = c.verdict === "Rejected";
+              const isKnownVerdict = isAcceptedCase || isRejectedCase;
+              const isExpanded     = expandedCases.has(i);
+              const title          = extractCaseTitle(c.case_name || "", c.summary || "");
+              const fullText       = (c.summary || "").trim();
+
+              return (
+                <div
+                  key={i}
+                  className="rounded-lg bg-slate-50 border border-slate-100 overflow-hidden"
+                >
+                  {/* Clickable header row */}
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setExpandedCases((prev) => {
+                        const next = new Set(prev);
+                        isExpanded ? next.delete(i) : next.add(i);
+                        return next;
+                      })
+                    }
+                    className="w-full flex items-start gap-3 p-3 text-left hover:bg-slate-100 transition-colors cursor-pointer"
+                  >
+                    {isKnownVerdict && (
+                      <span
+                        className={`mt-0.5 flex-shrink-0 text-xs font-bold px-2 py-0.5 rounded-full ${
+                          isAcceptedCase
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}
+                      >
+                        {c.verdict}
+                      </span>
+                    )}
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-slate-800 leading-snug">
+                        {title}
+                      </p>
+                      {!isExpanded && fullText && (
+                        <p className="text-xs text-slate-500 mt-0.5 leading-relaxed line-clamp-2">
+                          {fullText}
+                        </p>
+                      )}
+                    </div>
+                    <div className="flex-shrink-0 flex flex-col items-end gap-1 ml-2">
+                      <span className="text-xs text-slate-400 font-mono whitespace-nowrap">
+                        {Math.round(c.similarity_score * 100)}% match
+                      </span>
+                      {fullText && (
+                        <span className="text-xs text-blue-500 whitespace-nowrap">
+                          {isExpanded ? "Show less ▲" : "Show more ▼"}
+                        </span>
+                      )}
+                    </div>
+                  </button>
+
+                  {/* Expanded full text */}
+                  {isExpanded && fullText && (
+                    <div className="px-3 pb-3 border-t border-slate-200">
+                      <p className="text-xs text-slate-600 leading-relaxed pt-2">
+                        {fullText}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
+      {/* ── Counter-arguments (collapsed) ──────────────────────────────────── */}
+      {llm?.counter_arguments?.length > 0 && (
+        <div className="rounded-xl border border-orange-200 bg-orange-50 overflow-hidden">
+          <button
+            type="button"
+            onClick={() => setShowCounterArgs(v => !v)}
+            className="w-full flex items-center justify-between gap-3 px-4 py-3 text-left hover:bg-orange-100 transition-colors"
+          >
+            <div className="flex items-center gap-2">
+              <MessageSquareWarning className="w-4 h-4 text-orange-600 flex-shrink-0" />
+              <p className="text-xs font-semibold text-orange-700 uppercase tracking-widest">
+                What the Other Side Will Argue
+              </p>
+            </div>
+            {showCounterArgs
+              ? <ChevronUp className="w-4 h-4 text-orange-500 flex-shrink-0" />
+              : <ChevronDown className="w-4 h-4 text-orange-500 flex-shrink-0" />}
+          </button>
+          {showCounterArgs && (
+            <div className="px-4 pb-4 border-t border-orange-200">
+              <p className="text-xs text-orange-600 mt-3 mb-2">
+                Prepare for these arguments from the respondent's side:
+              </p>
+              <ul className="space-y-2.5">
+                {llm.counter_arguments.map((arg: string, i: number) => (
+                  <li key={i} className="text-sm text-orange-900 flex items-start gap-2.5 leading-relaxed">
+                    <span className="flex-shrink-0 mt-0.5 w-5 h-5 rounded-full bg-orange-200 text-orange-700 text-xs font-bold flex items-center justify-center">
+                      {i + 1}
+                    </span>
+                    <span>{arg}</span>
                   </li>
                 ))}
               </ul>
@@ -565,8 +760,31 @@ const CasePredictor = () => {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.detail || `Server error ${res.status}`);
       }
-      setPrediction(await res.json());
+      const data = await res.json();
+      setPrediction(data);
       setPhase("result");
+
+      // Fire-and-forget: save to user prediction history (requires auth; silently skip if not logged in)
+      if (authToken) {
+        fetch(`${apiUrl}/predictions`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${authToken}` },
+          body: JSON.stringify({
+            case_type:         relief.case_type,
+            description:       statement.trim().slice(0, 500),
+            jurisdiction:      location.trim(),
+            predicted_verdict: data.verdict || "",
+            confidence_score:  data.probability ?? null,
+            legal_references:  data.llm_analysis?.applicable_laws ?? [],
+            analysis_details: {
+              prediction_id: data.prediction_id,
+              risk_level:    data.risk_level,
+              relief_sought: relief.label,
+              role,
+            },
+          }),
+        }).catch(() => { /* history save is non-critical */ });
+      }
     } catch (e) {
       setError(e instanceof Error ? e.message : "Prediction failed. Please try again.");
       setPhase("form");

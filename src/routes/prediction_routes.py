@@ -19,7 +19,10 @@ import logging
 from src.routes.auth_routes import get_current_user
 from src.services.auth_service import TokenData
 from src.services.prediction_history_service import PredictionHistoryService
-from src.models.db_models import CasePrediction
+from src.models.db_models import (
+    CasePrediction, CasePredictionCreate, CasePredictionInDB,
+    CasePredictionMetadata, PredictionResult as DbPredictionResult,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -70,6 +73,25 @@ class PredictionResponse(BaseModel):
     
     class Config:
         populate_by_name = True
+
+
+def _to_response(pred: CasePredictionInDB) -> PredictionResponse:
+    """Map the service's nested CasePredictionInDB to the flat PredictionResponse."""
+    ra = pred.result.risk_assessment or {}
+    return PredictionResponse(
+        _id=str(pred.id),
+        user_id=str(pred.user_id),
+        case_type=pred.metadata.case_type,
+        description=ra.get("description", pred.metadata.case_name),
+        jurisdiction=pred.metadata.jurisdiction_state,
+        predicted_verdict=pred.result.verdict,
+        confidence_score=round(pred.result.confidence / 100.0, 4) if pred.result.confidence else None,
+        legal_references=ra.get("legal_references", []),
+        impact_score=ra.get("impact_score"),
+        analysis_details={k: v for k, v in ra.items() if k not in ("description", "legal_references", "impact_score")},
+        created_at=pred.created_at,
+        updated_at=pred.created_at,
+    )
 
 
 class PredictionStatsResponse(BaseModel):
@@ -128,42 +150,40 @@ async def save_prediction(
     """
     try:
         logger.info(f"[PRED] Saving prediction for user {current_user.user_id}")
-        
-        prediction = PredictionHistoryService.save_prediction(
+
+        pred_data = CasePredictionCreate(
             user_id=current_user.user_id,
-            case_type=request.case_type,
-            description=request.description,
-            jurisdiction=request.jurisdiction,
-            predicted_verdict=request.predicted_verdict,
-            confidence_score=request.confidence_score,
-            legal_references=request.legal_references or [],
-            impact_score=request.impact_score,
-            analysis_details=request.analysis_details or {}
+            metadata=CasePredictionMetadata(
+                case_name=(request.analysis_details or {}).get("relief_sought", request.case_type)[:120],
+                case_type=request.case_type,
+                year=datetime.utcnow().year,
+                jurisdiction_state=request.jurisdiction,
+            ),
+            result=DbPredictionResult(
+                verdict=request.predicted_verdict or "Unknown",
+                confidence=round((request.confidence_score or 0.0) * 100, 1),
+                probabilities={request.predicted_verdict: request.confidence_score or 0.0} if request.predicted_verdict else {},
+                shap_explanation={},
+                similar_cases=[],
+                risk_assessment={
+                    "description": request.description,
+                    "legal_references": request.legal_references or [],
+                    "impact_score": request.impact_score,
+                    **(request.analysis_details or {}),
+                },
+            ),
         )
-        
+        prediction = PredictionHistoryService.save_prediction(pred_data)
+
         if not prediction:
             logger.error(f"[PRED] Failed to save prediction for {current_user.user_id}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to save prediction"
             )
-        
+
         logger.info(f"[PRED] Prediction saved: {prediction.id}")
-        
-        return PredictionResponse(
-            _id=str(prediction.id),
-            user_id=str(prediction.user_id),
-            case_type=prediction.case_type,
-            description=prediction.description,
-            jurisdiction=prediction.jurisdiction,
-            predicted_verdict=prediction.predicted_verdict,
-            confidence_score=prediction.confidence_score,
-            legal_references=prediction.legal_references,
-            impact_score=prediction.impact_score,
-            analysis_details=prediction.analysis_details,
-            created_at=prediction.created_at,
-            updated_at=prediction.updated_at
-        )
+        return _to_response(prediction)
         
     except HTTPException:
         raise
@@ -197,30 +217,14 @@ async def get_predictions(
     """
     try:
         logger.info(f"[PRED] Fetching predictions for user {current_user.user_id}")
-        
+
         predictions = PredictionHistoryService.get_user_predictions(
             user_id=current_user.user_id,
             skip=skip,
-            limit=limit
+            limit=limit,
         )
-        
-        result = []
-        for pred in predictions:
-            result.append(PredictionResponse(
-                _id=str(pred.id),
-                user_id=str(pred.user_id),
-                case_type=pred.case_type,
-                description=pred.description,
-                jurisdiction=pred.jurisdiction,
-                predicted_verdict=pred.predicted_verdict,
-                confidence_score=pred.confidence_score,
-                legal_references=pred.legal_references,
-                impact_score=pred.impact_score,
-                analysis_details=pred.analysis_details,
-                created_at=pred.created_at,
-                updated_at=pred.updated_at
-            ))
-        
+
+        result = [_to_response(p) for p in predictions]
         logger.debug(f"[PRED] Retrieved {len(result)} predictions for {current_user.user_id}")
         return result
         
@@ -270,21 +274,8 @@ async def get_prediction(
                 detail="Access denied"
             )
         
-        return PredictionResponse(
-            _id=str(prediction.id),
-            user_id=str(prediction.user_id),
-            case_type=prediction.case_type,
-            description=prediction.description,
-            jurisdiction=prediction.jurisdiction,
-            predicted_verdict=prediction.predicted_verdict,
-            confidence_score=prediction.confidence_score,
-            legal_references=prediction.legal_references,
-            impact_score=prediction.impact_score,
-            analysis_details=prediction.analysis_details,
-            created_at=prediction.created_at,
-            updated_at=prediction.updated_at
-        )
-        
+        return _to_response(prediction)
+
     except HTTPException:
         raise
     except Exception as e:
@@ -370,38 +361,26 @@ async def search_predictions(
     try:
         logger.info(f"[PRED] Searching predictions for user {current_user.user_id}")
         
-        # Build search query
-        search_query = {"user_id": current_user.user_id}
-        
-        if case_type:
-            search_query["case_type"] = case_type
-        if verdict:
-            search_query["predicted_verdict"] = verdict
-        if jurisdiction:
-            search_query["jurisdiction"] = jurisdiction
-        if min_confidence is not None:
-            search_query["confidence_score"] = {"$gte": min_confidence}
-        
-        # Perform search using service method or direct query
-        predictions = PredictionHistoryService.search_predictions(search_query)
-        
+        # Fetch all user predictions then filter in Python
+        # (corpus is small per-user, so this is acceptable)
+        all_preds = PredictionHistoryService.get_user_predictions(
+            user_id=current_user.user_id, skip=0, limit=200
+        )
+
         result = []
-        for pred in predictions:
-            result.append(PredictionResponse(
-                _id=str(pred.id),
-                user_id=str(pred.user_id),
-                case_type=pred.case_type,
-                description=pred.description,
-                jurisdiction=pred.jurisdiction,
-                predicted_verdict=pred.predicted_verdict,
-                confidence_score=pred.confidence_score,
-                legal_references=pred.legal_references,
-                impact_score=pred.impact_score,
-                analysis_details=pred.analysis_details,
-                created_at=pred.created_at,
-                updated_at=pred.updated_at
-            ))
-        
+        for pred in all_preds:
+            if verdict and pred.result.verdict != verdict:
+                continue
+            if case_type and pred.metadata.case_type != case_type:
+                continue
+            if jurisdiction and pred.metadata.jurisdiction_state != jurisdiction:
+                continue
+            if min_confidence is not None:
+                conf = pred.result.confidence / 100.0 if pred.result.confidence else 0
+                if conf < min_confidence:
+                    continue
+            result.append(_to_response(pred))
+
         logger.info(f"[PRED] Found {len(result)} matching predictions")
         return result
         
