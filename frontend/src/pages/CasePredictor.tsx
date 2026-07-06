@@ -151,7 +151,7 @@ const PredictionResult = ({
   return (
     <div className="space-y-4 animate-fade-up">
       {/* Banner */}
-      <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3">
+      <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3 dark:bg-green-900/20 dark:border-green-800/40 dark:text-green-300">
         <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
         <span className="text-sm font-medium">
           Analysis complete — here is what the AI model predicts
@@ -159,13 +159,13 @@ const PredictionResult = ({
       </div>
 
       {/* Verdict card */}
-      <div className={`rounded-2xl p-6 border-2 ${isAccepted ? "bg-green-50 border-green-300" : "bg-red-50 border-red-300"}`}>
+      <div className={`rounded-2xl p-6 border-2 ${isAccepted ? "bg-green-50 border-green-300 dark:bg-green-900/15 dark:border-green-700/50" : "bg-red-50 border-red-300 dark:bg-red-900/15 dark:border-red-700/50"}`}>
         <div className="flex items-start justify-between gap-4">
           <div>
             <p className={`text-xs font-semibold uppercase tracking-widest mb-2 ${isAccepted ? "text-green-600" : "text-red-600"}`}>
               Predicted Outcome
             </p>
-            <p className={`text-4xl font-bold ${isAccepted ? "text-green-900" : "text-red-900"}`}>
+            <p className={`text-4xl font-bold ${isAccepted ? "text-green-900 dark:text-green-300" : "text-red-900 dark:text-red-300"}`}>
               {verdict}
             </p>
             {riskLabel && (
@@ -190,7 +190,7 @@ const PredictionResult = ({
 
       {/* ── Mediation suggestion ─────────────────────────────────────────── */}
       {showMediation && (
-        <div className="rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-5">
+        <div className="rounded-2xl border-2 border-indigo-200 bg-gradient-to-br from-indigo-50 to-purple-50 p-5 dark:border-indigo-800/40 dark:from-indigo-900/20 dark:to-purple-900/20">
           <div className="flex items-start gap-3">
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0 shadow-md">
               <Scale className="w-5 h-5 text-white" />
@@ -226,11 +226,11 @@ const PredictionResult = ({
 
       {/* Legal reasoning */}
       {llm?.legal_reasoning && (
-        <div className="rounded-xl border border-gray-200 bg-white p-4">
+        <div className="rounded-xl border border-gray-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/60">
           <p className="text-xs font-semibold text-gray-400 uppercase tracking-widest mb-2">
             Legal Reasoning
           </p>
-          <p className="text-sm text-gray-800 leading-relaxed">{llm.legal_reasoning}</p>
+          <p className="text-sm text-gray-800 dark:text-slate-200 leading-relaxed">{llm.legal_reasoning}</p>
         </div>
       )}
 
@@ -238,7 +238,7 @@ const PredictionResult = ({
       {(llm?.applicable_laws?.length > 0 || llm?.key_factors?.length > 0) && (
         <div className="grid grid-cols-2 gap-4">
           {llm?.applicable_laws?.length > 0 && (
-            <div className="rounded-xl border border-blue-100 bg-blue-50 p-4">
+            <div className="rounded-xl border border-blue-100 bg-blue-50 p-4 dark:border-blue-800/40 dark:bg-blue-900/15">
               <p className="text-xs font-semibold text-blue-500 uppercase tracking-widest mb-3">
                 Applicable Laws
               </p>
@@ -253,7 +253,7 @@ const PredictionResult = ({
             </div>
           )}
           {llm?.key_factors?.length > 0 && (
-            <div className="rounded-xl border border-purple-100 bg-purple-50 p-4">
+            <div className="rounded-xl border border-purple-100 bg-purple-50 p-4 dark:border-purple-800/40 dark:bg-purple-900/15">
               <p className="text-xs font-semibold text-purple-500 uppercase tracking-widest mb-3">
                 Key Factors
               </p>
@@ -273,7 +273,7 @@ const PredictionResult = ({
 
       {/* ── Similar precedent cases ─────────────────────────────────────────── */}
       {prediction.similar_cases?.length > 0 && (
-        <div className="rounded-xl border border-slate-200 bg-white p-4">
+        <div className="rounded-xl border border-slate-200 bg-white p-4 dark:border-slate-700 dark:bg-slate-800/60">
           <div className="flex items-center gap-2 mb-3">
             <Library className="w-4 h-4 text-blue-500" />
             <p className="text-xs font-semibold text-slate-500 uppercase tracking-widest">
@@ -312,7 +312,7 @@ const PredictionResult = ({
               return (
                 <div
                   key={i}
-                  className="rounded-lg bg-slate-50 border border-slate-100 overflow-hidden"
+                  className="rounded-lg bg-slate-50 border border-slate-100 overflow-hidden dark:bg-slate-800/40 dark:border-slate-700"
                 >
                   <button
                     type="button"
@@ -323,7 +323,7 @@ const PredictionResult = ({
                         return next;
                       })
                     }
-                    className="w-full flex items-start gap-3 p-3 text-left hover:bg-slate-100 transition-colors cursor-pointer"
+                    className="w-full flex items-start gap-3 p-3 text-left hover:bg-slate-100 transition-colors cursor-pointer dark:hover:bg-slate-700/50"
                   >
                     <div className="flex-1 min-w-0">
                       {/* Verdict badge */}
@@ -398,7 +398,7 @@ const PredictionResult = ({
 
       {/* ── Counter-arguments (collapsed) ──────────────────────────────────── */}
       {llm?.counter_arguments?.length > 0 && (
-        <div className="rounded-xl border border-orange-200 bg-orange-50 overflow-hidden">
+        <div className="rounded-xl border border-orange-200 bg-orange-50 overflow-hidden dark:border-orange-800/40 dark:bg-orange-900/15">
           <button
             type="button"
             onClick={() => setShowCounterArgs(v => !v)}
@@ -436,7 +436,7 @@ const PredictionResult = ({
 
       {/* Risk assessment */}
       {llm?.risk_assessment && (
-        <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 flex items-start gap-3">
+        <div className="rounded-xl border border-amber-100 bg-amber-50 p-4 flex items-start gap-3 dark:border-amber-800/40 dark:bg-amber-900/15">
           <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
           <div>
             <p className="text-xs font-semibold text-amber-600 uppercase tracking-widest mb-1">
@@ -449,7 +449,7 @@ const PredictionResult = ({
 
       {/* Recommendations */}
       {recs.length > 0 && (
-        <div className="rounded-xl border border-green-100 bg-green-50 p-4">
+        <div className="rounded-xl border border-green-100 bg-green-50 p-4 dark:border-green-800/40 dark:bg-green-900/15">
           <p className="text-xs font-semibold text-green-600 uppercase tracking-widest mb-3">
             Recommended Next Steps
           </p>
@@ -473,7 +473,7 @@ const PredictionResult = ({
       <div className="flex flex-col sm:flex-row gap-3 pt-2">
         <button
           onClick={onReset}
-          className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-700 hover:border-gray-300 hover:bg-gray-50 transition-all"
+          className="flex items-center justify-center gap-2 px-5 py-3 rounded-xl border-2 border-gray-200 text-sm font-medium text-gray-700 hover:border-gray-300 hover:bg-gray-50 transition-all dark:border-slate-600 dark:text-slate-300 dark:hover:border-slate-500 dark:hover:bg-slate-800"
         >
           <RotateCcw className="w-4 h-4" />
           Analyse Another Case
@@ -823,12 +823,12 @@ const CasePredictor = () => {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 -mt-16 pt-24 pb-8">
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-[#060d1a] dark:via-[#060d1a] dark:to-[#060d1a] -mt-16 pt-24 pb-8">
         <div className="container mx-auto px-4 max-w-2xl">
 
           {/* Page header */}
           <div className="text-center mb-8 animate-fade-up">
-            <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3">
+            <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3 dark:bg-blue-900/40 dark:text-blue-300">
               <TrendingUp className="w-3.5 h-3.5" />
               Powered by InLegalBERT
             </div>
@@ -842,11 +842,11 @@ const CasePredictor = () => {
 
           {/* ── Loading ─────────────────────────────────────────────────────── */}
           {phase === "loading" && (
-            <div className="rounded-2xl border-2 border-gray-200 bg-white shadow-xl p-12 text-center animate-fade-up">
-              <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-5">
-                <Loader2 className="w-8 h-8 text-blue-600 animate-spin" />
+            <div className="rounded-2xl border-2 border-gray-200 bg-white shadow-xl p-12 text-center animate-fade-up dark:border-slate-700 dark:bg-slate-900">
+              <div className="w-16 h-16 rounded-full bg-blue-50 flex items-center justify-center mx-auto mb-5 dark:bg-blue-900/30">
+                <Loader2 className="w-8 h-8 text-blue-600 animate-spin dark:text-blue-400" />
               </div>
-              <h2 className="text-xl font-bold text-gray-800 mb-2">Analysing your case…</h2>
+              <h2 className="text-xl font-bold text-gray-800 mb-2 dark:text-white">Analysing your case…</h2>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
                 We're converting your statement into legal language and running it
                 through InLegalBERT. This takes a few seconds.
@@ -861,17 +861,17 @@ const CasePredictor = () => {
 
           {/* ── Form ────────────────────────────────────────────────────────── */}
           {phase === "form" && (
-            <div className="rounded-2xl border-2 border-gray-200 bg-white shadow-xl overflow-hidden animate-fade-up">
+            <div className="rounded-2xl border-2 border-gray-200 bg-white shadow-xl overflow-hidden animate-fade-up dark:border-slate-700 dark:bg-slate-900">
 
               {/* Progress header */}
-              <div className="px-6 pt-6 pb-4 border-b border-gray-100">
+              <div className="px-6 pt-6 pb-4 border-b border-gray-100 dark:border-slate-700">
                 <div className="flex items-center justify-between text-xs text-gray-400 mb-2">
-                  <span className="font-medium text-gray-600">
+                  <span className="font-medium text-gray-600 dark:text-slate-400">
                     Step {step + 1} of {STEP_LABELS.length}
                   </span>
                   <span>{progress}% complete</span>
                 </div>
-                <div className="h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                <div className="h-1.5 bg-gray-100 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
                     className="h-full bg-gradient-to-r from-blue-500 to-purple-600 rounded-full transition-all duration-500"
                     style={{ width: `${progress}%` }}
@@ -882,9 +882,9 @@ const CasePredictor = () => {
                     <div
                       key={i}
                       className={`text-xs px-2.5 py-0.5 rounded-full font-medium transition-all ${
-                        i === step   ? "bg-blue-100 text-blue-700"
-                        : i < step  ? "bg-green-100 text-green-700"
-                        : "bg-gray-100 text-gray-400"
+                        i === step   ? "bg-blue-100 text-blue-700 dark:bg-blue-900/40 dark:text-blue-300"
+                        : i < step  ? "bg-green-100 text-green-700 dark:bg-green-900/40 dark:text-green-300"
+                        : "bg-gray-100 text-gray-400 dark:bg-slate-700 dark:text-slate-500"
                       }`}
                     >
                       {i < step ? "✓ " : ""}{label}
@@ -901,10 +901,10 @@ const CasePredictor = () => {
                   <div className="space-y-5">
                     <div className="flex items-start justify-between gap-3">
                       <div>
-                        <h2 className="text-2xl font-bold text-gray-800 leading-snug mb-2">
+                        <h2 className="text-2xl font-bold text-gray-800 dark:text-white leading-snug mb-2">
                           Tell us what happened
                         </h2>
-                        <p className="text-sm text-gray-500 leading-relaxed">
+                        <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
                           Describe the situation in your own words — who is involved, what
                           the dispute or complaint is about, and what has happened so far.
                           The more detail you give, the more accurate the analysis.
@@ -961,10 +961,10 @@ const CasePredictor = () => {
                           `I have all salary slips and my employment contract as evidence. ` +
                           `I want to recover my dues and seek legal remedy for wrongful termination."`
                         }
-                        className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none transition-colors resize-none leading-relaxed ${
+                        className={`w-full px-4 py-3 rounded-xl border-2 bg-white text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none transition-colors resize-none leading-relaxed dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-600 ${
                           isRecording
-                            ? "border-red-300 ring-2 ring-red-100 focus:border-red-400"
-                            : "border-gray-200 focus:border-blue-400"
+                            ? "border-red-300 ring-2 ring-red-100 focus:border-red-400 dark:border-red-700 dark:ring-red-900/40"
+                            : "border-gray-200 focus:border-blue-400 dark:border-slate-600 dark:focus:border-blue-500"
                         }`}
                       />
 
@@ -1105,10 +1105,10 @@ const CasePredictor = () => {
                 {step === 1 && (
                   <div className="space-y-5">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-800 leading-snug mb-2">
+                      <h2 className="text-2xl font-bold text-gray-800 dark:text-white leading-snug mb-2">
                         What are you asking the court for?
                       </h2>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 dark:text-slate-400">
                         Select the outcome that best represents what you want. This helps
                         the model understand the nature of your petition.
                       </p>
@@ -1121,13 +1121,13 @@ const CasePredictor = () => {
                           <button
                             key={opt.id}
                             onClick={() => handleReliefSelect(opt)}
-                            className={`group text-left px-4 py-4 rounded-xl border-2 border-gray-200 bg-white transition-all ${a.border} ${a.hover}`}
+                            className={`group text-left px-4 py-4 rounded-xl border-2 border-gray-200 bg-white transition-all ${a.border} ${a.hover} dark:border-slate-700 dark:bg-slate-800/60 dark:hover:bg-slate-700/60 dark:hover:border-slate-600`}
                           >
                             <Icon className={`w-5 h-5 mb-2 transition-colors ${a.icon}`} />
-                            <p className="text-sm font-semibold text-gray-700 leading-tight mb-1 group-hover:text-gray-900 transition-colors">
+                            <p className="text-sm font-semibold text-gray-700 dark:text-slate-200 leading-tight mb-1 group-hover:text-gray-900 dark:group-hover:text-white transition-colors">
                               {opt.label}
                             </p>
-                            <p className="text-xs text-gray-400 leading-snug">{opt.desc}</p>
+                            <p className="text-xs text-gray-400 dark:text-slate-500 leading-snug">{opt.desc}</p>
                           </button>
                         );
                       })}
@@ -1139,10 +1139,10 @@ const CasePredictor = () => {
                 {step === 2 && (
                   <div className="space-y-5">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-800 leading-snug mb-2">
+                      <h2 className="text-2xl font-bold text-gray-800 dark:text-white leading-snug mb-2">
                         In this matter, you are the…
                       </h2>
-                      <p className="text-sm text-gray-500">
+                      <p className="text-sm text-gray-500 dark:text-slate-400">
                         This tells the AI how to frame your statement — whether you
                         initiated the case or are defending against it.
                       </p>
@@ -1150,30 +1150,30 @@ const CasePredictor = () => {
                     <div className="grid grid-cols-2 gap-4">
                       <button
                         onClick={() => handleRoleSelect("petitioner")}
-                        className="group text-left px-5 py-5 rounded-xl border-2 border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50 transition-all"
+                        className="group text-left px-5 py-5 rounded-xl border-2 border-gray-200 bg-white hover:border-blue-400 hover:bg-blue-50 transition-all dark:border-slate-700 dark:bg-slate-800/60 dark:hover:border-blue-600/60 dark:hover:bg-blue-900/20"
                       >
-                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors">
-                          <Scale className="w-5 h-5 text-blue-600" />
+                        <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center mb-3 group-hover:bg-blue-200 transition-colors dark:bg-blue-900/40 dark:group-hover:bg-blue-800/60">
+                          <Scale className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                         </div>
-                        <p className="text-sm font-bold text-gray-800 group-hover:text-blue-700 mb-1 transition-colors">
+                        <p className="text-sm font-bold text-gray-800 dark:text-white group-hover:text-blue-700 dark:group-hover:text-blue-300 mb-1 transition-colors">
                           Complainant / Petitioner
                         </p>
-                        <p className="text-xs text-gray-400 leading-snug">
+                        <p className="text-xs text-gray-400 dark:text-slate-500 leading-snug">
                           You have filed or are planning to file this case. You are seeking
                           justice or relief from the court.
                         </p>
                       </button>
                       <button
                         onClick={() => handleRoleSelect("respondent")}
-                        className="group text-left px-5 py-5 rounded-xl border-2 border-gray-200 bg-white hover:border-orange-400 hover:bg-orange-50 transition-all"
+                        className="group text-left px-5 py-5 rounded-xl border-2 border-gray-200 bg-white hover:border-orange-400 hover:bg-orange-50 transition-all dark:border-slate-700 dark:bg-slate-800/60 dark:hover:border-orange-700/60 dark:hover:bg-orange-900/20"
                       >
-                        <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center mb-3 group-hover:bg-orange-200 transition-colors">
-                          <ShieldAlert className="w-5 h-5 text-orange-600" />
+                        <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center mb-3 group-hover:bg-orange-200 transition-colors dark:bg-orange-900/40 dark:group-hover:bg-orange-800/60">
+                          <ShieldAlert className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                         </div>
-                        <p className="text-sm font-bold text-gray-800 group-hover:text-orange-700 mb-1 transition-colors">
+                        <p className="text-sm font-bold text-gray-800 dark:text-white group-hover:text-orange-700 dark:group-hover:text-orange-300 mb-1 transition-colors">
                           Accused / Respondent
                         </p>
-                        <p className="text-xs text-gray-400 leading-snug">
+                        <p className="text-xs text-gray-400 dark:text-slate-500 leading-snug">
                           A case has been filed against you. You are defending yourself or
                           responding to a complaint.
                         </p>
@@ -1186,10 +1186,10 @@ const CasePredictor = () => {
                 {step === 3 && (
                   <div className="space-y-5">
                     <div>
-                      <h2 className="text-2xl font-bold text-gray-800 leading-snug mb-2">
+                      <h2 className="text-2xl font-bold text-gray-800 dark:text-white leading-snug mb-2">
                         Which state are you based in?
                       </h2>
-                      <p className="text-sm text-gray-500 leading-relaxed">
+                      <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
                         Jurisdiction determines which laws apply and how courts in that
                         region typically handle similar matters.
                       </p>
@@ -1210,7 +1210,7 @@ const CasePredictor = () => {
                         onChange={e => { setLocation(e.target.value); setError(null); }}
                         onKeyDown={e => e.key === "Enter" && handleLocationSubmit()}
                         placeholder="e.g., Delhi, Maharashtra, Karnataka, Tamil Nadu"
-                        className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-blue-400 transition-colors"
+                        className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-blue-400 transition-colors dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-600 dark:focus:border-blue-500"
                       />
                       <button
                         onClick={handleLocationSubmit}
@@ -1222,21 +1222,21 @@ const CasePredictor = () => {
                     </div>
 
                     {/* Summary of collected answers */}
-                    <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-2">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
+                    <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-2 dark:bg-slate-800/50 dark:border-slate-700">
+                      <p className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2">
                         Summary before prediction
                       </p>
-                      <div className="text-xs text-gray-600 space-y-1.5">
+                      <div className="text-xs text-gray-600 dark:text-slate-300 space-y-1.5">
                         <p>
-                          <span className="font-medium text-gray-700">You are:</span>{" "}
+                          <span className="font-medium text-gray-700 dark:text-slate-200">You are:</span>{" "}
                           {role === "petitioner" ? "Complainant / Petitioner" : "Accused / Respondent"}
                         </p>
                         <p>
-                          <span className="font-medium text-gray-700">Seeking:</span>{" "}
+                          <span className="font-medium text-gray-700 dark:text-slate-200">Seeking:</span>{" "}
                           {relief?.label}
                         </p>
                         <p className="leading-relaxed">
-                          <span className="font-medium text-gray-700">Statement:</span>{" "}
+                          <span className="font-medium text-gray-700 dark:text-slate-200">Statement:</span>{" "}
                           {statement.length > 120
                             ? statement.slice(0, 120) + "…"
                             : statement}
