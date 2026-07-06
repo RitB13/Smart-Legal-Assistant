@@ -15,6 +15,7 @@ from src.services.precedent_service import get_precedent_service
 from src.services.model_manager import get_model_manager
 from src.services.monitoring_service import get_prediction_monitor
 from src.services.audit_trail_service import AuditTrailService
+import json as _json
 import logging
 import uuid
 from datetime import datetime
@@ -23,6 +24,100 @@ import time
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/case-outcome", tags=["Case Outcome Prediction"])
+
+
+# ============================================================================
+# SIMILAR CASES LLM ENRICHMENT
+# ============================================================================
+
+def _enrich_similar_cases(raw_results: list) -> list:
+    """
+    Call Groq once with all similar case summaries to generate a meaningful title
+    and a complete 2-3 sentence description for each case.
+
+    Returns a list of {"title": str, "description": str} dicts aligned to raw_results.
+    Returns [] on any failure so the calling code falls back gracefully.
+    """
+    if not raw_results:
+        return []
+    try:
+        from src.services.llm_service import get_legal_response
+
+        case_blocks = ""
+        for i, r in enumerate(raw_results):
+            summary = (r.get("summary") or "").strip()
+            if summary:
+                case_blocks += f"\nCase {i + 1}:\n{summary[:800]}\n"
+
+        if not case_blocks.strip():
+            return []
+
+        prompt = (
+            "You are a legal analyst reviewing Indian court case excerpts.\n"
+            "For each excerpt below, provide four fields:\n"
+            "1. TITLE: A concise headline (5–10 words) naming the legal dispute "
+            "(e.g. 'SARFAESI Bank Recovery — NPA Challenge', "
+            "'Tenant Eviction — Arrears and Unauthorised Subletting').\n"
+            "2. DESCRIPTION: Exactly 2–3 complete sentences in plain English "
+            "explaining what the case is about. Every sentence must end with a full stop. "
+            "Do NOT use '...' or leave sentences incomplete. "
+            "If the excerpt ends mid-sentence, infer a logical conclusion from context.\n"
+            "3. LAWS_CITED: A JSON array of strings listing every Act, Code, Section, or Rule "
+            "explicitly mentioned or clearly applicable to this case "
+            "(e.g. [\"SARFAESI Act 2002\", \"Companies Act 1956\", \"Code of Civil Procedure\"]). "
+            "Return an empty array [] if none are identifiable.\n"
+            "4. DECISION: One complete sentence stating what the court decided or ordered, "
+            "or what relief was granted/refused. "
+            "If the excerpt does not reveal the final outcome, write what stage the case was at.\n\n"
+            "Rules:\n"
+            "- Title must be specific to this case, not a generic label.\n"
+            "- Do not put judge names or citation numbers in the title.\n"
+            "- Respond with ONLY valid JSON — no markdown fences, no extra text.\n\n"
+            f"{case_blocks}\n"
+            "Return a JSON array with one object per case in the same order:\n"
+            '[\n'
+            '  {"title": "...", "description": "...", "laws_cited": [...], "decision": "..."},\n'
+            '  {"title": "...", "description": "...", "laws_cited": [...], "decision": "..."}\n'
+            ']'
+        )
+
+        raw_response = get_legal_response(prompt, language="en", max_tokens=1200, temperature=0.15)
+        cleaned = raw_response.strip()
+
+        # Strip markdown fences if the model wrapped the output
+        if "```" in cleaned:
+            for block in cleaned.split("```"):
+                b = block.strip()
+                if b.startswith("json"):
+                    b = b[4:].strip()
+                if b.startswith("["):
+                    cleaned = b
+                    break
+
+        # Try direct parse
+        try:
+            result = _json.loads(cleaned)
+            if isinstance(result, list):
+                return result
+        except _json.JSONDecodeError:
+            pass
+
+        # Fallback: find array bounds and parse substring
+        try:
+            start = cleaned.index("[")
+            end = cleaned.rindex("]") + 1
+            result = _json.loads(cleaned[start:end])
+            if isinstance(result, list):
+                return result
+        except Exception:
+            pass
+
+        logger.warning("[Precedent] LLM enrichment: could not parse JSON from response")
+        return []
+
+    except Exception as e:
+        logger.warning("[Precedent] LLM title enrichment failed: %s", e)
+        return []
 
 
 # ============================================================================
@@ -313,6 +408,9 @@ async def predict_case_outcome(
                 case_type_filter=case_dict.get('case_type'),
                 top_k=3,
             )
+            # Generate meaningful titles and complete descriptions via Groq (single call for all 3)
+            llm_enrichments = _enrich_similar_cases(raw_results)
+
             for i, r in enumerate(raw_results):
                 outcome_raw = r.get('outcome', '')
                 # Normalise to Accepted / Rejected.
@@ -324,6 +422,9 @@ async def predict_case_outcome(
                     verdict_label = 'Rejected'
                 else:
                     verdict_label = 'Unknown'
+
+                enrichment = llm_enrichments[i] if i < len(llm_enrichments) else {}
+                laws_raw = enrichment.get('laws_cited')
                 similar_cases_raw.append(SimilarCase(
                     case_id=f"prec_{i+1}",
                     case_name=r.get('case_name', ''),
@@ -333,6 +434,10 @@ async def predict_case_outcome(
                     similarity_score=float(r.get('similarity', 0.0)),
                     jurisdiction=case_dict.get('jurisdiction_state', 'India'),
                     summary=r.get('summary') or None,
+                    llm_title=enrichment.get('title') or None,
+                    llm_description=enrichment.get('description') or None,
+                    llm_laws_cited=laws_raw if isinstance(laws_raw, list) and laws_raw else None,
+                    llm_decision=enrichment.get('decision') or None,
                 ))
         except Exception as e:
             logger.warning("[%s] Precedent search skipped: %s", prediction_id, e)

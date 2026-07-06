@@ -286,14 +286,28 @@ const PredictionResult = ({
               const isRejectedCase = c.verdict === "Rejected";
               const isKnownVerdict = isAcceptedCase || isRejectedCase;
               const isExpanded     = expandedCases.has(i);
-              // Strip leading judge citation ("KURIAN, J. " / "Madan B. Lokur, J. 1. ")
-              // so the text starts at the actual case facts, not the judge's name.
-              const rawText = (c.summary || "").trim();
-              const fullText = rawText
+
+              // Strip judge citation prefix so text starts at case facts.
+              const raw = (c.summary || "").trim();
+              const cleanedText = raw
                 .replace(/^[\w\s.]+,\s+J\.?\s+/i, "")
                 .replace(/^\d+\.\s+/, "")
-                .trim() || rawText;
-              const caseType = c.case_type || "Court Case";
+                .trim() || raw;
+
+              // Prefer LLM-generated title/description; fall back to sentence extraction.
+              const heading: string = c.llm_title || (() => {
+                const sentenceEnd = cleanedText.indexOf(". ", 40);
+                if (sentenceEnd > 0 && sentenceEnd < 220) return cleanedText.slice(0, sentenceEnd + 1);
+                if (cleanedText.length <= 160) return cleanedText;
+                return cleanedText.slice(0, cleanedText.lastIndexOf(" ", 160)) + "…";
+              })();
+
+              const body: string = c.llm_description || (() => {
+                const sentenceEnd = cleanedText.indexOf(". ", 40);
+                return sentenceEnd > 0 && sentenceEnd < 220
+                  ? cleanedText.slice(sentenceEnd + 2).trim()
+                  : "";
+              })();
 
               return (
                 <div
@@ -312,25 +326,24 @@ const PredictionResult = ({
                     className="w-full flex items-start gap-3 p-3 text-left hover:bg-slate-100 transition-colors cursor-pointer"
                   >
                     <div className="flex-1 min-w-0">
-                      {/* Case type + verdict badges */}
-                      <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
-                        <span className="text-xs font-medium text-blue-600 bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5">
-                          {caseType}
+                      {/* Verdict badge */}
+                      {isKnownVerdict && (
+                        <span className={`inline-block text-xs font-medium px-1.5 py-0.5 rounded mb-1.5 ${
+                          isAcceptedCase
+                            ? "bg-green-100 text-green-700"
+                            : "bg-red-100 text-red-700"
+                        }`}>
+                          {c.verdict}
                         </span>
-                        {isKnownVerdict && (
-                          <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${
-                            isAcceptedCase
-                              ? "bg-green-100 text-green-700"
-                              : "bg-red-100 text-red-700"
-                          }`}>
-                            {c.verdict}
-                          </span>
-                        )}
-                      </div>
-                      {/* Description — 2-line preview when collapsed */}
-                      {fullText && (
-                        <p className={`text-xs text-slate-700 leading-relaxed ${!isExpanded ? "line-clamp-2" : ""}`}>
-                          {fullText}
+                      )}
+                      {/* Heading — LLM-generated title or first sentence */}
+                      <p className="text-xs font-semibold text-slate-800 leading-snug">
+                        {heading}
+                      </p>
+                      {/* Description — always fully visible (LLM descriptions are complete sentences) */}
+                      {body && (
+                        <p className="text-xs text-slate-500 mt-1 leading-relaxed">
+                          {body}
                         </p>
                       )}
                     </div>
@@ -338,19 +351,42 @@ const PredictionResult = ({
                       <span className="text-xs text-slate-400 font-mono whitespace-nowrap">
                         {Math.round(c.similarity_score * 100)}% match
                       </span>
-                      {fullText && (
-                        <span className="text-xs text-blue-500 whitespace-nowrap">
-                          {isExpanded ? "Less ▲" : "More ▼"}
-                        </span>
-                      )}
+                      <span className="text-xs text-blue-500 whitespace-nowrap">
+                        {isExpanded ? "Less ▲" : "More ▼"}
+                      </span>
                     </div>
                   </button>
 
-                  {isExpanded && fullText && (
-                    <div className="px-3 pb-3 border-t border-slate-200">
-                      <p className="text-xs text-slate-600 leading-relaxed pt-2">
-                        {rawText}
-                      </p>
+                  {/* Expanded: laws cited + court decision */}
+                  {isExpanded && (c.llm_laws_cited?.length > 0 || c.llm_decision) && (
+                    <div className="px-3 pb-3 border-t border-slate-200 space-y-2 pt-2">
+                      {c.llm_laws_cited?.length > 0 && (
+                        <div>
+                          <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1.5">
+                            Laws &amp; Acts
+                          </p>
+                          <div className="flex flex-wrap gap-1.5">
+                            {c.llm_laws_cited.map((law: string, li: number) => (
+                              <span
+                                key={li}
+                                className="inline-block text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full"
+                              >
+                                {law}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                      {c.llm_decision && (
+                        <div>
+                          <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1">
+                            Court&apos;s Decision
+                          </p>
+                          <p className="text-xs text-slate-700 leading-relaxed">
+                            {c.llm_decision}
+                          </p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>

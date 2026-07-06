@@ -95,6 +95,10 @@ class SimilarCase(BaseModel):
     similarity_score: float = Field(..., ge=0.0, le=1.0, description="Similarity to input case (0.0-1.0)")
     jurisdiction: str = Field(..., description="Jurisdiction of similar case")
     summary: Optional[str] = Field(None, description="Brief summary of the case facts")
+    llm_title: Optional[str] = Field(None, description="LLM-generated meaningful case title")
+    llm_description: Optional[str] = Field(None, description="LLM-generated complete case description")
+    llm_laws_cited: Optional[List[str]] = Field(None, description="LLM-extracted laws and acts referenced in the case")
+    llm_decision: Optional[str] = Field(None, description="LLM-summarised court decision")
 
 
 class VerdictProbabilities(BaseModel):
