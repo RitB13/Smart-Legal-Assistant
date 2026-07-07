@@ -167,20 +167,9 @@ class SmartModeRouter:
         """
         
         query_lower = query.lower()
-        
-        # Check for simulate mode indicators
-        if detection_result.is_simulator_query:
-            return ModeRecommendation(
-                primary_mode="simulate",
-                confidence=detection_result.confidence,
-                confidence_tier=self._confidence_to_tier(detection_result.confidence),
-                alternative_modes=["chat"],
-                reasoning=detection_result.reasoning,
-                extracted_action=detection_result.extracted_action,
-                conversation_context=self._extract_context(conversation_history)
-            )
-        
-        # Check for predict mode indicators
+
+        # Check predict indicators FIRST — outcome/chances queries must never be
+        # misclassified as simulate even if the simulator detector fires on them.
         predict_indicators = [
             # explicit prediction words
             "predict", "prediction", "case prediction",
@@ -206,7 +195,19 @@ class SmartModeRouter:
                 reasoning="User is asking about case prediction/outcome. "
                          "Recommend case outcome predictor for ML-based analysis."
             )
-        
+
+        # Check for simulate mode indicators (after predict, so outcome queries aren't hijacked)
+        if detection_result.is_simulator_query:
+            return ModeRecommendation(
+                primary_mode="simulate",
+                confidence=detection_result.confidence,
+                confidence_tier=self._confidence_to_tier(detection_result.confidence),
+                alternative_modes=["chat"],
+                reasoning=detection_result.reasoning,
+                extracted_action=detection_result.extracted_action,
+                conversation_context=self._extract_context(conversation_history)
+            )
+
         # Default to chat mode
         return ModeRecommendation(
             primary_mode="chat",
