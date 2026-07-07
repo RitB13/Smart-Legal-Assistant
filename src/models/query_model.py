@@ -361,6 +361,11 @@ class QueryResponse(BaseModel):
         description="Indian court precedents retrieved by the RAG system and used to ground this response"
     )
 
+    follow_up_questions: List[str] = Field(
+        default_factory=list,
+        description="Suggested follow-up questions the user might want to ask next"
+    )
+
     class Config:
         json_schema_extra = {
             "example": {

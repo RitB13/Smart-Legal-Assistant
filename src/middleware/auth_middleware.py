@@ -46,6 +46,7 @@ async def jwt_auth_middleware(request: Request, call_next: Callable):
         "/auth/resend-otp",
         "/auth/forgot-password",
         "/auth/reset-password",
+        "/shared/",
     ]
     
     request_path = request.url.path

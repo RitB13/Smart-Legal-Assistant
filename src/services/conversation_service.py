@@ -277,6 +277,38 @@ class ConversationService:
             return None
     
     @staticmethod
+    def generate_share_token(conv_id: str) -> Optional[str]:
+        """Generate a public share token for a conversation and store it in MongoDB."""
+        import secrets
+        collection = get_collection("conversations")
+        try:
+            token = secrets.token_urlsafe(24)
+            result = collection.update_one(
+                {"_id": ObjectId(conv_id)},
+                {"$set": {"share_token": token, "updated_at": datetime.utcnow()}}
+            )
+            if result.matched_count > 0:
+                logger.info(f"[CONV] Share token generated for: {conv_id}")
+                return token
+            return None
+        except Exception as e:
+            logger.error(f"[CONV] Error generating share token: {e}")
+            return None
+
+    @staticmethod
+    def get_by_share_token(token: str) -> Optional[ConversationInDB]:
+        """Find a conversation by its public share token (no auth required)."""
+        collection = get_collection("conversations")
+        try:
+            conv_dict = collection.find_one({"share_token": token})
+            if conv_dict:
+                return ConversationInDB(**conv_dict)
+            return None
+        except Exception as e:
+            logger.error(f"[CONV] Error finding by share token: {e}")
+            return None
+
+    @staticmethod
     def get_conversation_stats(user_id: str) -> dict:
         """
         Get conversation statistics for a user.

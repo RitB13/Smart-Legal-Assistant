@@ -46,6 +46,7 @@ app.add_middleware(
 # Include routers
 app.include_router(auth_routes.router, tags=["Authentication"])
 app.include_router(conversation_routes.router, tags=["Conversations"])
+app.include_router(conversation_routes.public_router, tags=["Shared"])
 app.include_router(prediction_routes.router, tags=["Predictions"])
 app.include_router(chat_intelligence.router, tags=["Chat Intelligence"])
 app.include_router(chatbot.router, tags=["Chatbot"])

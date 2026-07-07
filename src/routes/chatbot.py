@@ -552,12 +552,15 @@ def handle_query_stream(req: QueryRequest, request: Request):
         logger.info(f"[{request_id}] Stream completed in {elapsed:.2f}s ({len(full_text)} chars)")
 
         done_payload = {
-            "type":          "done",
-            "summary":       parsed.get("summary", ""),
-            "laws":          parsed.get("laws", []),
-            "suggestions":   parsed.get("suggestions", []),
-            "similar_cases": similar_cases,
-            "request_id":    request_id,
+            "type":               "done",
+            "summary":            parsed.get("summary", ""),
+            "laws":               parsed.get("laws", []),
+            "suggestions":        parsed.get("suggestions", []),
+            "follow_up_questions": parsed.get("follow_up_questions", []),
+            "risk_level":         parsed.get("risk_level", ""),
+            "similar_cases":      similar_cases,
+            "request_id":         request_id,
+            "language":           language,
         }
         yield f"data: {_json.dumps(done_payload)}\n\n"
 

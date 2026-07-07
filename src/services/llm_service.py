@@ -18,7 +18,8 @@ Always structure your responses in this JSON format:
 {
     "summary": "<detailed explanation of the legal issue>",
     "laws": ["<relevant law or statute 1>", "<relevant law or statute 2>"],
-    "suggestions": ["<actionable suggestion 1>", "<actionable suggestion 2>"]
+    "suggestions": ["<actionable suggestion 1>", "<actionable suggestion 2>"],
+    "follow_up_questions": ["<natural follow-up question the user is likely to ask next 1>", "<follow-up question 2>", "<follow-up question 3>"]
 }
 
 Guidelines:
@@ -27,6 +28,7 @@ Guidelines:
 - Law names or legal sections can remain in English if they are proper names (e.g., "Indian Penal Code")
 - Ensure all JSON is valid and properly formatted
 - Provide clear, concise, and accurate legal guidance
+- The "follow_up_questions" should be 2-3 natural follow-up questions in the SAME LANGUAGE as the user's query
 - Do not include any text outside the JSON structure"""
 
 
@@ -453,7 +455,7 @@ def create_streaming_prompt(language_code: str, state: str = "") -> str:
         f"You are a legal assistant specialised in Indian law and legal rights.{jurisdiction_note}\n\n"
         f"CRITICAL: Your SUMMARY and STEPS MUST be written entirely in {language_name}. "
         f"Law names may stay in English even when responding in another language.\n\n"
-        f"Respond in EXACTLY this format — do NOT add any text before SUMMARY: or after the last STEPS bullet:\n\n"
+        f"Respond in EXACTLY this format — do NOT add any text before SUMMARY: or after the last FOLLOW_UP bullet:\n\n"
         f"SUMMARY: <detailed legal analysis in {language_name}, 2–4 paragraphs>\n\n"
         f"LAWS:\n"
         f"- <exact Indian statute / IPC section / Act name 1>\n"
@@ -461,15 +463,22 @@ def create_streaming_prompt(language_code: str, state: str = "") -> str:
         f"STEPS:\n"
         f"- <specific actionable step 1 in {language_name}>\n"
         f"- <specific actionable step 2 in {language_name}>\n"
-        f"- <specific actionable step 3 in {language_name}>"
+        f"- <specific actionable step 3 in {language_name}>\n\n"
+        f"RISK: <one of exactly: Low, Medium, High, Critical — your honest assessment of how legally serious this situation is>\n\n"
+        f"FOLLOW_UP:\n"
+        f"- <natural follow-up question 1 in {language_name}>\n"
+        f"- <natural follow-up question 2 in {language_name}>\n"
+        f"- <natural follow-up question 3 in {language_name}>"
     )
 
 
 def parse_streaming_output(text: str) -> dict:
-    """Parse the SUMMARY/LAWS/STEPS plain-text format into structured fields."""
+    """Parse the SUMMARY/LAWS/STEPS/RISK/FOLLOW_UP plain-text format into structured fields."""
     summary_parts: list = []
     laws: list = []
     suggestions: list = []
+    follow_up_questions: list = []
+    risk_level: str = ""
     section = None
 
     for raw_line in text.splitlines():
@@ -483,9 +492,26 @@ def parse_streaming_output(text: str) -> dict:
             section = "laws"
         elif line == "STEPS:":
             section = "steps"
+        elif line.startswith("RISK:"):
+            section = "risk"
+            rest = line[len("RISK:"):].strip()
+            if rest:
+                risk_level = rest
+        elif line == "FOLLOW_UP:":
+            section = "follow_up"
         elif section == "summary":
-            if line in ("LAWS:", "STEPS:"):
-                section = "laws" if line == "LAWS:" else "steps"
+            if line in ("LAWS:", "STEPS:", "FOLLOW_UP:") or line.startswith("RISK:"):
+                if line == "LAWS:":
+                    section = "laws"
+                elif line == "STEPS:":
+                    section = "steps"
+                elif line.startswith("RISK:"):
+                    section = "risk"
+                    rest = line[len("RISK:"):].strip()
+                    if rest:
+                        risk_level = rest
+                elif line == "FOLLOW_UP:":
+                    section = "follow_up"
             else:
                 summary_parts.append(line)
         elif section == "laws":
@@ -496,12 +522,21 @@ def parse_streaming_output(text: str) -> dict:
             cleaned = line.lstrip("-• ").strip()
             if cleaned:
                 suggestions.append(cleaned)
+        elif section == "risk":
+            if line and not risk_level:
+                risk_level = line
+        elif section == "follow_up":
+            cleaned = line.lstrip("-• ").strip()
+            if cleaned:
+                follow_up_questions.append(cleaned)
 
     summary = "\n".join(summary_parts).strip()
     return {
-        "summary":     summary or text.strip(),
-        "laws":        laws[:8],
-        "suggestions": suggestions[:6],
+        "summary":             summary or text.strip(),
+        "laws":                laws[:8],
+        "suggestions":         suggestions[:6],
+        "follow_up_questions": follow_up_questions[:3],
+        "risk_level":          risk_level,
     }
 
 

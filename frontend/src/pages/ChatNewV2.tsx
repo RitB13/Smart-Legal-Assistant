@@ -3,7 +3,7 @@ import {
   Send, Bot, User, Loader2, Plus, Trash2, MessageSquare,
   Menu, X, Scale, Mic, MicOff, PhoneCall, Volume2, Wand2, Paperclip, FileText,
   PanelLeftClose, PanelLeftOpen, ChevronDown, Download, BookOpen, CheckCircle2,
-  ThumbsUp, ThumbsDown,
+  ThumbsUp, ThumbsDown, Copy, Check, Share2,
 } from "lucide-react";
 import Header from "../components/Header";
 
@@ -27,6 +27,9 @@ interface ChatMessage {
   streaming?:    boolean;        // true while SSE stream is in progress
   request_id?:   string;        // API request ID, used for feedback submission
   feedback?:     "up" | "down"; // user's thumbs rating (set after clicking)
+  follow_up_questions?: string[];
+  risk_level?: string;
+  detected_language?: string;
 }
 
 interface ConvSummary {
@@ -72,6 +75,11 @@ const INDIAN_STATES = [
   { value: "West Bengal",       label: "West Bengal" },
 ];
 
+const LANGUAGE_NAMES: Record<string, string> = {
+  hi: "Hindi", bn: "Bengali", ta: "Tamil", te: "Telugu",
+  mr: "Marathi", gu: "Gujarati", kn: "Kannada", ml: "Malayalam", pa: "Punjabi",
+};
+
 const SUGGESTIONS = [
   "What are my rights as a tenant in India?",
   "Explain the RTI Act 2005 and how to file an application",
@@ -80,6 +88,18 @@ const SUGGESTIONS = [
 ];
 
 // ── Utility: best supported audio MIME type ───────────────────────────────────
+
+// Convert raw dataset filenames / IDs into readable case names
+function formatCaseName(raw: string): string {
+  const name = raw.replace(/\.txt$/i, "").trim();
+  // Pure numeric ID → label it as a court case reference
+  if (/^\d+$/.test(name)) return `Indian Court Case · ${name}`;
+  // Sentence-case for short all-caps strings
+  if (name === name.toUpperCase() && name.length < 40) {
+    return name.charAt(0).toUpperCase() + name.slice(1).toLowerCase();
+  }
+  return name;
+}
 
 function getBestMimeType(): string {
   const types = [
@@ -116,6 +136,22 @@ const ChatPage = () => {
 
   // ── Jurisdiction state ─────────────────────────────────────────────────────
   const [selectedState, setSelectedState]   = useState("");
+
+  // ── Expanded precedent summaries (Set of "${msgId}-${caseIdx}") ────────────
+  const [expandedPrecedents, setExpandedPrecedents] = useState<Set<string>>(new Set());
+
+  // ── Citation copy and share state ────────────────────────────────────────────
+  const [copiedCitationKey, setCopiedCitationKey] = useState<string | null>(null);
+  const [shareStatus, setShareStatus] = useState<"idle" | "loading" | "copied" | "error">("idle");
+
+  function togglePrecedent(key: string) {
+    setExpandedPrecedents(prev => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  }
 
   // ── Voice dictation state ───────────────────────────────────────────────────
   const [isDictating, setIsDictating]       = useState(false);
@@ -294,11 +330,14 @@ const ChatPage = () => {
   }
 
   interface QueryResult {
-    reply:         string;
-    laws:          string[];
-    suggestions:   string[];
-    similar_cases: SimilarCase[];
-    request_id:    string;
+    reply:               string;
+    laws:                string[];
+    suggestions:         string[];
+    similar_cases:       SimilarCase[];
+    request_id:          string;
+    follow_up_questions: string[];
+    risk_level:          string;
+    detected_language:   string;
   }
 
   // callQuery is used only by the voice conversation path (non-streaming)
@@ -322,11 +361,14 @@ const ChatPage = () => {
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       const data = await res.json();
       return {
-        reply:         data.summary        || "I can help with that. Could you provide more details?",
-        laws:          Array.isArray(data.laws)        ? data.laws        : [],
-        suggestions:   Array.isArray(data.suggestions) ? data.suggestions : [],
-        similar_cases: Array.isArray(data.similar_cases) ? data.similar_cases : [],
-        request_id:    data.request_id     || "",
+        reply:               data.summary        || "I can help with that. Could you provide more details?",
+        laws:                Array.isArray(data.laws)        ? data.laws        : [],
+        suggestions:         Array.isArray(data.suggestions) ? data.suggestions : [],
+        similar_cases:       Array.isArray(data.similar_cases) ? data.similar_cases : [],
+        request_id:          data.request_id     || "",
+        follow_up_questions: Array.isArray(data.follow_up_questions) ? data.follow_up_questions : [],
+        risk_level:          data.impact_score?.risk_level || "",
+        detected_language:   data.language || "",
       };
     } catch (e) {
       clearTimeout(tid);
@@ -334,7 +376,7 @@ const ChatPage = () => {
         e instanceof Error && e.name === "AbortError"
           ? "The request timed out. Please try again."
           : "Sorry, I couldn't reach the server. Please try again.";
-      return { reply: msg, laws: [], suggestions: [], similar_cases: [], request_id: "" };
+      return { reply: msg, laws: [], suggestions: [], similar_cases: [], request_id: "", follow_up_questions: [], risk_level: "", detected_language: "" };
     }
   }
 
@@ -416,12 +458,16 @@ const ChatPage = () => {
                 m.id === botMsgId
                   ? {
                       ...m,
-                      content:       summary,
-                      streaming:     false,
+                      content:             summary,
+                      streaming:           false,
                       request_id,
-                      laws:          laws.length   > 0 ? laws  : undefined,
-                      suggestions:   sugg.length   > 0 ? sugg  : undefined,
-                      similar_cases: cases.length  > 0 ? cases : undefined,
+                      laws:                laws.length   > 0 ? laws  : undefined,
+                      suggestions:         sugg.length   > 0 ? sugg  : undefined,
+                      similar_cases:       cases.length  > 0 ? cases : undefined,
+                      follow_up_questions: Array.isArray(data.follow_up_questions) && (data.follow_up_questions as string[]).length > 0
+                        ? (data.follow_up_questions as string[]) : undefined,
+                      risk_level:          String(data.risk_level ?? "") || undefined,
+                      detected_language:   String(data.language ?? "") || undefined,
                     }
                   : m
               ));
@@ -472,6 +518,38 @@ const ChatPage = () => {
         }),
       });
     } catch { /* feedback is non-critical — fail silently */ }
+  }
+
+  // ── Citation copy ─────────────────────────────────────────────────────────────
+
+  async function copyPrecedentCitation(key: string, caseName: string, caseType: string) {
+    const citation = `${formatCaseName(caseName)}. ${caseType || "Indian Court Case"}. Smart Legal Assistant Database.`;
+    try {
+      await navigator.clipboard.writeText(citation);
+      setCopiedCitationKey(key);
+      setTimeout(() => setCopiedCitationKey(null), 2000);
+    } catch { /* clipboard not available */ }
+  }
+
+  // ── Share conversation ────────────────────────────────────────────────────────
+
+  async function shareConversation(convId: string) {
+    setShareStatus("loading");
+    try {
+      const res = await fetch(`${apiUrl}/conversations/${convId}/share`, {
+        method: "POST",
+        headers: authHeaders(),
+      });
+      if (!res.ok) throw new Error();
+      const data = await res.json();
+      const shareUrl = `${window.location.origin}/shared/${data.share_token}`;
+      await navigator.clipboard.writeText(shareUrl);
+      setShareStatus("copied");
+      setTimeout(() => setShareStatus("idle"), 3000);
+    } catch {
+      setShareStatus("error");
+      setTimeout(() => setShareStatus("idle"), 2000);
+    }
   }
 
   // ── Chat actions ──────────────────────────────────────────────────────────────
@@ -913,18 +991,21 @@ const ChatPage = () => {
       .slice(-10)
       .map(m => ({ role: m.role, content: m.content }));
 
-    const { reply, laws, suggestions, similar_cases, request_id } = await callQuery(transcript, history);
+    const { reply, laws, suggestions, similar_cases, request_id, follow_up_questions, risk_level, detected_language } = await callQuery(transcript, history);
     if (!vcActiveRef.current) return;
 
     const botMsg: ChatMessage = {
-      id:            (Date.now() + 1).toString(),
-      role:          "assistant",
-      content:       reply,
-      timestamp:     new Date(),
-      laws:          laws.length        > 0 ? laws        : undefined,
-      suggestions:   suggestions.length > 0 ? suggestions : undefined,
-      similar_cases: similar_cases.length > 0 ? similar_cases : undefined,
-      request_id:    request_id || undefined,
+      id:                  (Date.now() + 1).toString(),
+      role:                "assistant",
+      content:             reply,
+      timestamp:           new Date(),
+      laws:                laws.length        > 0 ? laws        : undefined,
+      suggestions:         suggestions.length > 0 ? suggestions : undefined,
+      similar_cases:       similar_cases.length > 0 ? similar_cases : undefined,
+      request_id:          request_id || undefined,
+      follow_up_questions: follow_up_questions.length > 0 ? follow_up_questions : undefined,
+      risk_level:          risk_level || undefined,
+      detected_language:   detected_language || undefined,
     };
     setMessages(prev => [...prev, botMsg]);
 
@@ -1301,14 +1382,28 @@ const ChatPage = () => {
               <span className="text-xs text-slate-400 dark:text-slate-600 truncate max-w-[60%]">
                 {conversations.find(c => c.id === activeConvId)?.title ?? "Current conversation"}
               </span>
-              <button
-                onClick={exportChatPdf}
-                title="Export conversation as PDF"
-                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
-              >
-                <Download className="h-3.5 w-3.5" />
-                Export PDF
-              </button>
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={() => activeConvId && shareConversation(activeConvId)}
+                  disabled={shareStatus === "loading"}
+                  title="Share conversation"
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+                >
+                  {shareStatus === "loading" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> :
+                   shareStatus === "copied" ? <Check className="h-3.5 w-3.5 text-green-500" /> :
+                   shareStatus === "error"  ? <X className="h-3.5 w-3.5 text-red-500" /> :
+                   <Share2 className="h-3.5 w-3.5" />}
+                  {shareStatus === "copied" ? "Copied!" : shareStatus === "error" ? "Failed" : "Share"}
+                </button>
+                <button
+                  onClick={exportChatPdf}
+                  title="Export conversation as PDF"
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+                >
+                  <Download className="h-3.5 w-3.5" />
+                  Export PDF
+                </button>
+              </div>
             </div>
           )}
 
@@ -1428,25 +1523,125 @@ const ChatPage = () => {
                             <span className="text-[11px] font-semibold text-green-700 dark:text-green-400 uppercase tracking-wider">
                               Relevant Court Precedents
                             </span>
+                            <span className="ml-auto text-[10px] text-green-600 dark:text-green-500 font-medium">
+                              {msg.similar_cases.length} case{msg.similar_cases.length > 1 ? "s" : ""}
+                            </span>
                           </div>
                           <div className="divide-y divide-green-100 dark:divide-green-800/40">
-                            {msg.similar_cases.map((c, i) => (
-                              <div key={i} className="px-3 py-2.5">
-                                <div className="flex items-start justify-between gap-2">
-                                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-snug">
-                                    {c.case_name}
+                            {msg.similar_cases.map((c, i) => {
+                              const expKey = `${msg.id}-${i}`;
+                              const isExpanded = expandedPrecedents.has(expKey);
+                              const displayName = formatCaseName(c.case_name);
+                              // Clean up the case type label
+                              const displayType = c.case_type && c.case_type.toLowerCase() !== "unknown"
+                                ? c.case_type
+                                : "Court Case";
+                              // Similarity colour band
+                              const simPct = Math.round(c.similarity * 100);
+                              const simColor =
+                                simPct >= 70 ? "bg-green-200 dark:bg-green-800 text-green-800 dark:text-green-300" :
+                                simPct >= 50 ? "bg-emerald-100 dark:bg-emerald-900/50 text-emerald-700 dark:text-emerald-400" :
+                                "bg-slate-100 dark:bg-slate-700 text-slate-600 dark:text-slate-400";
+                              const summaryTrimmed = (c.summary || "").trim();
+                              const PREVIEW_LEN = 180;
+                              const needsExpand = summaryTrimmed.length > PREVIEW_LEN;
+
+                              return (
+                                <div key={i} className="px-3 py-2.5">
+                                  <div className="flex items-start justify-between gap-2">
+                                    <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-snug">
+                                      {displayName}
+                                    </span>
+                                    <div className="flex items-center gap-1 flex-shrink-0">
+                                      <span className={`text-[10px] font-semibold px-1.5 py-0.5 rounded-full ${simColor}`}>
+                                        {simPct}% match
+                                      </span>
+                                      <button
+                                        onClick={() => copyPrecedentCitation(`${msg.id}-${i}`, c.case_name, c.case_type)}
+                                        title="Copy citation"
+                                        className="w-5 h-5 flex items-center justify-center rounded text-slate-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 transition-all"
+                                      >
+                                        {copiedCitationKey === `${msg.id}-${i}`
+                                          ? <Check className="h-3 w-3 text-green-500" />
+                                          : <Copy className="h-3 w-3" />}
+                                      </button>
+                                    </div>
+                                  </div>
+                                  <span className="inline-block mt-0.5 text-[10px] font-medium px-1.5 py-0.5 rounded bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
+                                    {displayType}
                                   </span>
-                                  <span className="flex-shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
-                                    {Math.round(c.similarity * 100)}% match
-                                  </span>
+                                  {summaryTrimmed && (
+                                    <div className="mt-1.5">
+                                      <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed">
+                                        {isExpanded || !needsExpand
+                                          ? summaryTrimmed
+                                          : summaryTrimmed.slice(0, PREVIEW_LEN) + "…"}
+                                      </p>
+                                      {needsExpand && (
+                                        <button
+                                          onClick={() => togglePrecedent(expKey)}
+                                          className="mt-1 text-[10px] font-semibold text-green-700 dark:text-green-400 hover:underline"
+                                        >
+                                          {isExpanded ? "Show less ▲" : "Read more ▼"}
+                                        </button>
+                                      )}
+                                    </div>
+                                  )}
                                 </div>
-                                <span className="text-[10px] text-slate-500 dark:text-slate-500">{c.case_type}</span>
-                                {c.summary && (
-                                  <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed line-clamp-2">
-                                    {c.summary}
-                                  </p>
-                                )}
-                              </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Language indicator badge — non-English responses */}
+                      {msg.role === "assistant" && msg.detected_language && msg.detected_language !== "en" && !msg.streaming && (
+                        <div className="flex items-center gap-1">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-medium bg-indigo-50 dark:bg-indigo-900/20 border border-indigo-200 dark:border-indigo-700/50 text-indigo-600 dark:text-indigo-400">
+                            🇮🇳 {LANGUAGE_NAMES[msg.detected_language] || msg.detected_language}
+                          </span>
+                        </div>
+                      )}
+
+                      {/* Legal risk gauge */}
+                      {msg.role === "assistant" && msg.risk_level && !msg.streaming && (() => {
+                        const clean = msg.risk_level.replace(/[^\w\s]/g, "").trim().toLowerCase();
+                        const label = clean.includes("critical") ? "Critical" : clean.includes("high") ? "High" : clean.includes("medium") ? "Medium" : "Low";
+                        const pct   = label === "Critical" ? 92 : label === "High" ? 68 : label === "Medium" ? 42 : 18;
+                        const barCls = label === "Critical" ? "bg-red-500" : label === "High" ? "bg-orange-500" : label === "Medium" ? "bg-yellow-400" : "bg-green-500";
+                        const txtCls = label === "Critical" ? "text-red-600 dark:text-red-400" : label === "High" ? "text-orange-600 dark:text-orange-400" : label === "Medium" ? "text-yellow-600 dark:text-yellow-400" : "text-green-600 dark:text-green-400";
+                        return (
+                          <div className="w-full mt-2 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/50 px-3 py-2.5">
+                            <div className="flex items-center justify-between mb-2">
+                              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Legal Risk</span>
+                              <span className={`text-[11px] font-bold ${txtCls}`}>{label}</span>
+                            </div>
+                            <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                              <div className={`h-full rounded-full transition-all duration-700 ${barCls}`} style={{ width: `${pct}%` }} />
+                            </div>
+                            <div className="flex justify-between mt-1">
+                              <span className="text-[9px] text-slate-400">Low</span>
+                              <span className="text-[9px] text-slate-400">Critical</span>
+                            </div>
+                          </div>
+                        );
+                      })()}
+
+                      {/* Follow-up question chips */}
+                      {msg.role === "assistant" && msg.follow_up_questions && msg.follow_up_questions.length > 0 && !msg.streaming && (
+                        <div className="w-full mt-2">
+                          <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-wider mb-1.5 px-0.5">
+                            Ask follow-up
+                          </p>
+                          <div className="flex flex-col gap-1.5">
+                            {msg.follow_up_questions.map((q, qi) => (
+                              <button
+                                key={qi}
+                                onClick={() => { setInputText(q); setTimeout(() => inputRef.current?.focus(), 50); }}
+                                className="text-left text-[12px] px-3 py-2 rounded-xl border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 bg-white dark:bg-slate-800 hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/10 hover:text-blue-700 dark:hover:text-blue-300 transition-all"
+                              >
+                                {q}
+                              </button>
                             ))}
                           </div>
                         </div>

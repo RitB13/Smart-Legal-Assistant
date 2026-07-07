@@ -8,6 +8,8 @@ Endpoints:
 - PUT    /conversations/{id}         - Update conversation
 - DELETE /conversations/{id}         - Delete conversation
 - POST   /conversations/{id}/message - Add message to conversation
+- POST   /conversations/{id}/share   - Generate public share token
+- GET    /shared/{token}             - Get shared conversation (public, no auth)
 """
 
 from fastapi import APIRouter, HTTPException, status, Depends
@@ -25,6 +27,9 @@ logger = logging.getLogger(__name__)
 
 # Router for conversation endpoints
 router = APIRouter(prefix="/conversations", tags=["Conversations"])
+
+# Public shared conversation router (no auth required, no prefix)
+public_router = APIRouter(tags=["Shared"])
 
 
 # ==================== REQUEST/RESPONSE MODELS ====================
@@ -514,3 +519,50 @@ async def add_message_to_conversation(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Failed to add message"
         )
+
+
+@router.post("/{conv_id}/share", status_code=200)
+async def share_conversation(
+    conv_id: str,
+    current_user: TokenData = Depends(get_current_user)
+):
+    """Generate a public shareable link token for a conversation."""
+    try:
+        token = ConversationService.generate_share_token(conv_id)
+        if not token:
+            raise HTTPException(status_code=404, detail="Conversation not found")
+        return {"share_token": token}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CONV] Error sharing conversation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to generate share link")
+
+
+@public_router.get("/shared/{token}", status_code=200)
+async def get_shared_conversation(token: str):
+    """Get a publicly shared conversation by token (no auth required)."""
+    try:
+        conv = ConversationService.get_by_share_token(token)
+        if not conv:
+            raise HTTPException(status_code=404, detail="Shared conversation not found or link expired")
+        return {
+            "id": conv.id,
+            "title": conv.title,
+            "language": conv.language,
+            "messages": [
+                {
+                    "role": m.role,
+                    "content": m.content,
+                    "timestamp": m.timestamp.isoformat(),
+                    "language": m.language,
+                }
+                for m in conv.messages
+            ],
+            "created_at": conv.created_at.isoformat(),
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"[CONV] Error getting shared conversation: {e}")
+        raise HTTPException(status_code=500, detail="Failed to load shared conversation")
