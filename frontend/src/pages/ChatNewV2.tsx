@@ -1479,9 +1479,29 @@ const ChatPage = () => {
                             : "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-sm"
                         }`}
                       >
-                        {msg.content}
-                        {msg.streaming && (
-                          <span className="inline-block w-0.5 h-4 bg-slate-500 dark:bg-slate-300 animate-pulse ml-0.5 align-middle" />
+                        {/* While streaming but no content yet: show animated placeholder */}
+                        {msg.streaming && !msg.content ? (
+                          <span className="flex items-center gap-2 text-slate-400 dark:text-slate-500">
+                            <span className="italic text-sm">
+                              {extractedDocText ? "Analyzing document…" : "Thinking…"}
+                            </span>
+                            <span className="flex gap-1 items-center">
+                              {[0, 150, 300].map(d => (
+                                <span
+                                  key={d}
+                                  className="inline-block w-1.5 h-1.5 rounded-full bg-slate-400 dark:bg-slate-500 animate-bounce"
+                                  style={{ animationDelay: `${d}ms` }}
+                                />
+                              ))}
+                            </span>
+                          </span>
+                        ) : (
+                          <>
+                            {msg.content}
+                            {msg.streaming && (
+                              <span className="inline-block w-0.5 h-4 bg-slate-500 dark:bg-slate-300 animate-pulse ml-0.5 align-middle" />
+                            )}
+                          </>
                         )}
                       </div>
 
