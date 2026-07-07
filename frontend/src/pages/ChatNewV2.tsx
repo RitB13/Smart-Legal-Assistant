@@ -2,7 +2,8 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Send, Bot, User, Loader2, Plus, Trash2, MessageSquare,
   Menu, X, Scale, Mic, MicOff, PhoneCall, Volume2, Wand2, Paperclip, FileText,
-  PanelLeftClose, PanelLeftOpen, ChevronDown, Download, BookOpen,
+  PanelLeftClose, PanelLeftOpen, ChevronDown, Download, BookOpen, CheckCircle2,
+  ThumbsUp, ThumbsDown,
 } from "lucide-react";
 import Header from "../components/Header";
 
@@ -20,7 +21,12 @@ interface ChatMessage {
   role:         "user" | "assistant";
   content:      string;
   timestamp:    Date;
-  similar_cases?: SimilarCase[];   // only present on assistant messages with RAG hits
+  laws?:         string[];
+  suggestions?:  string[];
+  similar_cases?: SimilarCase[];
+  streaming?:    boolean;        // true while SSE stream is in progress
+  request_id?:   string;        // API request ID, used for feedback submission
+  feedback?:     "up" | "down"; // user's thumbs rating (set after clicking)
 }
 
 interface ConvSummary {
@@ -33,6 +39,38 @@ interface ConvSummary {
 type VoiceConvState = "listening" | "processing" | "speaking";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
+
+const INDIAN_STATES = [
+  { value: "Andhra Pradesh",    label: "Andhra Pradesh" },
+  { value: "Arunachal Pradesh", label: "Arunachal Pradesh" },
+  { value: "Assam",             label: "Assam" },
+  { value: "Bihar",             label: "Bihar" },
+  { value: "Chhattisgarh",      label: "Chhattisgarh" },
+  { value: "Delhi",             label: "Delhi" },
+  { value: "Goa",               label: "Goa" },
+  { value: "Gujarat",           label: "Gujarat" },
+  { value: "Haryana",           label: "Haryana" },
+  { value: "Himachal Pradesh",  label: "Himachal Pradesh" },
+  { value: "Jharkhand",         label: "Jharkhand" },
+  { value: "Karnataka",         label: "Karnataka" },
+  { value: "Kerala",            label: "Kerala" },
+  { value: "Madhya Pradesh",    label: "Madhya Pradesh" },
+  { value: "Maharashtra",       label: "Maharashtra" },
+  { value: "Manipur",           label: "Manipur" },
+  { value: "Meghalaya",         label: "Meghalaya" },
+  { value: "Mizoram",           label: "Mizoram" },
+  { value: "Nagaland",          label: "Nagaland" },
+  { value: "Odisha",            label: "Odisha" },
+  { value: "Punjab",            label: "Punjab" },
+  { value: "Rajasthan",         label: "Rajasthan" },
+  { value: "Sikkim",            label: "Sikkim" },
+  { value: "Tamil Nadu",        label: "Tamil Nadu" },
+  { value: "Telangana",         label: "Telangana" },
+  { value: "Tripura",           label: "Tripura" },
+  { value: "Uttar Pradesh",     label: "Uttar Pradesh" },
+  { value: "Uttarakhand",       label: "Uttarakhand" },
+  { value: "West Bengal",       label: "West Bengal" },
+];
 
 const SUGGESTIONS = [
   "What are my rights as a tenant in India?",
@@ -75,6 +113,9 @@ const ChatPage = () => {
   const [isLoading, setIsLoading]             = useState(false);
   const [sidebarOpen, setSidebarOpen]         = useState(false);   // mobile overlay
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false); // desktop collapse
+
+  // ── Jurisdiction state ─────────────────────────────────────────────────────
+  const [selectedState, setSelectedState]   = useState("");
 
   // ── Voice dictation state ───────────────────────────────────────────────────
   const [isDictating, setIsDictating]       = useState(false);
@@ -253,10 +294,14 @@ const ChatPage = () => {
   }
 
   interface QueryResult {
-    reply:        string;
+    reply:         string;
+    laws:          string[];
+    suggestions:   string[];
     similar_cases: SimilarCase[];
+    request_id:    string;
   }
 
+  // callQuery is used only by the voice conversation path (non-streaming)
   async function callQuery(
     query:   string,
     history: { role: string; content: string }[] = [],
@@ -277,8 +322,11 @@ const ChatPage = () => {
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       const data = await res.json();
       return {
-        reply:        data.summary       || "I can help with that. Could you provide more details?",
-        similar_cases: data.similar_cases || [],
+        reply:         data.summary        || "I can help with that. Could you provide more details?",
+        laws:          Array.isArray(data.laws)        ? data.laws        : [],
+        suggestions:   Array.isArray(data.suggestions) ? data.suggestions : [],
+        similar_cases: Array.isArray(data.similar_cases) ? data.similar_cases : [],
+        request_id:    data.request_id     || "",
       };
     } catch (e) {
       clearTimeout(tid);
@@ -286,8 +334,144 @@ const ChatPage = () => {
         e instanceof Error && e.name === "AbortError"
           ? "The request timed out. Please try again."
           : "Sorry, I couldn't reach the server. Please try again.";
-      return { reply: msg, similar_cases: [] };
+      return { reply: msg, laws: [], suggestions: [], similar_cases: [], request_id: "" };
     }
+  }
+
+  // callQueryStream — streaming path used by handleSend
+  async function callQueryStream(
+    query:   string,
+    history: { role: string; content: string }[],
+    botMsgId: string,
+    state:   string,
+    onDone?: (summary: string) => void,
+  ): Promise<void> {
+    let firstChunk = true;
+    let acc = "";
+
+    try {
+      const body: Record<string, unknown> = { query };
+      if (history.length > 0) body.conversation_history = history;
+      if (state) body.state = state;
+
+      const res = await fetch(`${apiUrl}/stream`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify(body),
+      });
+
+      if (!res.ok || !res.body) {
+        throw new Error(`Server error ${res.status}`);
+      }
+
+      const reader  = res.body.getReader();
+      const decoder = new TextDecoder();
+      let sseBuffer = "";
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+
+        sseBuffer += decoder.decode(value, { stream: true });
+
+        // SSE events are delimited by double newlines
+        const events = sseBuffer.split("\n\n");
+        sseBuffer = events.pop() ?? "";
+
+        for (const event of events) {
+          for (const line of event.split("\n")) {
+            if (!line.startsWith("data: ")) continue;
+            const jsonStr = line.slice(6).trim();
+            if (jsonStr === "[DONE]") continue;
+
+            let data: Record<string, unknown>;
+            try { data = JSON.parse(jsonStr); } catch { continue; }
+
+            if (data.type === "chunk") {
+              if (firstChunk) { firstChunk = false; setIsLoading(false); }
+              acc += String(data.content ?? "");
+
+              // Extract and display the summary portion of the accumulated text
+              let display = acc;
+              if (display.startsWith("SUMMARY: ")) display = display.slice(9);
+              else if (display.startsWith("SUMMARY:")) display = display.slice(8).trimStart();
+              const li = display.indexOf("\nLAWS:");
+              if (li !== -1) display = display.slice(0, li);
+              const si = display.indexOf("\nSTEPS:");
+              if (si !== -1) display = display.slice(0, si);
+
+              setMessages(prev => prev.map(m =>
+                m.id === botMsgId ? { ...m, content: display.trimStart() } : m
+              ));
+
+            } else if (data.type === "done") {
+              setIsLoading(false);
+              const summary    = String(data.summary    ?? acc.trimStart().replace(/^SUMMARY:\s*/,""));
+              const laws       = Array.isArray(data.laws)          ? (data.laws as string[])          : [];
+              const sugg       = Array.isArray(data.suggestions)   ? (data.suggestions as string[])   : [];
+              const cases      = Array.isArray(data.similar_cases) ? (data.similar_cases as SimilarCase[]) : [];
+              const request_id = String(data.request_id ?? "");
+
+              setMessages(prev => prev.map(m =>
+                m.id === botMsgId
+                  ? {
+                      ...m,
+                      content:       summary,
+                      streaming:     false,
+                      request_id,
+                      laws:          laws.length   > 0 ? laws  : undefined,
+                      suggestions:   sugg.length   > 0 ? sugg  : undefined,
+                      similar_cases: cases.length  > 0 ? cases : undefined,
+                    }
+                  : m
+              ));
+
+              if (onDone) onDone(summary);
+
+            } else if (data.type === "error") {
+              setIsLoading(false);
+              setMessages(prev => prev.map(m =>
+                m.id === botMsgId
+                  ? { ...m, content: String(data.message ?? "An error occurred."), streaming: false }
+                  : m
+              ));
+            }
+          }
+        }
+      }
+    } catch {
+      setIsLoading(false);
+      setMessages(prev => prev.map(m =>
+        m.id === botMsgId
+          ? { ...m, content: "Sorry, I couldn't reach the server. Please try again.", streaming: false }
+          : m
+      ));
+    }
+  }
+
+  // handleFeedback — submits 👍/👎 to /feedback/score
+  async function handleFeedback(
+    msgId:     string,
+    requestId: string,
+    direction: "up" | "down",
+  ) {
+    // Optimistic update — mark immediately
+    setMessages(prev => prev.map(m =>
+      m.id === msgId ? { ...m, feedback: direction } : m
+    ));
+
+    try {
+      await fetch(`${apiUrl}/feedback/score`, {
+        method: "POST",
+        headers: authHeaders(),
+        body: JSON.stringify({
+          request_id:         requestId,
+          overall_score_given: direction === "up" ? 100 : 0,
+          user_rating:         direction === "up" ? 5   : 1,
+          feedback_type:       direction === "up" ? "helpful" : "not_helpful",
+        }),
+      });
+    } catch { /* feedback is non-critical — fail silently */ }
   }
 
   // ── Chat actions ──────────────────────────────────────────────────────────────
@@ -332,25 +516,30 @@ const ChatPage = () => {
     const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", content: displayText, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
 
-    // Build conversation history from the last 10 messages (5 exchanges) for multi-turn memory
+    // Build conversation history from the last 10 messages for multi-turn memory
     const history = messagesRef.current
       .slice(-10)
       .map(m => ({ role: m.role, content: m.content }));
 
-    const { reply, similar_cases } = await callQuery(text, history);
-    const botMsg: ChatMessage = {
-      id:           (Date.now() + 1).toString(),
-      role:         "assistant",
-      content:      reply,
-      timestamp:    new Date(),
-      similar_cases: similar_cases.length > 0 ? similar_cases : undefined,
-    };
-    setMessages(prev => [...prev, botMsg]);
+    // Add streaming placeholder bot message immediately so user sees something
+    const botMsgId = (Date.now() + 1).toString();
+    setMessages(prev => [...prev, {
+      id:        botMsgId,
+      role:      "assistant" as const,
+      content:   "",
+      timestamp: new Date(),
+      streaming: true,
+    }]);
 
-    if (convId) {
-      appendMessage(convId, "user", text);
-      appendMessage(convId, "assistant", reply);
-    }
+    // Stream the response; persist to MongoDB via onDone callback
+    const persistConvId = convId;
+    await callQueryStream(text, history, botMsgId, selectedState, (finalSummary) => {
+      if (persistConvId) {
+        appendMessage(persistConvId, "user", text);
+        appendMessage(persistConvId, "assistant", finalSummary);
+      }
+    });
+
     setIsLoading(false);
   }
 
@@ -724,15 +913,18 @@ const ChatPage = () => {
       .slice(-10)
       .map(m => ({ role: m.role, content: m.content }));
 
-    const { reply, similar_cases } = await callQuery(transcript, history);
+    const { reply, laws, suggestions, similar_cases, request_id } = await callQuery(transcript, history);
     if (!vcActiveRef.current) return;
 
     const botMsg: ChatMessage = {
-      id:           (Date.now() + 1).toString(),
-      role:         "assistant",
-      content:      reply,
-      timestamp:    new Date(),
+      id:            (Date.now() + 1).toString(),
+      role:          "assistant",
+      content:       reply,
+      timestamp:     new Date(),
+      laws:          laws.length        > 0 ? laws        : undefined,
+      suggestions:   suggestions.length > 0 ? suggestions : undefined,
       similar_cases: similar_cases.length > 0 ? similar_cases : undefined,
+      request_id:    request_id || undefined,
     };
     setMessages(prev => [...prev, botMsg]);
 
@@ -806,11 +998,40 @@ const ChatPage = () => {
           </div>`;
       }
 
+      let lawsHtml = "";
+      if (!isUser && m.laws && m.laws.length > 0) {
+        const chips = m.laws.map(l =>
+          `<span style="display:inline-block;margin:2px 3px 2px 0;padding:3px 8px;background:#EFF6FF;border:1px solid #BFDBFE;border-radius:99px;font-size:11px;color:#1D4ED8;font-weight:500;">${escapeHtml(l)}</span>`
+        ).join("");
+        lawsHtml = `
+          <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #DBEAFE;">
+            <div style="font-size:9px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Applicable Laws</div>
+            <div>${chips}</div>
+          </div>`;
+      }
+
+      let suggestionsHtml = "";
+      if (!isUser && m.suggestions && m.suggestions.length > 0) {
+        const items = m.suggestions.map((s, i) =>
+          `<div style="display:flex;gap:8px;margin:4px 0;">
+            <span style="flex-shrink:0;font-weight:700;color:#15803D;font-size:12px;">${i + 1}.</span>
+            <span style="font-size:12px;color:#374151;line-height:1.5;">${escapeHtml(s)}</span>
+          </div>`
+        ).join("");
+        suggestionsHtml = `
+          <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #D1FAE5;">
+            <div style="font-size:9px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">Suggested Steps</div>
+            ${items}
+          </div>`;
+      }
+
       return `
         <div style="margin-bottom:18px;text-align:${align};">
           <div style="display:inline-block;max-width:82%;background:${bg};border:1px solid ${border};border-radius:12px;padding:12px 16px;text-align:left;">
             <div style="font-size:9px;font-weight:700;color:${labelColor};text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">${label}</div>
             <div style="font-size:13px;color:#1E293B;white-space:pre-wrap;line-height:1.65;">${escapeHtml(m.content)}</div>
+            ${lawsHtml}
+            ${suggestionsHtml}
             ${precedentsHtml}
             <div style="font-size:10px;color:#9CA3AF;margin-top:8px;">${m.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
           </div>
@@ -1148,7 +1369,56 @@ const ChatPage = () => {
                         }`}
                       >
                         {msg.content}
+                        {msg.streaming && (
+                          <span className="inline-block w-0.5 h-4 bg-slate-500 dark:bg-slate-300 animate-pulse ml-0.5 align-middle" />
+                        )}
                       </div>
+
+                      {/* Applicable Laws — blue badge chips */}
+                      {msg.role === "assistant" && msg.laws && msg.laws.length > 0 && (
+                        <div className="w-full mt-2 rounded-xl border border-blue-200 dark:border-blue-800/50 bg-blue-50 dark:bg-blue-950/30 px-3 py-2.5">
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <Scale className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                            <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wider">
+                              Applicable Laws
+                            </span>
+                          </div>
+                          <div className="flex flex-wrap gap-1.5">
+                            {msg.laws.map((law, i) => (
+                              <span
+                                key={i}
+                                className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-white dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700/50 text-blue-700 dark:text-blue-300"
+                              >
+                                {law}
+                              </span>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Suggested Steps — numbered action list */}
+                      {msg.role === "assistant" && msg.suggestions && msg.suggestions.length > 0 && (
+                        <div className="w-full mt-2 rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2.5">
+                          <div className="flex items-center gap-1.5 mb-2">
+                            <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                            <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">
+                              Suggested Steps
+                            </span>
+                          </div>
+                          <ol className="space-y-1.5">
+                            {msg.suggestions.map((s, i) => (
+                              <li key={i} className="flex gap-2.5 items-start">
+                                <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 border border-emerald-300 dark:border-emerald-700 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center justify-center mt-0.5">
+                                  {i + 1}
+                                </span>
+                                <span className="text-[12px] text-slate-700 dark:text-slate-300 leading-relaxed">
+                                  {s}
+                                </span>
+                              </li>
+                            ))}
+                          </ol>
+                        </div>
+                      )}
 
                       {/* Relevant Cases panel — only on assistant messages with RAG hits */}
                       {msg.role === "assistant" && msg.similar_cases && msg.similar_cases.length > 0 && (
@@ -1182,6 +1452,40 @@ const ChatPage = () => {
                         </div>
                       )}
 
+                      {/* Feedback buttons — 👍/👎 only on settled assistant messages */}
+                      {msg.role === "assistant" && msg.request_id && !msg.streaming && (
+                        <div className="flex items-center gap-0.5 px-1">
+                          <button
+                            onClick={() => handleFeedback(msg.id, msg.request_id!, "up")}
+                            disabled={!!msg.feedback}
+                            title="Helpful"
+                            className={`w-6 h-6 flex items-center justify-center rounded-md transition-all disabled:cursor-default ${
+                              msg.feedback === "up"
+                                ? "text-green-600 dark:text-green-400 bg-green-50 dark:bg-green-900/30"
+                                : msg.feedback === "down"
+                                ? "text-slate-300 dark:text-slate-600"
+                                : "text-slate-400 hover:text-green-600 dark:hover:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20"
+                            }`}
+                          >
+                            <ThumbsUp className="h-3.5 w-3.5" />
+                          </button>
+                          <button
+                            onClick={() => handleFeedback(msg.id, msg.request_id!, "down")}
+                            disabled={!!msg.feedback}
+                            title="Not helpful"
+                            className={`w-6 h-6 flex items-center justify-center rounded-md transition-all disabled:cursor-default ${
+                              msg.feedback === "down"
+                                ? "text-red-500 dark:text-red-400 bg-red-50 dark:bg-red-900/30"
+                                : msg.feedback === "up"
+                                ? "text-slate-300 dark:text-slate-600"
+                                : "text-slate-400 hover:text-red-500 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20"
+                            }`}
+                          >
+                            <ThumbsDown className="h-3.5 w-3.5" />
+                          </button>
+                        </div>
+                      )}
+
                       <span className="text-[10px] text-slate-400 dark:text-slate-600 px-1">
                         {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </span>
@@ -1189,8 +1493,8 @@ const ChatPage = () => {
                   </div>
                 ))}
 
-                {/* Typing indicator */}
-                {isLoading && (
+                {/* Typing indicator — shown only before the first streaming chunk arrives */}
+                {isLoading && !messages.some(m => m.streaming) && (
                   <div className="flex gap-3">
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-gradient-to-br from-teal-400 to-blue-500 flex items-center justify-center">
                       <Bot className="h-4 w-4 text-white" />
@@ -1316,6 +1620,23 @@ const ChatPage = () => {
 
                   {/* Left tools */}
                   <div className="flex items-center gap-1">
+                    {/* State jurisdiction selector */}
+                    <select
+                      value={selectedState}
+                      onChange={e => setSelectedState(e.target.value)}
+                      title="Select state for jurisdiction-specific legal advice"
+                      className={`text-[11px] rounded-lg px-2 py-1.5 border cursor-pointer transition-all focus:outline-none max-w-[128px] ${
+                        selectedState
+                          ? "border-blue-300 dark:border-blue-600 bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300"
+                          : "border-slate-200 dark:border-slate-700 bg-transparent text-slate-500 dark:text-slate-400 hover:border-slate-300 dark:hover:border-slate-600"
+                      }`}
+                    >
+                      <option value="">📍 All India</option>
+                      {INDIAN_STATES.map(s => (
+                        <option key={s.value} value={s.value}>{s.label}</option>
+                      ))}
+                    </select>
+
                     {/* Document upload */}
                     <button
                       onClick={() => docInputRef.current?.click()}

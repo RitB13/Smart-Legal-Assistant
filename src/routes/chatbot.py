@@ -1,7 +1,15 @@
+import json as _json
 from fastapi import APIRouter, HTTPException, status, Request
+from fastapi.responses import StreamingResponse
 from src.models.query_model import QueryRequest, QueryResponse, ImpactScoreModel
 from src.models.db_models import ConversationCreate
-from src.services.llm_service import get_legal_response, create_rag_enhanced_prompt
+from src.services.llm_service import (
+    get_legal_response,
+    create_rag_enhanced_prompt,
+    create_streaming_prompt,
+    parse_streaming_output,
+    get_legal_response_stream,
+)
 from src.services.precedent_service import get_precedent_service
 from src.services.parser import parse_llm_output
 from src.services.language_service import detect_language, get_language_name
@@ -286,6 +294,23 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
         except Exception as rag_err:
             logger.warning(f"[{request_id}] RAG retrieval failed, proceeding without context: {rag_err}")
 
+        # Apply state-level jurisdiction context when caller specifies a state
+        req_state = (req.state or "").strip()
+        if req_state and req_state not in ("National", "All India"):
+            base = rag_system_prompt if rag_system_prompt else None
+            # Build or augment the system prompt with a jurisdiction note
+            jurisdiction_addendum = (
+                f"\n\nJURISDICTION: The user is asking about laws in {req_state}, India. "
+                f"Prioritise {req_state}-specific legislation, High Court judgments, and state regulations. "
+                f"Explicitly note when advice is specific to {req_state}."
+            )
+            if base:
+                rag_system_prompt = base + jurisdiction_addendum
+            else:
+                from src.services.llm_service import create_language_aware_prompt
+                rag_system_prompt = create_language_aware_prompt(language) + jurisdiction_addendum
+            logger.info(f"[{request_id}] Jurisdiction override → {req_state}")
+
         # Build conversation history list for multi-turn memory
         history = (
             [{"role": m.role, "content": m.content} for m in req.conversation_history]
@@ -422,6 +447,128 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="An unexpected error occurred while processing your query. Please try again."
         )
+
+
+@router.post("/stream")
+def handle_query_stream(req: QueryRequest, request: Request):
+    """
+    Streaming chatbot endpoint — server-sent events (SSE).
+
+    Each event is a JSON object on a ``data: ...`` line followed by two newlines.
+    Event shapes:
+      {"type": "chunk",  "content": "<text fragment>"}
+      {"type": "done",   "summary": "...", "laws": [...], "suggestions": [...],
+                         "similar_cases": [...], "request_id": "..."}
+      {"type": "error",  "message": "..."}
+    """
+    request_id = str(uuid.uuid4())
+    start_time = time.time()
+
+    # ── Language detection ───────────────────────────────────────────────────
+    if req.language:
+        language = req.language.lower().strip()
+    else:
+        language = detect_language(req.query) or "en"
+
+    # ── RAG retrieval (same dual-index logic as /query) ──────────────────────
+    precedents: list = []
+    try:
+        from src.services.dense_retrieval_service import get_dense_retrieval_service
+        dense_svc = get_dense_retrieval_service()
+        if dense_svc.available:
+            precedents = dense_svc.search(req.query, top_k=4)
+        if not precedents:
+            precedent_svc = get_precedent_service()
+            if precedent_svc.available:
+                precedents = precedent_svc.search(req.query, top_k=4)
+    except Exception as rag_err:
+        logger.warning(f"[{request_id}] Stream RAG failed: {rag_err}")
+
+    # Court precedents to attach in the done event
+    similar_cases = [
+        {
+            "case_name":  p.get("case_name",  ""),
+            "case_type":  p.get("case_type",  ""),
+            "summary":    (p.get("summary") or "")[:350],
+            "similarity": round(float(p.get("similarity", 0.0)), 4),
+        }
+        for p in precedents
+        if float(p.get("similarity", 0.0)) >= 0.08
+    ]
+
+    # ── Build streaming system prompt ────────────────────────────────────────
+    req_state = (req.state or "").strip()
+    system_prompt = create_streaming_prompt(language, state=req_state)
+
+    # Inject retrieved precedents as grounding context
+    relevant_prec = [p for p in precedents if float(p.get("similarity", 0.0)) >= 0.08]
+    if relevant_prec:
+        rag_ctx = "\n\nRELEVANT INDIAN COURT PRECEDENTS (ground your answer in these):\n"
+        for i, p in enumerate(relevant_prec, 1):
+            rag_ctx += (
+                f"\n[{i}] {p.get('case_name', '')}: "
+                f"{(p.get('summary', '') or '')[:350]}\n"
+            )
+        rag_ctx += "\nCite these cases in your SUMMARY where applicable.\n"
+        system_prompt += rag_ctx
+
+    # ── Conversation history ─────────────────────────────────────────────────
+    history = (
+        [{"role": m.role, "content": m.content} for m in req.conversation_history]
+        if req.conversation_history else None
+    )
+
+    logger.info(
+        f"[{request_id}] Stream query: lang={language}, state={req_state or 'national'}, "
+        f"rag_hits={len(similar_cases)}"
+    )
+
+    def event_stream():
+        full_text = ""
+        try:
+            for chunk in get_legal_response_stream(
+                req.query,
+                language=language,
+                system_prompt=system_prompt,
+                conversation_history=history,
+            ):
+                full_text += chunk
+                yield f"data: {_json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
+
+        except Exception as stream_err:
+            logger.error(f"[{request_id}] Streaming generation error: {stream_err}")
+            yield (
+                f"data: {_json.dumps({'type': 'error', 'message': 'AI service error. Please try again.'})}\n\n"
+            )
+            return
+
+        # Parse the full accumulated response into structured fields
+        try:
+            parsed = parse_streaming_output(full_text)
+        except Exception:
+            parsed = {"summary": full_text.strip(), "laws": [], "suggestions": []}
+
+        elapsed = time.time() - start_time
+        logger.info(f"[{request_id}] Stream completed in {elapsed:.2f}s ({len(full_text)} chars)")
+
+        done_payload = {
+            "type":          "done",
+            "summary":       parsed.get("summary", ""),
+            "laws":          parsed.get("laws", []),
+            "suggestions":   parsed.get("suggestions", []),
+            "similar_cases": similar_cases,
+            "request_id":    request_id,
+        }
+        yield f"data: {_json.dumps(done_payload)}\n\n"
+
+    return StreamingResponse(
+        event_stream(),
+        media_type="text/event-stream",
+        headers={
+            "Cache-Control":     "no-cache",
+            "X-Accel-Buffering": "no",    # disable nginx buffering in production
+        },
+    )
 
 
 # Initialize feedback processor
