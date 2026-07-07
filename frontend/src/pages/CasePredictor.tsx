@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { useLocation } from "react-router-dom";
 import {
   Scale, ArrowRight, ArrowLeft, CheckCircle2, AlertTriangle,
   Loader2, TrendingUp, RotateCcw, Send,
@@ -499,6 +500,7 @@ const STEP_LABELS = ["Your Statement", "What You Seek", "Your Role", "Location"]
 
 const CasePredictor = () => {
   useEffect(() => { window.scrollTo({ top: 0, behavior: "auto" }); }, []);
+  const routerLocation = useLocation();
 
   type Phase = "form" | "loading" | "result";
 
@@ -542,6 +544,16 @@ const CasePredictor = () => {
   const authHeader = authToken ? { Authorization: `Bearer ${authToken}` } : {};
 
   const progress = Math.round((step / STEP_LABELS.length) * 100);
+
+  // Pre-fill the statement field when navigating from the chatbot prediction bridge
+  useEffect(() => {
+    const prefill = (routerLocation.state as { prefillQuery?: string } | null)?.prefillQuery;
+    if (prefill) {
+      setStatement(prefill);
+      statementRef.current = prefill;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   // Voice support detection + cleanup
   useEffect(() => {

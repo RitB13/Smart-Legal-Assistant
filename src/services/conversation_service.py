@@ -126,35 +126,41 @@ class ConversationService:
             return []
     
     @staticmethod
-    def add_message(conv_id: str, role: str, content: str, language: Optional[str] = None) -> Optional[ConversationInDB]:
+    def add_message(
+        conv_id: str,
+        role: str,
+        content: str,
+        language: Optional[str] = None,
+        laws: list = None,
+        suggestions: list = None,
+        risk_level: Optional[str] = None,
+    ) -> Optional[ConversationInDB]:
         """
         Add a message to a conversation.
-        
+
         Args:
             conv_id: Conversation's MongoDB ObjectId as string
             role: Message role ("user" or "assistant")
             content: Message text content
             language: Language of the message (optional)
-            
+            laws: Applicable laws extracted by the LLM (optional)
+            suggestions: Suggested steps extracted by the LLM (optional)
+            risk_level: Legal risk level ("Low"/"Medium"/"High"/"Critical") (optional)
+
         Returns:
             Updated ConversationInDB if successful, None if failed
-            
-        Example:
-            >>> conv = ConversationService.add_message(
-            ...     "507f1f77bcf86cd799439011",
-            ...     role="user",
-            ...     content="What are my case prospects?",
-            ...     language="en"
-            ... )
         """
         collection = get_collection("conversations")
-        
+
         try:
             message = {
                 "role": role,
                 "content": content,
                 "timestamp": datetime.utcnow(),
                 "language": language,
+                "laws": laws or [],
+                "suggestions": suggestions or [],
+                "risk_level": risk_level or None,
             }
             
             result = collection.update_one(

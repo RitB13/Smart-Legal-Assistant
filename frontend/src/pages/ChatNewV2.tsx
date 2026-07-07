@@ -32,6 +32,7 @@ interface ChatMessage {
   risk_level?: string;
   detected_language?: string;
   response_type?: string; // "prediction_prompt" triggers a link to /predict
+  source_query?: string;  // the user question that produced a prediction_prompt
 }
 
 interface ConvSummary {
@@ -321,12 +322,21 @@ const ChatPage = () => {
     } catch { /* leave messages as-is */ }
   }
 
-  async function appendMessage(convId: string, role: string, content: string) {
+  async function appendMessage(
+    convId: string,
+    role: string,
+    content: string,
+    meta?: { laws?: string[]; suggestions?: string[]; risk_level?: string },
+  ) {
     try {
+      const body: Record<string, unknown> = { role, content };
+      if (meta?.laws?.length)        body.laws        = meta.laws;
+      if (meta?.suggestions?.length) body.suggestions = meta.suggestions;
+      if (meta?.risk_level)          body.risk_level  = meta.risk_level;
       await fetch(`${apiUrl}/conversations/${convId}/messages`, {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({ role, content }),
+        body: JSON.stringify(body),
       });
     } catch { /* fire-and-forget; UI already updated */ }
   }
@@ -347,12 +357,14 @@ const ChatPage = () => {
   async function callQuery(
     query:   string,
     history: { role: string; content: string }[] = [],
+    state:   string = "",
   ): Promise<QueryResult> {
     const controller = new AbortController();
     const tid = setTimeout(() => controller.abort(), 60_000);
     try {
       const body: Record<string, unknown> = { query };
       if (history.length > 0) body.conversation_history = history;
+      if (state) body.state = state;
 
       const res = await fetch(`${apiUrl}/query`, {
         method: "POST",
@@ -363,6 +375,10 @@ const ChatPage = () => {
       clearTimeout(tid);
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       const data = await res.json();
+      // Filter out the placeholder "Assessment not performed" value so the
+      // risk gauge only renders when the LLM actually produced a risk level.
+      const rawRisk = data.impact_score?.risk_level || "";
+      const riskLevel = rawRisk === "Assessment not performed" ? "" : rawRisk;
       return {
         reply:               data.summary        || "I can help with that. Could you provide more details?",
         laws:                Array.isArray(data.laws)        ? data.laws        : [],
@@ -370,7 +386,7 @@ const ChatPage = () => {
         similar_cases:       Array.isArray(data.similar_cases) ? data.similar_cases : [],
         request_id:          data.request_id     || "",
         follow_up_questions: Array.isArray(data.follow_up_questions) ? data.follow_up_questions : [],
-        risk_level:          data.impact_score?.risk_level || "",
+        risk_level:          riskLevel,
         detected_language:   data.language || "",
         response_type:       data.response_type || "",
       };
@@ -386,11 +402,11 @@ const ChatPage = () => {
 
   // callQueryStream — streaming path used by handleSend
   async function callQueryStream(
-    query:   string,
-    history: { role: string; content: string }[],
+    query:    string,
+    history:  { role: string; content: string }[],
     botMsgId: string,
-    state:   string,
-    onDone?: (summary: string) => void,
+    state:    string,
+    onDone?:  (summary: string, meta?: { laws?: string[]; suggestions?: string[]; risk_level?: string }) => void,
   ): Promise<void> {
     let firstChunk = true;
     let acc = "";
@@ -452,11 +468,13 @@ const ChatPage = () => {
 
             } else if (data.type === "done") {
               setIsLoading(false);
-              const summary    = String(data.summary    ?? acc.trimStart().replace(/^SUMMARY:\s*/,""));
-              const laws       = Array.isArray(data.laws)          ? (data.laws as string[])          : [];
-              const sugg       = Array.isArray(data.suggestions)   ? (data.suggestions as string[])   : [];
-              const cases      = Array.isArray(data.similar_cases) ? (data.similar_cases as SimilarCase[]) : [];
-              const request_id = String(data.request_id ?? "");
+              const summary      = String(data.summary    ?? acc.trimStart().replace(/^SUMMARY:\s*/,""));
+              const laws         = Array.isArray(data.laws)          ? (data.laws as string[])          : [];
+              const sugg         = Array.isArray(data.suggestions)   ? (data.suggestions as string[])   : [];
+              const cases        = Array.isArray(data.similar_cases) ? (data.similar_cases as SimilarCase[]) : [];
+              const request_id   = String(data.request_id ?? "");
+              const responseType = String(data.response_type ?? "") || undefined;
+              const riskLvl      = String(data.risk_level ?? "") || undefined;
 
               setMessages(prev => prev.map(m =>
                 m.id === botMsgId
@@ -470,13 +488,19 @@ const ChatPage = () => {
                       similar_cases:       cases.length  > 0 ? cases : undefined,
                       follow_up_questions: Array.isArray(data.follow_up_questions) && (data.follow_up_questions as string[]).length > 0
                         ? (data.follow_up_questions as string[]) : undefined,
-                      risk_level:          String(data.risk_level ?? "") || undefined,
+                      risk_level:          riskLvl,
                       detected_language:   String(data.language ?? "") || undefined,
+                      response_type:       responseType,
+                      source_query:        responseType === "prediction_prompt" ? query : undefined,
                     }
                   : m
               ));
 
-              if (onDone) onDone(summary);
+              if (onDone) onDone(summary, {
+                laws:       laws.length > 0 ? laws : undefined,
+                suggestions: sugg.length > 0 ? sugg : undefined,
+                risk_level:  riskLvl,
+              });
 
             } else if (data.type === "error") {
               setIsLoading(false);
@@ -569,9 +593,9 @@ const ChatPage = () => {
       .join("\n\n---\n");
 
     setInputText("");
-    setExtractedDocText("");
-    setDocFile(null);
-    setDocLaws([]);
+    // Do NOT clear extractedDocText / docFile / docLaws here — they persist until
+    // the user explicitly dismisses the document with the ✕ button. This lets the
+    // user ask multiple questions about the same document in sequence.
     setDocUploadError("");
     setIsLoading(true);
     setHasUsedVoice(false);
@@ -615,10 +639,10 @@ const ChatPage = () => {
 
     // Stream the response; persist to MongoDB via onDone callback
     const persistConvId = convId;
-    await callQueryStream(text, history, botMsgId, selectedState, (finalSummary) => {
+    await callQueryStream(text, history, botMsgId, selectedState, (finalSummary, meta) => {
       if (persistConvId) {
-        appendMessage(persistConvId, "user", text);
-        appendMessage(persistConvId, "assistant", finalSummary);
+        appendMessage(persistConvId, "user", displayText);
+        appendMessage(persistConvId, "assistant", finalSummary, meta);
       }
     });
 
@@ -995,7 +1019,7 @@ const ChatPage = () => {
       .slice(-10)
       .map(m => ({ role: m.role, content: m.content }));
 
-    const { reply, laws, suggestions, similar_cases, request_id, follow_up_questions, risk_level, detected_language, response_type } = await callQuery(transcript, history);
+    const { reply, laws, suggestions, similar_cases, request_id, follow_up_questions, risk_level, detected_language, response_type } = await callQuery(transcript, history, selectedState);
     if (!vcActiveRef.current) return;
 
     const botMsg: ChatMessage = {
@@ -1011,13 +1035,18 @@ const ChatPage = () => {
       risk_level:          risk_level || undefined,
       detected_language:   detected_language || undefined,
       response_type:       response_type || undefined,
+      source_query:        response_type === "prediction_prompt" ? transcript : undefined,
     };
     setMessages(prev => [...prev, botMsg]);
 
-    // Persist to MongoDB
+    // Persist to MongoDB (with structured data for assistant messages)
     if (convId) {
       appendMessage(convId, "user", transcript);
-      appendMessage(convId, "assistant", reply);
+      appendMessage(convId, "assistant", reply, {
+        laws:       laws.length > 0 ? laws : undefined,
+        suggestions: suggestions.length > 0 ? suggestions : undefined,
+        risk_level:  risk_level || undefined,
+      });
     }
 
     // ── Speak the reply via browser TTS ───────────────────────────────────────
@@ -1546,6 +1575,7 @@ const ChatPage = () => {
                           </p>
                           <Link
                             to="/predict"
+                            state={{ prefillQuery: msg.source_query || "" }}
                             className="flex-shrink-0 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white transition-colors"
                           >
                             Run Prediction →
