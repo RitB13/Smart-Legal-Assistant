@@ -2,22 +2,28 @@
 Build Dense Retrieval Index
 ===========================
 One-time script: encodes all 82k Indian court cases in rag_corpus.csv using
-InLegalBERT and saves L2-normalised embeddings + corpus metadata.
+paraphrase-multilingual-MiniLM-L12-v2 (via sentence-transformers) and saves
+L2-normalised embeddings + corpus metadata.
 
-Usage (from project root):
+Why this model:
+  - Supports 50+ languages including Hindi, Bengali, Tamil, Telugu, Marathi,
+    Gujarati, Kannada, Malayalam, Punjabi — enabling cross-lingual retrieval
+    so users asking in Indian languages still find relevant English court cases.
+  - 12-layer MiniLM: 4-6x faster on CPU than full BERT, produces 384-dim vectors.
+
+Usage (from project root, after Ctrl+C on any previous run):
     python -m src.scripts.build_dense_index
 
 Output (saved to src/data/models/dense/):
-    embeddings.npy    -- float32 (N, 768), L2-normalised
+    embeddings.npy    -- float32 (N, 384), L2-normalised
     corpus_meta.json  -- [{case_name, case_type, summary, source}, ...]
-    index_meta.json   -- build metadata (n_docs, model, embedding_dim)
+    index_meta.json   -- build metadata (n_docs, model, embedding_dim, etc.)
 """
 
-import os
-import sys
 import ast
 import json
 import logging
+import sys
 import numpy as np
 import pandas as pd
 from pathlib import Path
@@ -30,19 +36,14 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
-ROOT        = Path(__file__).resolve().parents[2]   # project root
+ROOT        = Path(__file__).resolve().parents[2]
 CORPUS_PATH = ROOT / "src" / "data" / "processed" / "rag_corpus.csv"
 OUT_DIR     = ROOT / "src" / "data" / "models" / "dense"
 
-MODEL_DIRS = [
-    ROOT / "src" / "data" / "models" / "inlegalbert" / "outcome",
-    ROOT / "src" / "data" / "models" / "inlegalbert" / "bail",
-    ROOT / "src" / "data" / "models" / "inlegalbert" / "fairness",
-]
-HF_FALLBACK = "law-ai/InLegalBERT"
-
-BATCH_SIZE  = 32
-MAX_SEQ_LEN = 256
+# ── Model config ───────────────────────────────────────────────────────────────
+MODEL_NAME  = "paraphrase-multilingual-MiniLM-L12-v2"
+BATCH_SIZE  = 256   # sentence-transformers handles batching + threading internally
+MAX_CHARS   = 1500  # truncate each text before encoding
 
 SOURCE_TO_CASE_TYPE = {
     "il_tur_summ": "Turnaround Case",
@@ -62,34 +63,20 @@ def _parse_list_field(val) -> str:
     return str(val) if val is not None else ""
 
 
-def _mean_pool(last_hidden, attention_mask):
-    """Attention-mask-aware mean pooling."""
-    mask   = attention_mask.unsqueeze(-1).expand(last_hidden.size()).float()
-    summed = (last_hidden * mask).sum(dim=1)
-    counts = mask.sum(dim=1).clamp(min=1e-9)
-    return summed / counts
-
-
 def build_index():
-    import torch
-    from transformers import BertModel, AutoTokenizer
-    from sklearn.preprocessing import normalize
+    try:
+        from sentence_transformers import SentenceTransformer
+    except ImportError:
+        logger.error(
+            "sentence-transformers is not installed. "
+            "Run:  pip install sentence-transformers>=2.7.0"
+        )
+        sys.exit(1)
 
     # ── Load model ─────────────────────────────────────────────────────────────
-    model_dir = next((d for d in MODEL_DIRS if d.exists()), None)
-    if model_dir:
-        logger.info("Loading tokenizer + model from local dir: %s", model_dir)
-        tokenizer = AutoTokenizer.from_pretrained(str(model_dir))
-        model     = BertModel.from_pretrained(str(model_dir))
-    else:
-        logger.warning("No local InLegalBERT found — downloading from %s", HF_FALLBACK)
-        tokenizer = AutoTokenizer.from_pretrained(HF_FALLBACK)
-        model     = BertModel.from_pretrained(HF_FALLBACK)
-
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-    logger.info("Device: %s", device)
-    model.to(device)
-    model.eval()
+    logger.info("Loading model: %s  (downloads ~280 MB on first run)", MODEL_NAME)
+    model = SentenceTransformer(MODEL_NAME)
+    logger.info("Model loaded — embedding dim: %d", model.get_sentence_embedding_dimension())
 
     # ── Load corpus ─────────────────────────────────────────────────────────────
     logger.info("Loading corpus from %s", CORPUS_PATH)
@@ -105,9 +92,9 @@ def build_index():
         raw_summary = _parse_list_field(row.get("summary", ""))
         source      = str(row.get("source", "")).strip()
 
-        # Prefer summary for embedding (shorter, more semantic), fall back to text
+        # Prefer summary (shorter, more semantic), fall back to full text
         index_text = raw_summary if len(raw_summary) > 20 else raw_text
-        index_text = index_text[:1500].strip() or raw_id
+        index_text = index_text[:MAX_CHARS].strip() or raw_id
 
         embed_texts.append(index_text)
         meta.append({
@@ -117,44 +104,23 @@ def build_index():
             "source":    source,
         })
 
-    n        = len(embed_texts)
-    n_batches = (n + BATCH_SIZE - 1) // BATCH_SIZE
-    logger.info("Embedding %d documents in %d batches (batch_size=%d)", n, n_batches, BATCH_SIZE)
+    n = len(embed_texts)
+    logger.info(
+        "Encoding %d documents with %s (batch_size=%d) …",
+        n, MODEL_NAME, BATCH_SIZE,
+    )
+    logger.info("Estimated time: 1-2 hours on CPU. Progress bar below:")
 
-    # ── Embed ──────────────────────────────────────────────────────────────────
-    all_vecs = []
+    # ── Encode — sentence-transformers handles batching, threading, normalisation
+    embeddings = model.encode(
+        embed_texts,
+        batch_size=BATCH_SIZE,
+        show_progress_bar=True,
+        normalize_embeddings=True,   # L2-normalise so dot product == cosine
+        convert_to_numpy=True,
+    ).astype(np.float32)             # ensure float32 for compact storage
 
-    with torch.no_grad():
-        for b in range(n_batches):
-            start       = b * BATCH_SIZE
-            end         = min(start + BATCH_SIZE, n)
-            batch_texts = embed_texts[start:end]
-
-            enc = tokenizer(
-                batch_texts,
-                padding=True,
-                truncation=True,
-                max_length=MAX_SEQ_LEN,
-                return_tensors="pt",
-            )
-            input_ids      = enc["input_ids"].to(device)
-            attention_mask = enc["attention_mask"].to(device)
-            token_type_ids = enc.get("token_type_ids")
-            if token_type_ids is not None:
-                token_type_ids = token_type_ids.to(device)
-
-            out    = model(input_ids=input_ids, attention_mask=attention_mask,
-                           token_type_ids=token_type_ids)
-            pooled = _mean_pool(out.last_hidden_state, attention_mask)
-            all_vecs.append(pooled.cpu().numpy().astype(np.float32))
-
-            if (b + 1) % 100 == 0 or b == n_batches - 1:
-                pct = (b + 1) / n_batches * 100
-                logger.info("  %d/%d docs (%.1f%%)", end, n, pct)
-
-    embeddings = np.vstack(all_vecs)                           # (N, 768)
-    embeddings = normalize(embeddings, norm="l2").astype(np.float32)
-    logger.info("Embeddings shape: %s", embeddings.shape)
+    logger.info("Embeddings shape: %s  dtype: %s", embeddings.shape, embeddings.dtype)
 
     # ── Save ───────────────────────────────────────────────────────────────────
     OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -164,7 +130,8 @@ def build_index():
     idx_path  = OUT_DIR / "index_meta.json"
 
     np.save(str(emb_path), embeddings)
-    logger.info("Saved embeddings  → %s", emb_path)
+    logger.info("Saved embeddings  → %s  (%.1f MB)", emb_path,
+                emb_path.stat().st_size / 1e6)
 
     with open(meta_path, "w", encoding="utf-8") as f:
         json.dump(meta, f, ensure_ascii=False, indent=2)
@@ -172,13 +139,14 @@ def build_index():
 
     index_meta = {
         "n_docs":        n,
+        "model":         MODEL_NAME,
         "embedding_dim": int(embeddings.shape[1]),
-        "model":         str(model_dir) if model_dir else HF_FALLBACK,
-        "max_seq_len":   MAX_SEQ_LEN,
+        "max_chars":     MAX_CHARS,
         "batch_size":    BATCH_SIZE,
         "normalised":    True,
+        "library":       "sentence-transformers",
     }
-    with open(idx_path, "w") as f:
+    with open(idx_path, "w", encoding="utf-8") as f:
         json.dump(index_meta, f, indent=2)
     logger.info("Saved index meta  → %s", idx_path)
     logger.info("Dense index build complete.")
