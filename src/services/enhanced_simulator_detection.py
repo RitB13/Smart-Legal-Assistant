@@ -384,12 +384,15 @@ class EnhancedSimulatorDetectionService:
                 matches += 1
             else:
                 # For languages with multi-word phrases, check if key words match
-                # E.g., "मैं चाहता हूँ करना" might match even if exact phrase isn't found
+                # Filter out stop words / single chars (e.g. "i", "a") that appear in
+                # every sentence and would cause false positives.
                 key_components = keyword.split()
                 if len(key_components) > 1:
-                    # If multiple words in keyword, check if main words are present
-                    matching_components = sum(1 for comp in key_components if comp in text)
-                    if matching_components >= max(1, len(key_components) - 1):
+                    meaningful = [c for c in key_components if len(c) >= 3]
+                    if not meaningful:
+                        meaningful = key_components  # fallback if all parts are tiny
+                    matching_components = sum(1 for comp in meaningful if comp in text)
+                    if matching_components >= max(1, len(meaningful) - 1):
                         matches += 1
         
         if matches == 0:
