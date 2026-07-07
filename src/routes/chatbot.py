@@ -474,7 +474,22 @@ def handle_query_stream(req: QueryRequest, request: Request):
         f"rag_hits={len(similar_cases)}"
     )
 
+    _CONV_STARTERS = frozenset({
+        "ok", "okay", "sure", "thanks", "thank", "noted", "great", "alright",
+        "understood", "perfect", "cool", "sounds", "fine", "got", "nice",
+        "yep", "yes", "no", "nope", "hmm", "interesting",
+    })
+
     def event_stream():
+        # Conversational acknowledgments (≤10 words, starts with ack word)
+        # — skip the LLM entirely and return a brief natural reply.
+        _qwords = req.query.strip().split()
+        if _qwords and len(_qwords) <= 10 and _qwords[0].lower().rstrip(",.!?") in _CONV_STARTERS:
+            _reply = "Got it! Feel free to ask me any other legal questions whenever you're ready."
+            yield f"data: {_json.dumps({'type': 'chunk', 'content': _reply})}\n\n"
+            yield f"data: {_json.dumps({'type': 'done', 'summary': _reply, 'laws': [], 'suggestions': [], 'follow_up_questions': [], 'risk_level': '', 'similar_cases': [], 'request_id': request_id, 'language': language})}\n\n"
+            return
+
         full_text = ""
         try:
             for chunk in get_legal_response_stream(
