@@ -137,6 +137,60 @@ Guidelines:
     return prompt
 
 
+def create_rag_enhanced_prompt(language_code: str, precedents: list) -> str:
+    """
+    Build a system prompt that includes retrieved court precedents as context.
+
+    Injects the precedent block between the core legal-assistant instructions and
+    the JSON-format instruction so the model can ground its answer in real cases.
+
+    Args:
+        language_code: ISO language code (e.g. 'en', 'hi')
+        precedents:    List of dicts from PrecedentService.search() —
+                       [{case_name, case_type, summary, outcome, similarity}]
+
+    Returns:
+        Full system prompt string with embedded precedents.
+        Falls back to create_language_aware_prompt() if no valid precedents given.
+    """
+    base = create_language_aware_prompt(language_code)
+
+    # Filter out very-low-similarity results that would add noise
+    relevant = [p for p in precedents if p.get("similarity", 0) >= 0.08]
+    if not relevant:
+        return base
+
+    context_block = "\n\nRELEVANT INDIAN COURT PRECEDENTS (retrieved from verified legal database):\n"
+    context_block += "Use these cases to ground your response. Cite case names in your summary where applicable.\n"
+
+    for i, p in enumerate(relevant, 1):
+        case_name = p.get("case_name", "Unknown")
+        case_type = p.get("case_type", "").strip()
+        summary   = (p.get("summary", "") or "").strip()[:500]
+        outcome   = (p.get("outcome", "") or "").strip()[:200]
+
+        context_block += f"\n[Case {i}] {case_name}"
+        if case_type and case_type.lower() not in ("unknown", ""):
+            context_block += f" ({case_type})"
+        if summary:
+            context_block += f"\n  Summary: {summary}"
+            if len(p.get("summary", "")) > 500:
+                context_block += "..."
+        if outcome:
+            context_block += f"\n  Outcome: {outcome}"
+            if len(p.get("outcome", "")) > 200:
+                context_block += "..."
+        context_block += "\n"
+
+    # Insert precedent block just before the closing instruction ("Do not include…")
+    # so the JSON format instruction remains the last thing the model sees.
+    insert_marker = "- Do not include any text outside the JSON structure"
+    if insert_marker in base:
+        return base.replace(insert_marker, context_block + insert_marker)
+
+    return base + context_block
+
+
 def get_legal_response(
     user_query: str,
     language: str = "en",
@@ -144,9 +198,10 @@ def get_legal_response(
     max_tokens: int = None,
     timeout: int = None,
     system_prompt: str = None,
+    conversation_history: list = None,
 ) -> str:
     """
-    Get legal response from Groq LLM with multilingual support.
+    Get legal response from Groq LLM with multilingual support and multi-turn memory.
 
     Args:
         user_query: The user's legal question
@@ -157,6 +212,8 @@ def get_legal_response(
         system_prompt: Override the default chatbot system prompt. Use this for
                        analytical/structured calls so the chatbot JSON format
                        instruction does not conflict with the user prompt format.
+        conversation_history: List of prior messages [{"role": "user"|"assistant", "content": str}].
+                              Last 10 messages are used; older ones are silently dropped.
 
     Returns:
         String response from the LLM
@@ -165,30 +222,44 @@ def get_legal_response(
         requests.exceptions.RequestException: If API call fails
     """
     temperature = temperature if temperature is not None else LLM_TEMPERATURE
-    max_tokens = max_tokens if max_tokens is not None else LLM_MAX_TOKENS
-    timeout = timeout if timeout is not None else LLM_TIMEOUT
+    max_tokens  = max_tokens  if max_tokens  is not None else LLM_MAX_TOKENS
+    timeout     = timeout     if timeout     is not None else LLM_TIMEOUT
 
     # Use caller-supplied system prompt, or default chatbot prompt
     if system_prompt is None:
         system_prompt = create_language_aware_prompt(language)
-    
+
+    # Build the messages list: system → history → current user query
+    messages = [{"role": "system", "content": system_prompt}]
+
+    if conversation_history:
+        # Cap at last 10 messages to control token spend; trim each to 1000 chars
+        for msg in conversation_history[-10:]:
+            role    = msg.get("role", "user")
+            content = (msg.get("content") or "").strip()
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content[:1000]})
+
+    messages.append({"role": "user", "content": user_query})
+
     try:
         headers = {
             "Authorization": f"Bearer {GROQ_API_KEY}",
             "Content-Type": "application/json"
         }
-        
+
         payload = {
-            "model": GROQ_MODEL,
-            "messages": [
-                {"role": "system", "content": system_prompt},
-                {"role": "user", "content": user_query}
-            ],
+            "model":       GROQ_MODEL,
+            "messages":    messages,
             "temperature": temperature,
-            "max_tokens": max_tokens
+            "max_tokens":  max_tokens,
         }
 
-        logger.debug(f"Making request to Groq API with model: {GROQ_MODEL}, language: {language}, timeout={timeout}s")
+        history_len = len(messages) - 2  # exclude system + current user msg
+        logger.debug(
+            f"Making request to Groq API — model: {GROQ_MODEL}, language: {language}, "
+            f"timeout={timeout}s, history_msgs={history_len}"
+        )
         logger.debug(f"System prompt length: {len(system_prompt)} chars")
         response = requests.post(
             BASE_URL,
