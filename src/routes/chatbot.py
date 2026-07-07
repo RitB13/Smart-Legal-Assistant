@@ -477,7 +477,7 @@ def handle_query_stream(req: QueryRequest, request: Request):
     _CONV_STARTERS = frozenset({
         "ok", "okay", "sure", "thanks", "thank", "noted", "great", "alright",
         "understood", "perfect", "cool", "sounds", "fine", "got", "nice",
-        "yep", "yes", "no", "nope", "hmm", "interesting",
+        "yep", "nope", "hmm",
     })
 
     def event_stream():
