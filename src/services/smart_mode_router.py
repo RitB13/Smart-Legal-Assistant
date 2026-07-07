@@ -173,8 +173,8 @@ class SmartModeRouter:
             return ModeRecommendation(
                 primary_mode="simulate",
                 confidence=detection_result.confidence,
-                confidence_tier=detection_result.confidence_tier,
-                alternative_modes=["chat"],  # Can also ask chat about legal questions
+                confidence_tier=self._confidence_to_tier(detection_result.confidence),
+                alternative_modes=["chat"],
                 reasoning=detection_result.reasoning,
                 extracted_action=detection_result.extracted_action,
                 conversation_context=self._extract_context(conversation_history)
