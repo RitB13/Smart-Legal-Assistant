@@ -168,20 +168,37 @@ class SmartModeRouter:
         
         query_lower = query.lower()
 
+        # Short conversational acknowledgments → chat immediately, skip all keyword logic
+        _words = query_lower.split()
+        _conv_starters = {
+            "ok", "okay", "sure", "thanks", "thank", "noted", "great", "alright",
+            "understood", "perfect", "cool", "sounds", "fine", "got", "nice", "yep",
+            "yes", "no", "nope", "hmm", "interesting", "i", "will"
+        }
+        if len(_words) <= 10 and _words and _words[0].rstrip(",.!?") in _conv_starters:
+            return ModeRecommendation(
+                primary_mode="chat",
+                confidence=0.95,
+                confidence_tier="very_high",
+                alternative_modes=["chat"],
+                reasoning="Short conversational message — routing to chat."
+            )
+
         # Check predict indicators FIRST — outcome/chances queries must never be
         # misclassified as simulate even if the simulator detector fires on them.
         predict_indicators = [
-            # explicit prediction words
-            "predict", "prediction", "case prediction",
-            # outcome / verdict words
-            "outcome", "verdict", "probable outcome", "probable verdict", "likely result",
+            # explicit prediction phrases (not "predictor" tool references)
+            "case prediction", "predict my case", "predict the outcome", "predict the verdict",
+            # outcome / verdict words — require context to avoid "outcome predictor" false match
+            "case outcome", "court outcome", "verdict", "probable outcome", "probable verdict",
+            "likely result", "likely outcome",
             # winning / losing phrases
             "will i win", "will i lose", "chances of winning", "chances of losing",
-            "chances", "winning", "win my case", "lose my case", "will i succeed",
+            "chances", "winning the case", "win my case", "lose my case", "will i succeed",
             # dismissal / employment termination
             "unfair dismissal", "wrongful dismissal", "wrongful termination",
-            # court outcome
-            "what will happen", "how will court", "how will the court",
+            # court outcome phrases
+            "what will happen to my case", "how will court", "how will the court",
             "what are my chances", "my chances",
         ]
 
