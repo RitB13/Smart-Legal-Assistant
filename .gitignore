@@ -62,6 +62,7 @@ src/data/nyayaanumana/
 # Large models — stored on HF Hub, downloaded at startup via download_models.py
 src/data/models/inlegalbert/
 src/data/models/precedent/
+src/data/models/dense/
 
 # Frontend build output
 frontend/dist/

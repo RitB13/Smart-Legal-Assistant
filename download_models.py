@@ -26,12 +26,14 @@ MODELS_BASE = Path("src/data/models")
 HF_MODEL_REPO = os.getenv("HF_MODEL_REPO", "")
 HF_TOKEN = os.getenv("HF_TOKEN") or None
 
-# These files must exist for the app to serve InLegalBERT and precedent features.
-# Classical models are in git so we don't check for them here.
+# These files must exist for the app to serve InLegalBERT, precedent, and dense
+# retrieval features. Classical models are in git so we don't check for them here.
 KEY_FILES = [
     MODELS_BASE / "inlegalbert/fairness/model.safetensors",
     MODELS_BASE / "inlegalbert/outcome/model.safetensors",
     MODELS_BASE / "precedent/precedent_index.pkl",
+    MODELS_BASE / "dense/embeddings.npy",
+    MODELS_BASE / "dense/corpus_meta.json",
 ]
 
 
