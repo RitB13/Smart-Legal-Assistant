@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, useCallback } from "react";
+import { Link } from "react-router-dom";
 import {
   Send, Bot, User, Loader2, Plus, Trash2, MessageSquare,
   Menu, X, Scale, Mic, MicOff, PhoneCall, Volume2, Wand2, Paperclip, FileText,
@@ -30,6 +31,7 @@ interface ChatMessage {
   follow_up_questions?: string[];
   risk_level?: string;
   detected_language?: string;
+  response_type?: string; // "prediction_prompt" triggers a link to /predict
 }
 
 interface ConvSummary {
@@ -338,6 +340,7 @@ const ChatPage = () => {
     follow_up_questions: string[];
     risk_level:          string;
     detected_language:   string;
+    response_type:       string;
   }
 
   // callQuery is used only by the voice conversation path (non-streaming)
@@ -369,6 +372,7 @@ const ChatPage = () => {
         follow_up_questions: Array.isArray(data.follow_up_questions) ? data.follow_up_questions : [],
         risk_level:          data.impact_score?.risk_level || "",
         detected_language:   data.language || "",
+        response_type:       data.response_type || "",
       };
     } catch (e) {
       clearTimeout(tid);
@@ -376,7 +380,7 @@ const ChatPage = () => {
         e instanceof Error && e.name === "AbortError"
           ? "The request timed out. Please try again."
           : "Sorry, I couldn't reach the server. Please try again.";
-      return { reply: msg, laws: [], suggestions: [], similar_cases: [], request_id: "", follow_up_questions: [], risk_level: "", detected_language: "" };
+      return { reply: msg, laws: [], suggestions: [], similar_cases: [], request_id: "", follow_up_questions: [], risk_level: "", detected_language: "", response_type: "" };
     }
   }
 
@@ -991,7 +995,7 @@ const ChatPage = () => {
       .slice(-10)
       .map(m => ({ role: m.role, content: m.content }));
 
-    const { reply, laws, suggestions, similar_cases, request_id, follow_up_questions, risk_level, detected_language } = await callQuery(transcript, history);
+    const { reply, laws, suggestions, similar_cases, request_id, follow_up_questions, risk_level, detected_language, response_type } = await callQuery(transcript, history);
     if (!vcActiveRef.current) return;
 
     const botMsg: ChatMessage = {
@@ -1006,6 +1010,7 @@ const ChatPage = () => {
       follow_up_questions: follow_up_questions.length > 0 ? follow_up_questions : undefined,
       risk_level:          risk_level || undefined,
       detected_language:   detected_language || undefined,
+      response_type:       response_type || undefined,
     };
     setMessages(prev => [...prev, botMsg]);
 
@@ -1385,9 +1390,9 @@ const ChatPage = () => {
               <div className="flex items-center gap-1">
                 <button
                   onClick={() => activeConvId && shareConversation(activeConvId)}
-                  disabled={shareStatus === "loading"}
-                  title="Share conversation"
-                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-50"
+                  disabled={!activeConvId || shareStatus === "loading"}
+                  title={activeConvId ? "Share conversation" : "Send a message first to share"}
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-indigo-600 dark:text-slate-400 dark:hover:text-indigo-400 px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                 >
                   {shareStatus === "loading" ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> :
                    shareStatus === "copied" ? <Check className="h-3.5 w-3.5 text-green-500" /> :
@@ -1626,6 +1631,21 @@ const ChatPage = () => {
                           </div>
                         );
                       })()}
+
+                      {/* Prediction bridge — shown when chatbot redirects to case predictor */}
+                      {msg.role === "assistant" && msg.response_type === "prediction_prompt" && !msg.streaming && (
+                        <div className="w-full mt-2 rounded-xl border border-violet-200 dark:border-violet-700/50 bg-violet-50 dark:bg-violet-900/10 px-3 py-2.5 flex items-center justify-between gap-3">
+                          <p className="text-[12px] text-violet-700 dark:text-violet-300 leading-snug">
+                            This looks like a case outcome question. Use the Case Predictor for an ML-based analysis.
+                          </p>
+                          <Link
+                            to="/predict"
+                            className="flex-shrink-0 text-[11px] font-semibold px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 text-white transition-colors"
+                          >
+                            Run Prediction →
+                          </Link>
+                        </div>
+                      )}
 
                       {/* Follow-up question chips */}
                       {msg.role === "assistant" && msg.follow_up_questions && msg.follow_up_questions.length > 0 && !msg.streaming && (

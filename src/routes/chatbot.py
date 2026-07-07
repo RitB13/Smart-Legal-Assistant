@@ -391,48 +391,12 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
         # Log completion
         elapsed = time.time() - start_time
         logger.info(f"[{request_id}] Query processed successfully in {elapsed:.2f}s")
-        
-        # Persist conversation to MongoDB
-        try:
-            conversation_title = req.query[:100] if len(req.query) > 0 else "Chatbot Query"
-            
-            # Create new conversation document
-            conv_data = ConversationCreate(
-                user_id="anonymous",  # TODO: Get from auth context when available
-                title=conversation_title,
-                language=language
-            )
-            
-            conv = ConversationService.create_conversation(conv_data)
-            
-            if conv:
-                # Add user query to conversation
-                ConversationService.add_message(
-                    str(conv.id),
-                    role="user",
-                    content=req.query,
-                    language=language
-                )
-                
-                # Add assistant response to conversation
-                response_text = parsed.get("summary", "")
-                ConversationService.add_message(
-                    str(conv.id),
-                    role="assistant",
-                    content=response_text,
-                    language=language
-                )
-                
-                # Add conversation_id to response for frontend tracking
-                parsed["conversation_id"] = str(conv.id)
-                logger.info(f"[{request_id}] Conversation saved to MongoDB: {conv.id}")
-            else:
-                logger.warning(f"[{request_id}] Failed to persist conversation to MongoDB")
-                parsed["conversation_id"] = None
-        except Exception as e:
-            logger.warning(f"[{request_id}] Error persisting conversation: {str(e)}")
-            parsed["conversation_id"] = None
-        
+
+        # Conversation persistence is handled by the frontend via POST /conversations
+        # and POST /conversations/{id}/messages. The /query endpoint does not create
+        # conversations itself to avoid duplicates.
+        parsed["conversation_id"] = None
+
         # Return response
         response = QueryResponse(**parsed)
         return response
