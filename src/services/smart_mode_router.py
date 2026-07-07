@@ -173,8 +173,8 @@ class SmartModeRouter:
             return ModeRecommendation(
                 primary_mode="simulate",
                 confidence=detection_result.confidence,
-                confidence_tier=detection_result.confidence_tier,
-                alternative_modes=["chat"],  # Can also ask chat about legal questions
+                confidence_tier=self._confidence_to_tier(detection_result.confidence),
+                alternative_modes=["chat"],
                 reasoning=detection_result.reasoning,
                 extracted_action=detection_result.extracted_action,
                 conversation_context=self._extract_context(conversation_history)
@@ -182,20 +182,29 @@ class SmartModeRouter:
         
         # Check for predict mode indicators
         predict_indicators = [
-            "predict", "outcome", "verdict", "will i win", "case prediction",
-            "chances", "likely result", "probable outcome", "probable verdict",
-            "what will happen", "how will court", "will i succeed"
+            # explicit prediction words
+            "predict", "prediction", "case prediction",
+            # outcome / verdict words
+            "outcome", "verdict", "probable outcome", "probable verdict", "likely result",
+            # winning / losing phrases
+            "will i win", "will i lose", "chances of winning", "chances of losing",
+            "chances", "winning", "win my case", "lose my case", "will i succeed",
+            # dismissal / employment termination
+            "unfair dismissal", "wrongful dismissal", "wrongful termination",
+            # court outcome
+            "what will happen", "how will court", "how will the court",
+            "what are my chances", "my chances",
         ]
-        
+
         if any(indicator in query_lower for indicator in predict_indicators):
-            confidence = 0.75
+            confidence = 0.85
             return ModeRecommendation(
                 primary_mode="predict",
                 confidence=confidence,
                 confidence_tier=self._confidence_to_tier(confidence),
                 alternative_modes=["chat", "simulate"],
-                reasoning=f"User is asking about case prediction/outcome. "
-                         f"Recommend case outcome predictor for ML-based analysis."
+                reasoning="User is asking about case prediction/outcome. "
+                         "Recommend case outcome predictor for ML-based analysis."
             )
         
         # Default to chat mode

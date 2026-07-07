@@ -222,35 +222,6 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
                 logger.warning(f"[{request_id}] Simulator failed, falling back to chat: {sim_err}")
                 # Fall through to normal LLM chat flow below
 
-        # Return a lightweight prediction prompt — no LLM call needed
-        if mode_rec.primary_mode == "predict" and mode_rec.confidence >= 0.80:
-            logger.info(f"[{request_id}] Returning prediction_prompt response")
-            return QueryResponse(
-                request_id=request_id,
-                summary="It sounds like you want to know how your case might turn out in court. I can guide you through a quick assessment — just switch to Predict mode and I'll ask you a few structured questions.",
-                laws=[],
-                suggestions=["Switch to Predict mode to get an ML-based case outcome prediction.", "Have your case details ready: case type, jurisdiction, year, and any damages claimed."],
-                impact_score=ImpactScoreModel(
-                    overall_score=0,
-                    financial_risk_score=0,
-                    legal_exposure_score=0,
-                    long_term_impact_score=0,
-                    rights_lost_score=0,
-                    risk_level="Assessment not performed",
-                    breakdown={"note": "Use Predict mode for case outcome analysis"},
-                    key_factors=[],
-                    mitigating_factors=[],
-                    recommendation="Switch to Predict mode for a structured case outcome assessment."
-                ),
-                language=language,
-                suggested_mode="predict",
-                mode_confidence=mode_rec.confidence,
-                mode_reasoning=mode_rec.reasoning,
-                extracted_action=mode_rec.extracted_action,
-                response_type="prediction_prompt",
-                conversation_id=None
-            )
-
         # RAG: retrieve precedents — dense (InLegalBERT) if available, TF-IDF fallback
         rag_system_prompt = None
         precedents: list = []   # populated inside try; used below to build similar_cases
@@ -392,6 +363,10 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
         elapsed = time.time() - start_time
         logger.info(f"[{request_id}] Query processed successfully in {elapsed:.2f}s")
 
+        # Mark prediction-type queries so the frontend shows the Run Prediction bridge
+        if mode_rec.primary_mode == "predict" and mode_rec.confidence >= 0.80:
+            parsed["response_type"] = "prediction_prompt"
+
         # Conversation persistence is handled by the frontend via POST /conversations
         # and POST /conversations/{id}/messages. The /query endpoint does not create
         # conversations itself to avoid duplicates.
@@ -500,16 +475,6 @@ def handle_query_stream(req: QueryRequest, request: Request):
     )
 
     def event_stream():
-        # ── Prediction fast-path: redirect without calling the LLM ──────────
-        if mode_rec and mode_rec.primary_mode == "predict" and mode_rec.confidence >= 0.80:
-            prediction_msg = (
-                "It sounds like you want to know how your case might turn out in court. "
-                "The Case Predictor gives you an ML-based assessment — tap Run Prediction below."
-            )
-            yield f"data: {_json.dumps({'type': 'chunk', 'content': prediction_msg})}\n\n"
-            yield f"data: {_json.dumps({'type': 'done', 'summary': prediction_msg, 'laws': [], 'suggestions': ['Switch to Predict mode for a structured case outcome assessment.'], 'follow_up_questions': [], 'risk_level': '', 'similar_cases': [], 'request_id': request_id, 'language': language, 'response_type': 'prediction_prompt'})}\n\n"
-            return
-
         full_text = ""
         try:
             for chunk in get_legal_response_stream(
@@ -537,6 +502,11 @@ def handle_query_stream(req: QueryRequest, request: Request):
         elapsed = time.time() - start_time
         logger.info(f"[{request_id}] Stream completed in {elapsed:.2f}s ({len(full_text)} chars)")
 
+        is_predict = (
+            mode_rec is not None
+            and mode_rec.primary_mode == "predict"
+            and mode_rec.confidence >= 0.80
+        )
         done_payload = {
             "type":               "done",
             "summary":            parsed.get("summary", ""),
@@ -547,6 +517,7 @@ def handle_query_stream(req: QueryRequest, request: Request):
             "similar_cases":      similar_cases,
             "request_id":         request_id,
             "language":           language,
+            "response_type":      "prediction_prompt" if is_predict else None,
         }
         yield f"data: {_json.dumps(done_payload)}\n\n"
 
