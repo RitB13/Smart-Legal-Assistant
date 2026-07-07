@@ -1,7 +1,8 @@
 from fastapi import APIRouter, HTTPException, status, Request
 from src.models.query_model import QueryRequest, QueryResponse, ImpactScoreModel
 from src.models.db_models import ConversationCreate
-from src.services.llm_service import get_legal_response
+from src.services.llm_service import get_legal_response, create_rag_enhanced_prompt
+from src.services.precedent_service import get_precedent_service
 from src.services.parser import parse_llm_output
 from src.services.language_service import detect_language, get_language_name
 from src.services.feedback_processor import FeedbackProcessor, ScoreFeedback, ScoreFeedbackResponse
@@ -242,11 +243,65 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
                 conversation_id=None
             )
 
-        # Call LLM for legal analysis
+        # RAG: retrieve precedents — dense (InLegalBERT) if available, TF-IDF fallback
+        rag_system_prompt = None
+        precedents: list = []   # populated inside try; used below to build similar_cases
+        try:
+            from src.services.dense_retrieval_service import get_dense_retrieval_service
+            precedents = []
+
+            dense_svc = get_dense_retrieval_service()
+            if dense_svc.available:
+                rag_start  = time.time()
+                precedents = dense_svc.search(req.query, top_k=4)
+                rag_time   = time.time() - rag_start
+                if precedents:
+                    logger.info(
+                        f"[{request_id}] Dense RAG: {len(precedents)} results "
+                        f"in {rag_time:.2f}s (top_sim={precedents[0].get('similarity',0):.3f})"
+                    )
+                else:
+                    logger.debug(f"[{request_id}] Dense RAG: no results above threshold")
+
+            # Fall back to TF-IDF precedent index when dense index is not ready
+            if not precedents:
+                precedent_svc = get_precedent_service()
+                if precedent_svc.available:
+                    rag_start  = time.time()
+                    precedents = precedent_svc.search(req.query, top_k=4)
+                    rag_time   = time.time() - rag_start
+                    if precedents:
+                        logger.info(
+                            f"[{request_id}] TF-IDF RAG: {len(precedents)} results "
+                            f"in {rag_time:.2f}s (top_sim={precedents[0].get('similarity',0):.3f})"
+                        )
+                    else:
+                        logger.debug(f"[{request_id}] TF-IDF RAG: no results above threshold")
+                else:
+                    logger.debug(f"[{request_id}] Precedent index not available — skipping RAG")
+
+            if precedents:
+                rag_system_prompt = create_rag_enhanced_prompt(language, precedents)
+
+        except Exception as rag_err:
+            logger.warning(f"[{request_id}] RAG retrieval failed, proceeding without context: {rag_err}")
+
+        # Build conversation history list for multi-turn memory
+        history = (
+            [{"role": m.role, "content": m.content} for m in req.conversation_history]
+            if req.conversation_history else None
+        )
+
+        # Call LLM for legal analysis (RAG-augmented prompt + conversation history)
         logger.debug(f"[{request_id}] Calling LLM service for legal analysis...")
         llm_start = time.time()
         try:
-            raw_output = get_legal_response(req.query, language=language)
+            raw_output = get_legal_response(
+                req.query,
+                language=language,
+                system_prompt=rag_system_prompt,       # None → default prompt (no RAG)
+                conversation_history=history,           # None → stateless (no history)
+            )
             llm_time = time.time() - llm_start
             logger.debug(f"[{request_id}] LLM response received in {llm_time:.2f}s ({len(raw_output)} chars)")
         except Exception as e:
@@ -270,8 +325,23 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
         
         # Add required metadata
         parsed["request_id"] = request_id
-        parsed["language"] = language
-        
+        parsed["language"]    = language
+
+        # Attach retrieved court precedents so the frontend can display them
+        parsed["similar_cases"] = [
+            {
+                "case_name":  p.get("case_name",  ""),
+                "case_type":  p.get("case_type",  ""),
+                "summary":    (p.get("summary") or "")[:350],
+                "similarity": round(float(p.get("similarity", 0.0)), 4),
+            }
+            for p in precedents
+            if float(p.get("similarity", 0.0)) >= 0.08
+        ]
+        logger.debug(
+            f"[{request_id}] Attaching {len(parsed['similar_cases'])} similar cases to response"
+        )
+
         # Add mode information
         parsed["suggested_mode"] = mode_rec.primary_mode
         parsed["mode_confidence"] = mode_rec.confidence

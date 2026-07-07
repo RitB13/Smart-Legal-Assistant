@@ -144,12 +144,26 @@ class AuditTrailSummary(BaseModel):
     events: List[AuditEvent] = Field(..., description="List of events in order")
     
 
+class ConversationMessage(BaseModel):
+    """A single message in a multi-turn conversation history."""
+    role:    str = Field(..., description="Message role: 'user' or 'assistant'")
+    content: str = Field(..., description="Message content (auto-truncated to 1000 chars when sent to LLM)")
+
+
+class SimilarCase(BaseModel):
+    """A court case retrieved as a relevant precedent for a legal query."""
+    case_name:  str   = Field(..., description="Name / identifier of the court case")
+    case_type:  str   = Field(..., description="Category of the case (e.g. 'Supreme Court Case')")
+    summary:    str   = Field(..., description="Brief summary of the case facts")
+    similarity: float = Field(..., ge=0.0, le=1.0, description="Cosine similarity score (0–1)")
+
+
 class QueryRequest(BaseModel):
     """Request model for legal queries with multilingual support."""
     query: str = Field(
-        ..., 
-        min_length=1, 
-        max_length=2000, 
+        ...,
+        min_length=1,
+        max_length=2000,
         description="Legal query or question",
         example="What are my rights as a tenant in case of wrongful eviction?"
     )
@@ -158,12 +172,17 @@ class QueryRequest(BaseModel):
         description="ISO language code (e.g., 'en', 'hi', 'bn', 'ta', 'te', 'mr', 'gu', 'kn', 'ml', 'pa'). If not provided, language will be auto-detected.",
         example="en"
     )
-    
+    conversation_history: List[ConversationMessage] = Field(
+        default_factory=list,
+        description="Prior conversation messages for multi-turn context. Send up to 10 most recent messages (user + assistant alternating). Older messages are automatically truncated."
+    )
+
     class Config:
         json_schema_extra = {
             "example": {
                 "query": "What is the statute of limitations for filing a personal injury claim?",
-                "language": "en"
+                "language": "en",
+                "conversation_history": []
             }
         }
 
@@ -329,6 +348,12 @@ class QueryResponse(BaseModel):
     simulation_data: Optional[Dict[str, Any]] = Field(
         None,
         description="Full simulation result when response_type is 'simulation'"
+    )
+
+    # RAG: court precedents that grounded this response
+    similar_cases: List[SimilarCase] = Field(
+        default_factory=list,
+        description="Indian court precedents retrieved by the RAG system and used to ground this response"
     )
 
     class Config:

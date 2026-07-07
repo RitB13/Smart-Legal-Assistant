@@ -2,17 +2,25 @@ import { useState, useRef, useEffect, useCallback } from "react";
 import {
   Send, Bot, User, Loader2, Plus, Trash2, MessageSquare,
   Menu, X, Scale, Mic, MicOff, PhoneCall, Volume2, Wand2, Paperclip, FileText,
-  PanelLeftClose, PanelLeftOpen, ChevronDown,
+  PanelLeftClose, PanelLeftOpen, ChevronDown, Download, BookOpen,
 } from "lucide-react";
 import Header from "../components/Header";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
+interface SimilarCase {
+  case_name:  string;
+  case_type:  string;
+  summary:    string;
+  similarity: number;
+}
+
 interface ChatMessage {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-  timestamp: Date;
+  id:           string;
+  role:         "user" | "assistant";
+  content:      string;
+  timestamp:    Date;
+  similar_cases?: SimilarCase[];   // only present on assistant messages with RAG hits
 }
 
 interface ConvSummary {
@@ -99,6 +107,8 @@ const ChatPage = () => {
   const docInputRef          = useRef<HTMLInputElement>(null);
   // true when the user themselves just sent — ensures we always scroll on send
   const userJustSentRef      = useRef(false);
+  // Mirror of messages state — lets async callbacks (voice conv) read latest list without stale closure
+  const messagesRef          = useRef<ChatMessage[]>([]);
 
   // ── Dictation refs ────────────────────────────────────────────────────────────
   const dictRecorderRef  = useRef<MediaRecorder | null>(null);
@@ -138,8 +148,9 @@ const ChatPage = () => {
 
   // ── State sync helpers ────────────────────────────────────────────────────────
 
-  // Keep conversation id ref in sync so async callbacks read the latest value
-  useEffect(() => { activeConvRef.current = activeConvId; }, [activeConvId]);
+  // Keep refs in sync with state so async callbacks always read the latest value
+  useEffect(() => { activeConvRef.current  = activeConvId; }, [activeConvId]);
+  useEffect(() => { messagesRef.current    = messages;     }, [messages]);
 
   // Mirror voice conv UI state into ref so RAF/async callbacks read it without stale closure
   function setVoiceConvState(s: VoiceConvState) {
@@ -241,25 +252,41 @@ const ChatPage = () => {
     } catch { /* fire-and-forget; UI already updated */ }
   }
 
-  async function callQuery(query: string): Promise<string> {
+  interface QueryResult {
+    reply:        string;
+    similar_cases: SimilarCase[];
+  }
+
+  async function callQuery(
+    query:   string,
+    history: { role: string; content: string }[] = [],
+  ): Promise<QueryResult> {
     const controller = new AbortController();
     const tid = setTimeout(() => controller.abort(), 60_000);
     try {
+      const body: Record<string, unknown> = { query };
+      if (history.length > 0) body.conversation_history = history;
+
       const res = await fetch(`${apiUrl}/query`, {
         method: "POST",
         headers: authHeaders(),
-        body: JSON.stringify({ query }),
+        body: JSON.stringify(body),
         signal: controller.signal,
       });
       clearTimeout(tid);
       if (!res.ok) throw new Error(`Server error ${res.status}`);
       const data = await res.json();
-      return data.summary || "I can help with that. Could you provide more details?";
+      return {
+        reply:        data.summary       || "I can help with that. Could you provide more details?",
+        similar_cases: data.similar_cases || [],
+      };
     } catch (e) {
       clearTimeout(tid);
-      if (e instanceof Error && e.name === "AbortError")
-        return "The request timed out. Please try again.";
-      return "Sorry, I couldn't reach the server. Please try again.";
+      const msg =
+        e instanceof Error && e.name === "AbortError"
+          ? "The request timed out. Please try again."
+          : "Sorry, I couldn't reach the server. Please try again.";
+      return { reply: msg, similar_cases: [] };
     }
   }
 
@@ -305,8 +332,19 @@ const ChatPage = () => {
     const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", content: displayText, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
 
-    const reply = await callQuery(text);
-    const botMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: "assistant", content: reply, timestamp: new Date() };
+    // Build conversation history from the last 10 messages (5 exchanges) for multi-turn memory
+    const history = messagesRef.current
+      .slice(-10)
+      .map(m => ({ role: m.role, content: m.content }));
+
+    const { reply, similar_cases } = await callQuery(text, history);
+    const botMsg: ChatMessage = {
+      id:           (Date.now() + 1).toString(),
+      role:         "assistant",
+      content:      reply,
+      timestamp:    new Date(),
+      similar_cases: similar_cases.length > 0 ? similar_cases : undefined,
+    };
     setMessages(prev => [...prev, botMsg]);
 
     if (convId) {
@@ -680,11 +718,22 @@ const ChatPage = () => {
     const userMsg: ChatMessage = { id: Date.now().toString(), role: "user", content: transcript, timestamp: new Date() };
     setMessages(prev => [...prev, userMsg]);
 
-    // ── Get AI reply ──────────────────────────────────────────────────────────
-    const reply = await callQuery(transcript);
+    // ── Get AI reply with conversation history ────────────────────────────────
+    // Use messagesRef (not messages state) to avoid stale closure in async chain
+    const history = messagesRef.current
+      .slice(-10)
+      .map(m => ({ role: m.role, content: m.content }));
+
+    const { reply, similar_cases } = await callQuery(transcript, history);
     if (!vcActiveRef.current) return;
 
-    const botMsg: ChatMessage = { id: (Date.now() + 1).toString(), role: "assistant", content: reply, timestamp: new Date() };
+    const botMsg: ChatMessage = {
+      id:           (Date.now() + 1).toString(),
+      role:         "assistant",
+      content:      reply,
+      timestamp:    new Date(),
+      similar_cases: similar_cases.length > 0 ? similar_cases : undefined,
+    };
     setMessages(prev => [...prev, botMsg]);
 
     // Persist to MongoDB
@@ -713,6 +762,95 @@ const ChatPage = () => {
     if (vcActiveRef.current) {
       await startVoiceConvListening();
     }
+  }
+
+  // ── PDF Export ────────────────────────────────────────────────────────────────
+
+  function escapeHtml(str: string): string {
+    return str
+      .replace(/&/g,  "&amp;")
+      .replace(/</g,  "&lt;")
+      .replace(/>/g,  "&gt;")
+      .replace(/"/g,  "&quot;")
+      .replace(/'/g,  "&#39;");
+  }
+
+  function exportChatPdf() {
+    if (messages.length === 0) return;
+
+    const convTitle = conversations.find(c => c.id === activeConvId)?.title ?? "Legal Consultation";
+    const dateStr   = new Date().toLocaleDateString("en-IN", { year: "numeric", month: "long", day: "numeric" });
+
+    const messagesHtml = messages.map(m => {
+      const isUser = m.role === "user";
+      const bg     = isUser ? "#EFF6FF" : "#F8FAFC";
+      const border = isUser ? "#BFDBFE" : "#E2E8F0";
+      const label  = isUser ? "You" : "Legal AI";
+      const labelColor = isUser ? "#1D4ED8" : "#0F766E";
+      const align  = isUser ? "right" : "left";
+
+      let precedentsHtml = "";
+      if (!isUser && m.similar_cases && m.similar_cases.length > 0) {
+        const caseItems = m.similar_cases.map(c => `
+          <div style="padding:6px 10px;margin:4px 0;background:#F0FDF4;border-left:3px solid #22C55E;border-radius:4px;">
+            <div style="font-weight:700;font-size:11px;color:#15803D;">${escapeHtml(c.case_name)}</div>
+            <div style="font-size:10px;color:#6B7280;">${escapeHtml(c.case_type)} &nbsp;·&nbsp; Match: ${Math.round(c.similarity * 100)}%</div>
+            ${c.summary ? `<div style="font-size:11px;color:#374151;margin-top:3px;line-height:1.5;">${escapeHtml(c.summary.slice(0, 250))}${c.summary.length > 250 ? "…" : ""}</div>` : ""}
+          </div>`).join("");
+        precedentsHtml = `
+          <div style="margin-top:10px;padding-top:8px;border-top:1px dashed #D1FAE5;">
+            <div style="font-size:9px;font-weight:700;color:#6B7280;text-transform:uppercase;letter-spacing:.06em;margin-bottom:5px;">
+              Relevant Court Precedents
+            </div>
+            ${caseItems}
+          </div>`;
+      }
+
+      return `
+        <div style="margin-bottom:18px;text-align:${align};">
+          <div style="display:inline-block;max-width:82%;background:${bg};border:1px solid ${border};border-radius:12px;padding:12px 16px;text-align:left;">
+            <div style="font-size:9px;font-weight:700;color:${labelColor};text-transform:uppercase;letter-spacing:.06em;margin-bottom:6px;">${label}</div>
+            <div style="font-size:13px;color:#1E293B;white-space:pre-wrap;line-height:1.65;">${escapeHtml(m.content)}</div>
+            ${precedentsHtml}
+            <div style="font-size:10px;color:#9CA3AF;margin-top:8px;">${m.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}</div>
+          </div>
+        </div>`;
+    }).join("");
+
+    const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8"/>
+  <title>Legal Consultation — ${escapeHtml(convTitle)}</title>
+  <style>
+    body{font-family:Georgia,serif;margin:0;padding:40px;background:#fff;color:#1E293B;font-size:14px;}
+    @page{margin:20mm;}
+    @media print{body{padding:0;}}
+    h1{font-size:22px;color:#1E3A5F;margin-bottom:4px;}
+    .meta{font-size:12px;color:#6B7280;margin-bottom:28px;padding-bottom:14px;border-bottom:2px solid #E5E7EB;}
+    .disclaimer{margin-top:32px;padding:12px 16px;background:#FFFBEB;border:1px solid #FDE68A;border-radius:8px;font-size:11px;color:#92400E;}
+  </style>
+</head>
+<body>
+  <h1>&#9878; Smart Legal Assistant</h1>
+  <div class="meta">
+    <strong>${escapeHtml(convTitle)}</strong><br/>
+    Exported on ${escapeHtml(dateStr)} &nbsp;·&nbsp; ${messages.length} messages
+  </div>
+  ${messagesHtml}
+  <div class="disclaimer">
+    <strong>Disclaimer:</strong> This document is generated by an AI legal assistant and is provided for informational purposes only.
+    It does not constitute legal advice. Please consult a qualified legal professional before taking any legal action.
+  </div>
+</body>
+</html>`;
+
+    const win = window.open("", "_blank");
+    if (!win) { alert("Please allow pop-ups to export the conversation as PDF."); return; }
+    win.document.write(html);
+    win.document.close();
+    // Small delay so the browser finishes rendering before the print dialog opens
+    setTimeout(() => { win.focus(); win.print(); }, 400);
   }
 
   // ── Derived UI labels ─────────────────────────────────────────────────────────
@@ -936,6 +1074,23 @@ const ChatPage = () => {
             </span>
           </div>
 
+          {/* Conversation toolbar — export button, only when there are messages */}
+          {messages.length > 0 && (
+            <div className="flex-shrink-0 flex items-center justify-between px-4 py-1.5 border-b border-slate-100 dark:border-slate-800/60 bg-white dark:bg-[#060d1a]">
+              <span className="text-xs text-slate-400 dark:text-slate-600 truncate max-w-[60%]">
+                {conversations.find(c => c.id === activeConvId)?.title ?? "Current conversation"}
+              </span>
+              <button
+                onClick={exportChatPdf}
+                title="Export conversation as PDF"
+                className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-blue-600 dark:text-slate-400 dark:hover:text-blue-400 px-2.5 py-1 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              >
+                <Download className="h-3.5 w-3.5" />
+                Export PDF
+              </button>
+            </div>
+          )}
+
           {/* Messages — scrolls internally */}
           <div
             ref={messagesContainerRef}
@@ -994,6 +1149,39 @@ const ChatPage = () => {
                       >
                         {msg.content}
                       </div>
+
+                      {/* Relevant Cases panel — only on assistant messages with RAG hits */}
+                      {msg.role === "assistant" && msg.similar_cases && msg.similar_cases.length > 0 && (
+                        <div className="w-full mt-1 rounded-xl border border-green-200 dark:border-green-800/50 bg-green-50 dark:bg-green-950/30 overflow-hidden">
+                          <div className="flex items-center gap-1.5 px-3 py-2 border-b border-green-200 dark:border-green-800/50">
+                            <BookOpen className="h-3.5 w-3.5 text-green-600 dark:text-green-400 flex-shrink-0" />
+                            <span className="text-[11px] font-semibold text-green-700 dark:text-green-400 uppercase tracking-wider">
+                              Relevant Court Precedents
+                            </span>
+                          </div>
+                          <div className="divide-y divide-green-100 dark:divide-green-800/40">
+                            {msg.similar_cases.map((c, i) => (
+                              <div key={i} className="px-3 py-2.5">
+                                <div className="flex items-start justify-between gap-2">
+                                  <span className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-snug">
+                                    {c.case_name}
+                                  </span>
+                                  <span className="flex-shrink-0 text-[10px] font-medium px-1.5 py-0.5 rounded-full bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400">
+                                    {Math.round(c.similarity * 100)}% match
+                                  </span>
+                                </div>
+                                <span className="text-[10px] text-slate-500 dark:text-slate-500">{c.case_type}</span>
+                                {c.summary && (
+                                  <p className="text-[11px] text-slate-600 dark:text-slate-400 mt-1 leading-relaxed line-clamp-2">
+                                    {c.summary}
+                                  </p>
+                                )}
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
                       <span className="text-[10px] text-slate-400 dark:text-slate-600 px-1">
                         {msg.timestamp.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
                       </span>
