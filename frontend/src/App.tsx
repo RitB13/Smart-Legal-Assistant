@@ -16,6 +16,7 @@ import ChatNewV2 from "./pages/ChatNewV2";
 import CasePredictor from "./pages/CasePredictor";
 import PredictionHistory from "./pages/PredictionHistory";
 import RightsPage from "./pages/Rights";
+import SharedConversation from "./pages/SharedConversation";
 import NotFound from "./pages/NotFound";
 import MediationHome from "./pages/mediation/MediationHome";
 import CreateDispute from "./pages/mediation/CreateDispute";
@@ -50,6 +51,7 @@ const App = () => (
               <Route path="/register"     element={<Register />} />
               <Route path="/verify-otp"   element={<VerifyOtp />} />
               <Route path="/rights"       element={<RightsPage />} />
+              <Route path="/shared/:token" element={<SharedConversation />} />
 
               {/* Protected routes */}
               <Route path="/chat"    element={<ProtectedRoute><ChatNewV2 /></ProtectedRoute>} />
