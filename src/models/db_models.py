@@ -80,6 +80,9 @@ class MessageInConversation(BaseModel):
     content: str
     timestamp: datetime
     language: Optional[str] = None
+    laws: List[str] = Field(default_factory=list)
+    suggestions: List[str] = Field(default_factory=list)
+    risk_level: Optional[str] = None
 
 
 class ConversationBase(BaseModel):

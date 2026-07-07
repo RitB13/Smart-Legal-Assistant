@@ -434,6 +434,18 @@ def handle_query_stream(req: QueryRequest, request: Request):
     else:
         language = detect_language(req.query) or "en"
 
+    # ── Smart mode detection (mirrors /query logic) ──────────────────────────
+    mode_rec = None
+    try:
+        mode_result = smart_router.route_query(req.query, language=language, session_id=None)
+        mode_rec = mode_result.mode_recommendation
+        logger.info(
+            f"[{request_id}] Stream mode: {mode_rec.primary_mode} "
+            f"({mode_rec.confidence:.0%} confidence)"
+        )
+    except Exception as mode_err:
+        logger.warning(f"[{request_id}] Stream mode detection failed: {mode_err}")
+
     # ── RAG retrieval (same dual-index logic as /query) ──────────────────────
     precedents: list = []
     try:
@@ -488,6 +500,16 @@ def handle_query_stream(req: QueryRequest, request: Request):
     )
 
     def event_stream():
+        # ── Prediction fast-path: redirect without calling the LLM ──────────
+        if mode_rec and mode_rec.primary_mode == "predict" and mode_rec.confidence >= 0.80:
+            prediction_msg = (
+                "It sounds like you want to know how your case might turn out in court. "
+                "The Case Predictor gives you an ML-based assessment — tap Run Prediction below."
+            )
+            yield f"data: {_json.dumps({'type': 'chunk', 'content': prediction_msg})}\n\n"
+            yield f"data: {_json.dumps({'type': 'done', 'summary': prediction_msg, 'laws': [], 'suggestions': ['Switch to Predict mode for a structured case outcome assessment.'], 'follow_up_questions': [], 'risk_level': '', 'similar_cases': [], 'request_id': request_id, 'language': language, 'response_type': 'prediction_prompt'})}\n\n"
+            return
+
         full_text = ""
         try:
             for chunk in get_legal_response_stream(

@@ -38,15 +38,17 @@ class MessageCreate(BaseModel):
     """Create message request"""
     role: str = Field(..., description="Message role: 'user' or 'assistant'")
     content: str = Field(..., description="Message content")
+    laws: List[str] = Field(default_factory=list, description="Applicable laws (assistant messages)")
+    suggestions: List[str] = Field(default_factory=list, description="Suggested steps (assistant messages)")
+    risk_level: Optional[str] = None
     case_type: Optional[str] = None
     analyzed_entities: Optional[dict] = None
-    
+
     class Config:
         json_schema_extra = {
             "example": {
                 "role": "user",
                 "content": "What are my rights in a property dispute?",
-                "case_type": "property_dispute"
             }
         }
 
@@ -56,6 +58,9 @@ class MessageResponse(BaseModel):
     role: str
     content: str
     timestamp: datetime
+    laws: List[str] = Field(default_factory=list)
+    suggestions: List[str] = Field(default_factory=list)
+    risk_level: Optional[str] = None
     case_type: Optional[str] = None
     analyzed_entities: Optional[dict] = None
 
@@ -268,6 +273,9 @@ async def get_conversation(
                 role=msg.role,
                 content=msg.content,
                 timestamp=msg.timestamp,
+                laws=msg.laws if msg.laws else [],
+                suggestions=msg.suggestions if msg.suggestions else [],
+                risk_level=msg.risk_level,
                 case_type=None,
                 analyzed_entities=None
             )
@@ -352,6 +360,9 @@ async def update_conversation(
                 role=msg.role,
                 content=msg.content,
                 timestamp=msg.timestamp,
+                laws=msg.laws if msg.laws else [],
+                suggestions=msg.suggestions if msg.suggestions else [],
+                risk_level=msg.risk_level,
                 case_type=None,
                 analyzed_entities=None
             )
@@ -476,7 +487,10 @@ async def add_message_to_conversation(
         conversation = ConversationService.add_message(
             conv_id=conversation_id,
             role=request.role,
-            content=request.content
+            content=request.content,
+            laws=request.laws or [],
+            suggestions=request.suggestions or [],
+            risk_level=request.risk_level or None,
         )
         
         if not conversation:
@@ -493,6 +507,9 @@ async def add_message_to_conversation(
                 role=msg.role,
                 content=msg.content,
                 timestamp=msg.timestamp,
+                laws=msg.laws if msg.laws else [],
+                suggestions=msg.suggestions if msg.suggestions else [],
+                risk_level=msg.risk_level,
                 case_type=None,
                 analyzed_entities=None
             )
@@ -556,6 +573,9 @@ async def get_shared_conversation(token: str):
                     "content": m.content,
                     "timestamp": m.timestamp.isoformat(),
                     "language": m.language,
+                    "laws": m.laws if m.laws else [],
+                    "suggestions": m.suggestions if m.suggestions else [],
+                    "risk_level": m.risk_level,
                 }
                 for m in conv.messages
             ],

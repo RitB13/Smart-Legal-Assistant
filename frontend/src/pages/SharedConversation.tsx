@@ -1,12 +1,15 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
-import { Bot, User, Scale, Loader2, AlertCircle } from "lucide-react";
+import { Bot, User, Scale, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
 
 interface SharedMessage {
   role: "user" | "assistant";
   content: string;
   timestamp: string;
   language?: string;
+  laws?: string[];
+  suggestions?: string[];
+  risk_level?: string;
 }
 
 interface SharedConv {
@@ -104,6 +107,68 @@ const SharedConversation = () => {
               }`}>
                 {msg.content}
               </div>
+
+              {/* Applicable Laws */}
+              {msg.role === "assistant" && msg.laws && msg.laws.length > 0 && (
+                <div className="w-full mt-1 rounded-xl border border-blue-200 dark:border-blue-800/50 bg-blue-50 dark:bg-blue-950/30 px-3 py-2.5">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <Scale className="h-3.5 w-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                    <span className="text-[11px] font-semibold text-blue-700 dark:text-blue-400 uppercase tracking-wider">Applicable Laws</span>
+                  </div>
+                  <div className="flex flex-wrap gap-1.5">
+                    {msg.laws.map((law, i) => (
+                      <span key={i} className="inline-flex items-center px-2.5 py-1 rounded-full text-[11px] font-medium bg-white dark:bg-blue-900/40 border border-blue-200 dark:border-blue-700/50 text-blue-700 dark:text-blue-300">
+                        {law}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Suggested Steps */}
+              {msg.role === "assistant" && msg.suggestions && msg.suggestions.length > 0 && (
+                <div className="w-full mt-1 rounded-xl border border-emerald-200 dark:border-emerald-800/50 bg-emerald-50 dark:bg-emerald-950/30 px-3 py-2.5">
+                  <div className="flex items-center gap-1.5 mb-1.5">
+                    <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" />
+                    <span className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400 uppercase tracking-wider">Suggested Steps</span>
+                  </div>
+                  <ol className="space-y-1.5">
+                    {msg.suggestions.map((s, i) => (
+                      <li key={i} className="flex gap-2.5 items-start">
+                        <span className="flex-shrink-0 w-5 h-5 rounded-full bg-emerald-100 dark:bg-emerald-900/50 border border-emerald-300 dark:border-emerald-700 text-[10px] font-bold text-emerald-700 dark:text-emerald-400 flex items-center justify-center mt-0.5">
+                          {i + 1}
+                        </span>
+                        <span className="text-[12px] text-slate-700 dark:text-slate-300 leading-relaxed">{s}</span>
+                      </li>
+                    ))}
+                  </ol>
+                </div>
+              )}
+
+              {/* Legal risk gauge */}
+              {msg.role === "assistant" && msg.risk_level && (() => {
+                const clean = msg.risk_level.replace(/[^\w\s]/g, "").trim().toLowerCase();
+                const label = clean.includes("critical") ? "Critical" : clean.includes("high") ? "High" : clean.includes("medium") ? "Medium" : "Low";
+                const pct   = label === "Critical" ? 92 : label === "High" ? 68 : label === "Medium" ? 42 : 18;
+                const barCls = label === "Critical" ? "bg-red-500" : label === "High" ? "bg-orange-500" : label === "Medium" ? "bg-yellow-400" : "bg-green-500";
+                const txtCls = label === "Critical" ? "text-red-600" : label === "High" ? "text-orange-600" : label === "Medium" ? "text-yellow-600" : "text-green-600";
+                return (
+                  <div className="w-full mt-1 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/50 px-3 py-2.5">
+                    <div className="flex items-center justify-between mb-1.5">
+                      <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Legal Risk</span>
+                      <span className={`text-[11px] font-bold ${txtCls}`}>{label}</span>
+                    </div>
+                    <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
+                      <div className={`h-full rounded-full ${barCls}`} style={{ width: `${pct}%` }} />
+                    </div>
+                    <div className="flex justify-between mt-1">
+                      <span className="text-[9px] text-slate-400">Low</span>
+                      <span className="text-[9px] text-slate-400">Critical</span>
+                    </div>
+                  </div>
+                );
+              })()}
+
               <span className="text-[10px] text-slate-400 px-1">
                 {new Date(msg.timestamp).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })}
               </span>
