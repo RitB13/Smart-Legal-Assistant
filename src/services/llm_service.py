@@ -1,3 +1,4 @@
+import json
 import requests
 import logging
 from config import GROQ_API_KEY, GROQ_MODEL, LLM_TIMEOUT, LLM_MAX_TOKENS, LLM_TEMPERATURE
@@ -415,6 +416,168 @@ def get_legal_response_with_jurisdiction(
     except requests.exceptions.RequestException as e:
         logger.error(f"LLM API request failed: {str(e)}")
         raise
+
+
+# ── Streaming support ─────────────────────────────────────────────────────────
+
+def create_streaming_prompt(language_code: str, state: str = "") -> str:
+    """
+    System prompt for the /stream endpoint.
+    Returns structured plain-text (SUMMARY / LAWS / STEPS) instead of JSON so
+    the model can stream the answer word-by-word without breaking JSON syntax.
+    """
+    language_names = {
+        "en": "English",
+        "hi": "Hindi (हिन्दी)",
+        "bn": "Bengali (বাংলা)",
+        "ta": "Tamil (தமிழ்)",
+        "te": "Telugu (తెలుగు)",
+        "mr": "Marathi (मराठी)",
+        "gu": "Gujarati (ગુજરાતી)",
+        "kn": "Kannada (ಕನ್ನಡ)",
+        "ml": "Malayalam (മലയാളം)",
+        "pa": "Punjabi (ਪੰਜਾਬੀ)",
+    }
+    language_name = language_names.get(language_code, language_code or "English")
+
+    jurisdiction_note = ""
+    if state and state.strip() not in ("National", "All India", ""):
+        sname = state.strip()
+        jurisdiction_note = (
+            f"\nJURISDICTION: The user is asking about laws in {sname}, India. "
+            f"Prioritise {sname}-specific statutes, High Court decisions, and state regulations. "
+            f"Mention explicitly when advice is specific to {sname}."
+        )
+
+    return (
+        f"You are a legal assistant specialised in Indian law and legal rights.{jurisdiction_note}\n\n"
+        f"CRITICAL: Your SUMMARY and STEPS MUST be written entirely in {language_name}. "
+        f"Law names may stay in English even when responding in another language.\n\n"
+        f"Respond in EXACTLY this format — do NOT add any text before SUMMARY: or after the last STEPS bullet:\n\n"
+        f"SUMMARY: <detailed legal analysis in {language_name}, 2–4 paragraphs>\n\n"
+        f"LAWS:\n"
+        f"- <exact Indian statute / IPC section / Act name 1>\n"
+        f"- <exact Indian statute / IPC section / Act name 2>\n\n"
+        f"STEPS:\n"
+        f"- <specific actionable step 1 in {language_name}>\n"
+        f"- <specific actionable step 2 in {language_name}>\n"
+        f"- <specific actionable step 3 in {language_name}>"
+    )
+
+
+def parse_streaming_output(text: str) -> dict:
+    """Parse the SUMMARY/LAWS/STEPS plain-text format into structured fields."""
+    summary_parts: list = []
+    laws: list = []
+    suggestions: list = []
+    section = None
+
+    for raw_line in text.splitlines():
+        line = raw_line.strip()
+        if line.startswith("SUMMARY:"):
+            section = "summary"
+            rest = line[len("SUMMARY:"):].strip()
+            if rest:
+                summary_parts.append(rest)
+        elif line == "LAWS:":
+            section = "laws"
+        elif line == "STEPS:":
+            section = "steps"
+        elif section == "summary":
+            if line in ("LAWS:", "STEPS:"):
+                section = "laws" if line == "LAWS:" else "steps"
+            else:
+                summary_parts.append(line)
+        elif section == "laws":
+            cleaned = line.lstrip("-• ").strip()
+            if cleaned:
+                laws.append(cleaned)
+        elif section == "steps":
+            cleaned = line.lstrip("-• ").strip()
+            if cleaned:
+                suggestions.append(cleaned)
+
+    summary = "\n".join(summary_parts).strip()
+    return {
+        "summary":     summary or text.strip(),
+        "laws":        laws[:8],
+        "suggestions": suggestions[:6],
+    }
+
+
+def get_legal_response_stream(
+    user_query: str,
+    language: str = "en",
+    system_prompt: str = None,
+    conversation_history: list = None,
+):
+    """
+    Synchronous generator that yields raw text chunks from Groq streaming API.
+    Each yielded value is a string fragment (may be a single token or a few words).
+
+    Args:
+        user_query:           The user's legal question.
+        language:             ISO language code used only when system_prompt is None.
+        system_prompt:        Override system prompt (pass create_streaming_prompt result).
+        conversation_history: List of {"role", "content"} dicts; last 10 are used.
+
+    Yields:
+        str — text chunks as they arrive from the API.
+
+    Raises:
+        requests.HTTPError / requests.Timeout on API errors.
+    """
+    if system_prompt is None:
+        system_prompt = create_streaming_prompt(language)
+
+    messages = [{"role": "system", "content": system_prompt}]
+
+    if conversation_history:
+        for msg in conversation_history[-10:]:
+            role    = msg.get("role", "user")
+            content = (msg.get("content") or "").strip()
+            if role in ("user", "assistant") and content:
+                messages.append({"role": role, "content": content[:1000]})
+
+    messages.append({"role": "user", "content": user_query})
+
+    headers = {
+        "Authorization": f"Bearer {GROQ_API_KEY}",
+        "Content-Type":  "application/json",
+    }
+    payload = {
+        "model":       GROQ_MODEL,
+        "messages":    messages,
+        "temperature": LLM_TEMPERATURE,
+        "max_tokens":  LLM_MAX_TOKENS,
+        "stream":      True,
+    }
+
+    response = requests.post(
+        BASE_URL,
+        headers=headers,
+        json=payload,
+        timeout=LLM_TIMEOUT,
+        stream=True,
+    )
+    response.raise_for_status()
+
+    for raw_line in response.iter_lines():
+        if not raw_line:
+            continue
+        line = raw_line.decode("utf-8") if isinstance(raw_line, bytes) else raw_line
+        if not line.startswith("data: "):
+            continue
+        data_str = line[6:].strip()
+        if data_str == "[DONE]":
+            break
+        try:
+            chunk_data = json.loads(data_str)
+            content = chunk_data["choices"][0]["delta"].get("content", "")
+            if content:
+                yield content
+        except (KeyError, IndexError, json.JSONDecodeError):
+            continue
 
 
 # ── Whisper transcription ──────────────────────────────────────────────────────

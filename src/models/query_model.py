@@ -176,6 +176,11 @@ class QueryRequest(BaseModel):
         default_factory=list,
         description="Prior conversation messages for multi-turn context. Send up to 10 most recent messages (user + assistant alternating). Older messages are automatically truncated."
     )
+    state: Optional[str] = Field(
+        None,
+        description="Indian state for jurisdiction-specific legal advice (e.g. 'Maharashtra', 'Delhi'). Omit or leave blank for national-level guidance.",
+        example="Maharashtra"
+    )
 
     class Config:
         json_schema_extra = {
