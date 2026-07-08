@@ -17,6 +17,9 @@ import PredictionHistory from "./pages/PredictionHistory";
 import RightsPage from "./pages/Rights";
 import SharedConversation from "./pages/SharedConversation";
 import NotFound from "./pages/NotFound";
+import Privacy from "./pages/Privacy";
+import Terms from "./pages/Terms";
+import Disclaimer from "./pages/Disclaimer";
 import MediationHome from "./pages/mediation/MediationHome";
 import CreateDispute from "./pages/mediation/CreateDispute";
 import DisputeRoom from "./pages/mediation/DisputeRoom";
@@ -50,6 +53,9 @@ const App = () => (
               <Route path="/verify-otp"   element={<VerifyOtp />} />
               <Route path="/rights"       element={<RightsPage />} />
               <Route path="/shared/:token" element={<SharedConversation />} />
+              <Route path="/privacy"      element={<Privacy />} />
+              <Route path="/terms"        element={<Terms />} />
+              <Route path="/disclaimer"   element={<Disclaimer />} />
 
               {/* Protected routes */}
               <Route path="/chat"    element={<ProtectedRoute><ChatNewV2 /></ProtectedRoute>} />

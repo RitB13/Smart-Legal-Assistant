@@ -352,7 +352,7 @@ export default function AgentTriage() {
               <span className="text-xs text-slate-400 dark:text-slate-500">
                 {fixStatus === "error"
                   ? "Correction failed — check your connection"
-                  : "AI corrects mishearings automatically"}
+                  : "Fixes speech-to-text errors"}
               </span>
             </div>
           )}

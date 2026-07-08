@@ -32,7 +32,7 @@ const NotFound = () => {
         </h1>
         <p className="text-slate-500 dark:text-slate-400 text-sm max-w-sm leading-relaxed mb-8">
           The page you're looking for doesn't exist or has been moved.
-          Head back and use one of our legal tools instead.
+          Try one of the tools below to get back on track.
         </p>
 
         {/* Navigation options */}

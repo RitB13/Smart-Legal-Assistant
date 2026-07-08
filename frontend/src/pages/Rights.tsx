@@ -314,7 +314,7 @@ const RightsPage = () => {
             </h2>
 
             <p className="text-lg text-blue-100/80 mb-8 max-w-md mx-auto leading-relaxed">
-              Our AI legal assistant explains your rights, helps draft complaints, and guides you through legal processes.
+              Know your rights, then act on them. Our legal assistant walks you through the process — whether that's drafting a complaint or understanding what the law actually says.
             </p>
 
             <Link

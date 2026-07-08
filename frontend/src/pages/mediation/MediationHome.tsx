@@ -69,7 +69,7 @@ export default function MediationHome() {
           </div>
           <h1 className="text-3xl font-bold text-slate-900 mb-2">Resolve disputes fairly</h1>
           <p className="text-slate-500 max-w-xl">
-            Both parties submit their perspective privately. Our AI analyses both sides, detects language bias, and proposes a fair settlement backed by real Indian court data.
+            Both parties submit their account privately. The AI reads both sides, checks for language imbalance, and proposes a settlement backed by real Indian court data.
           </p>
         </div>
 
@@ -126,7 +126,7 @@ export default function MediationHome() {
             {[
               { n: '1', label: 'Create', desc: 'Party A describes the dispute and shares an invite code' },
               { n: '2', label: 'Join',   desc: 'Party B joins and both submit their version privately' },
-              { n: '3', label: 'Analyse',desc: 'AI analyses both sides with fairness correction' },
+              { n: '3', label: 'Analyse',desc: 'The AI reads both accounts and checks for language advantage' },
               { n: '4', label: 'Resolve',desc: 'Both parties receive a neutral settlement proposal' },
             ].map(s => (
               <div key={s.n} className="text-center">
@@ -150,7 +150,7 @@ export default function MediationHome() {
             </div>
           ) : disputes.length === 0 ? (
             <div className="text-center py-8 border border-dashed border-slate-200 rounded-xl">
-              <p className="text-sm text-slate-400">No disputes yet. Start one above.</p>
+              <p className="text-sm text-slate-400">No disputes yet. Create your first one above.</p>
             </div>
           ) : (
             <div className="space-y-2">
