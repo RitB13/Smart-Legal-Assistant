@@ -1,4 +1,5 @@
 import logging
+from contextlib import asynccontextmanager
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from starlette.middleware.base import BaseHTTPMiddleware
@@ -27,12 +28,50 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """FastAPI lifespan: startup → yield → shutdown."""
+    # ── Startup ──────────────────────────────────────────────────────────────
+    logger.info("Smart Legal Assistant API starting up...")
+    logger.info(f"Debug mode: {DEBUG}")
+
+    validate_config()
+    validate_jwt_config()
+
+    logger.info("\n" + "=" * 70)
+    logger.info("PHASE 9 - DEPLOYMENT & MONITORING: Initializing at startup")
+    logger.info("=" * 70)
+
+    model_manager = get_model_manager()
+    if model_manager.load_model_at_startup():
+        logger.info("✓ Models loaded successfully and cached in memory")
+        model_info = model_manager.get_model_info()
+        logger.info(f"  Available versions: {len(model_info['available_versions'])}")
+        logger.info(f"  Current version: {model_info['current_version']}")
+        logger.info(f"  Fallback available: {model_info['fallback_version'] is not None}")
+    else:
+        logger.warning("⚠ Failed to load models, predictions may be unavailable")
+
+    get_prediction_monitor()
+    logger.info("✓ Prediction monitoring initialized")
+
+    logger.info("=" * 70)
+    logger.info("Startup complete - API ready for requests")
+    logger.info("=" * 70 + "\n")
+
+    yield
+
+    # ── Shutdown ─────────────────────────────────────────────────────────────
+    logger.info("Smart Legal Assistant API shutting down...")
+
+
 # Create FastAPI app
 app = FastAPI(
     title="Smart Legal Assistant API",
     description="AI-powered legal assistant for providing legal information and guidance",
     version="1.0.0",
     swagger_ui_parameters={"persistAuthorization": True},
+    lifespan=lifespan,
 )
 
 # Middleware order matters: add_middleware prepends, so LAST added = FIRST to run.
@@ -134,42 +173,3 @@ async def _rate_limit_middleware(request: Request, call_next):
 app.add_middleware(BaseHTTPMiddleware, dispatch=_rate_limit_middleware)
 
 
-# Log app startup
-@app.on_event("startup")
-async def startup_event():
-    logger.info("Smart Legal Assistant API starting up...")
-    logger.info(f"Debug mode: {DEBUG}")
-
-    # Validate all required environment variables before allowing any traffic.
-    # Both functions raise RuntimeError with a clear message if anything is wrong.
-    validate_config()
-    validate_jwt_config()
-    
-    # PHASE 9: Load models at startup
-    logger.info("\n" + "=" * 70)
-    logger.info("PHASE 9 - DEPLOYMENT & MONITORING: Initializing at startup")
-    logger.info("=" * 70)
-    
-    # Load and cache models in memory
-    model_manager = get_model_manager()
-    if model_manager.load_model_at_startup():
-        logger.info("✓ Models loaded successfully and cached in memory")
-        model_info = model_manager.get_model_info()
-        logger.info(f"  Available versions: {len(model_info['available_versions'])}")
-        logger.info(f"  Current version: {model_info['current_version']}")
-        logger.info(f"  Fallback available: {model_info['fallback_version'] is not None}")
-    else:
-        logger.warning("⚠ Failed to load models, predictions may be unavailable")
-    
-    # Initialize monitoring
-    monitor = get_prediction_monitor()
-    logger.info("✓ Prediction monitoring initialized")
-    
-    logger.info("=" * 70)
-    logger.info("Startup complete - API ready for requests")
-    logger.info("=" * 70 + "\n")
-
-# Log app shutdown
-@app.on_event("shutdown")
-async def shutdown_event():
-    logger.info("Smart Legal Assistant API shutting down...")

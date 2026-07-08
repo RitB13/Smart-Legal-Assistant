@@ -89,6 +89,8 @@ class ConversationBase(BaseModel):
     """Base conversation data"""
     title: str
     language: str = "en"
+    case_type: str = "general"
+    jurisdiction: str = "india"
 
 
 class ConversationCreate(ConversationBase):

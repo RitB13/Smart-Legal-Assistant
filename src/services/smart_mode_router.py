@@ -63,10 +63,16 @@ class SmartModeRouter:
     4. User's language
     """
 
+    # Maximum sessions kept in memory before LRU eviction (prevents unbounded growth)
+    _MAX_SESSIONS = 500
+    # Session entries older than this many seconds are pruned on each write
+    _SESSION_TTL_SECONDS = 3600  # 1 hour
+
     def __init__(self):
         """Initialize smart router with detection service"""
         self.detector = get_enhanced_simulator_detection()
-        self.conversation_history: Dict[str, List[Dict]] = {}  # session_id -> message list
+        # session_id -> {"messages": [...], "last_seen": float}
+        self.conversation_history: Dict[str, Dict] = {}
 
     def route_query(
         self,
@@ -372,7 +378,7 @@ class SmartModeRouter:
     def _has_future_tense(self, text: str) -> bool:
         """Check if text contains future tense indicators"""
         future_indicators = [
-            "will", "going to", "going to", "plan to", "intend to",
+            "will", "going to", "plan to", "intend to",
             "want to", "would", "could", "should", "i'm planning"
         ]
         return any(indicator in text for indicator in future_indicators)
@@ -401,24 +407,39 @@ class SmartModeRouter:
         return any(word in text for word in prediction_words)
 
     def _add_to_history(self, session_id: str, query: str, mode: str):
-        """Add query to conversation history"""
+        """Add query to conversation history with TTL and max-size eviction."""
+        import time as _time
+        now = _time.monotonic()
+
+        # Prune stale sessions on every write to keep memory bounded
+        stale_cutoff = now - self._SESSION_TTL_SECONDS
+        stale = [sid for sid, v in self.conversation_history.items() if v["last_seen"] < stale_cutoff]
+        for sid in stale:
+            del self.conversation_history[sid]
+
+        # If still at cap, evict the least-recently-seen session
+        if len(self.conversation_history) >= self._MAX_SESSIONS and session_id not in self.conversation_history:
+            oldest = min(self.conversation_history, key=lambda k: self.conversation_history[k]["last_seen"])
+            del self.conversation_history[oldest]
+
         if session_id not in self.conversation_history:
-            self.conversation_history[session_id] = []
-        
-        self.conversation_history[session_id].append({
+            self.conversation_history[session_id] = {"messages": [], "last_seen": now}
+
+        self.conversation_history[session_id]["messages"].append({
             "query": query,
             "mode": mode,
-            "timestamp": __import__("time").time()
+            "timestamp": now,
         })
+        self.conversation_history[session_id]["last_seen"] = now
 
     def get_conversation_history(self, session_id: str) -> List[Dict]:
-        """Retrieve conversation history for a session"""
-        return self.conversation_history.get(session_id, [])
+        """Retrieve conversation history for a session."""
+        entry = self.conversation_history.get(session_id)
+        return entry["messages"] if entry else []
 
     def clear_conversation_history(self, session_id: str):
-        """Clear conversation history for a session"""
-        if session_id in self.conversation_history:
-            del self.conversation_history[session_id]
+        """Clear conversation history for a session."""
+        self.conversation_history.pop(session_id, None)
 
 
 # Singleton instance

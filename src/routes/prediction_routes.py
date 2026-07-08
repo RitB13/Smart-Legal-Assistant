@@ -16,7 +16,7 @@ from typing import Optional, List, Dict, Any
 from datetime import datetime
 import logging
 
-from src.routes.auth_routes import get_current_user
+from src.dependencies import get_current_user
 from src.services.auth_service import TokenData
 from src.services.prediction_history_service import PredictionHistoryService
 from src.models.db_models import (
@@ -360,27 +360,19 @@ async def search_predictions(
     """
     try:
         logger.info(f"[PRED] Searching predictions for user {current_user.user_id}")
-        
-        # Fetch all user predictions then filter in Python
-        # (corpus is small per-user, so this is acceptable)
-        all_preds = PredictionHistoryService.get_user_predictions(
-            user_id=current_user.user_id, skip=0, limit=200
+
+        # Build filter criteria and delegate to MongoDB — avoids loading the full
+        # corpus into Python memory just to filter it.
+        min_conf_db = round(min_confidence * 100, 1) if min_confidence is not None else None
+        preds = PredictionHistoryService.search_predictions_filtered(
+            user_id=current_user.user_id,
+            verdict=verdict,
+            case_type=case_type,
+            jurisdiction=jurisdiction,
+            min_confidence_pct=min_conf_db,
         )
 
-        result = []
-        for pred in all_preds:
-            if verdict and pred.result.verdict != verdict:
-                continue
-            if case_type and pred.metadata.case_type != case_type:
-                continue
-            if jurisdiction and pred.metadata.jurisdiction_state != jurisdiction:
-                continue
-            if min_confidence is not None:
-                conf = pred.result.confidence / 100.0 if pred.result.confidence else 0
-                if conf < min_confidence:
-                    continue
-            result.append(_to_response(pred))
-
+        result = [_to_response(p) for p in preds]
         logger.info(f"[PRED] Found {len(result)} matching predictions")
         return result
         

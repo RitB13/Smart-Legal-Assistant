@@ -24,7 +24,7 @@ from src.models.mediation_model import (
 )
 from src.services.mediation_service import get_mediation_service
 from src.services.llm_service import get_legal_response, transcribe_audio_bytes
-from src.routes.auth_routes import get_current_user
+from src.dependencies import get_current_user
 from src.services.auth_service import TokenData
 
 router = APIRouter(prefix="/mediation", tags=["AI Mediation"])

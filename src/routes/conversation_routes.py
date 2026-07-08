@@ -18,7 +18,7 @@ from typing import Optional, List
 from datetime import datetime
 import logging
 
-from src.routes.auth_routes import get_current_user
+from src.dependencies import get_current_user
 from src.services.auth_service import TokenData
 from src.services.conversation_service import ConversationService
 from src.models.db_models import Conversation, MessageInConversation, ConversationCreate as DBConversationCreate
@@ -142,25 +142,27 @@ async def create_conversation(
             DBConversationCreate(
                 user_id=current_user.user_id,
                 title=request.title or f"Conversation {datetime.now().strftime('%Y-%m-%d %H:%M')}",
-                language="en"
+                language="en",
+                case_type=request.case_type,
+                jurisdiction=request.jurisdiction,
             )
         )
-        
+
         if not conversation:
             logger.error(f"[CONV] Failed to create conversation for {current_user.user_id}")
             raise HTTPException(
                 status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
                 detail="Failed to create conversation"
             )
-        
+
         logger.info(f"[CONV] Conversation created: {conversation.id}")
-        
+
         return ConversationResponse(
             _id=str(conversation.id),
             user_id=str(conversation.user_id),
             title=conversation.title,
-            case_type="general",
-            jurisdiction="india",
+            case_type=conversation.case_type,
+            jurisdiction=conversation.jurisdiction,
             messages=[],
             created_at=conversation.created_at,
             updated_at=conversation.updated_at,
@@ -202,17 +204,18 @@ async def get_conversations(
         
         conversations = ConversationService.get_user_conversations(
             user_id=current_user.user_id,
-            limit=limit
+            skip=skip,
+            limit=limit,
         )
-        
+
         result = []
         for conv in conversations:
             result.append(ConversationResponse(
                 _id=str(conv.id),
                 user_id=str(conv.user_id),
                 title=conv.title,
-                case_type="general",
-                jurisdiction="india",
+                case_type=conv.case_type,
+                jurisdiction=conv.jurisdiction,
                 messages=[],
                 created_at=conv.created_at,
                 updated_at=conv.updated_at,
@@ -286,8 +289,8 @@ async def get_conversation(
             _id=str(conversation.id),
             user_id=str(conversation.user_id),
             title=conversation.title,
-            case_type="general",
-            jurisdiction="india",
+            case_type=conversation.case_type,
+            jurisdiction=conversation.jurisdiction,
             messages=messages,
             created_at=conversation.created_at,
             updated_at=conversation.updated_at,
@@ -373,8 +376,8 @@ async def update_conversation(
             _id=str(conversation.id),
             user_id=str(conversation.user_id),
             title=conversation.title,
-            case_type="general",
-            jurisdiction="india",
+            case_type=conversation.case_type,
+            jurisdiction=conversation.jurisdiction,
             messages=messages,
             created_at=conversation.created_at,
             updated_at=conversation.updated_at,
@@ -520,8 +523,8 @@ async def add_message_to_conversation(
             _id=str(conversation.id),
             user_id=str(conversation.user_id),
             title=conversation.title,
-            case_type="general",
-            jurisdiction="india",
+            case_type=conversation.case_type,
+            jurisdiction=conversation.jurisdiction,
             messages=messages,
             created_at=conversation.created_at,
             updated_at=conversation.updated_at,

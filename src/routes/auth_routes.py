@@ -13,7 +13,6 @@ Endpoints:
 """
 
 from fastapi import APIRouter, HTTPException, status, Depends, Header
-from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from pydantic import BaseModel, EmailStr, Field
 from typing import Optional
 import logging
@@ -30,8 +29,8 @@ from src.services.auth_service import (
 )
 from src.services.email_service import generate_otp, send_otp_email
 from src.models.db_models import UserCreate, User
-
-_bearer_scheme = HTTPBearer(auto_error=False)
+# Re-export so any code that still imports get_current_user from here continues to work.
+from src.dependencies import get_current_user as get_current_user  # noqa: F401
 
 logger = logging.getLogger(__name__)
 
@@ -157,42 +156,6 @@ class UserResponse(BaseModel):
 
     class Config:
         populate_by_name = True
-
-
-# ==================== DEPENDENCY: GET CURRENT USER ====================
-
-async def get_current_user(
-    credentials: Optional[HTTPAuthorizationCredentials] = Depends(_bearer_scheme),
-) -> TokenData:
-    """
-    Dependency to extract and verify current user from JWT Bearer token.
-
-    Uses FastAPI's HTTPBearer scheme so Swagger UI shows the global
-    "Authorize" button — paste the token once, all protected endpoints
-    are automatically authenticated.
-
-    Raises:
-        HTTPException 401 if token is missing or invalid
-    """
-    if not credentials:
-        logger.warning("[AUTH] Missing authorization header")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Missing authorization header. Use the Authorize button (top-right in Swagger) to set your Bearer token.",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    token_data = verify_token(credentials.credentials)
-
-    if not token_data:
-        logger.warning("[AUTH] Invalid or expired token")
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired token",
-            headers={"WWW-Authenticate": "Bearer"},
-        )
-
-    return token_data
 
 
 # ==================== ENDPOINTS ====================

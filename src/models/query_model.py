@@ -126,8 +126,8 @@ class ChecklistPriorityExplanation(BaseModel):
     consequence_if_delayed: str = Field(..., description="What happens if delayed")
 
 
-class AuditEvent(BaseModel):
-    """Phase 3: Single event in audit trail"""
+class AuditEventSummary(BaseModel):
+    """Phase 3: Single event in audit trail (response/summary form — not the dataclass in audit_trail_service)"""
     timestamp: str = Field(..., description="ISO timestamp of event")
     type: str = Field(..., description="Type of event")
     description: str = Field(..., description="Human-readable description")
@@ -141,7 +141,7 @@ class AuditTrailSummary(BaseModel):
     total_events: int = Field(..., description="Total number of events logged")
     total_duration_ms: float = Field(..., description="Total processing time")
     event_types: Dict[str, Any] = Field(..., description="Summary of event types")
-    events: List[AuditEvent] = Field(..., description="List of events in order")
+    events: List[AuditEventSummary] = Field(..., description="List of events in order")
     
 
 class ConversationMessage(BaseModel):
@@ -150,8 +150,8 @@ class ConversationMessage(BaseModel):
     content: str = Field(..., description="Message content (auto-truncated to 1000 chars when sent to LLM)")
 
 
-class SimilarCase(BaseModel):
-    """A court case retrieved as a relevant precedent for a legal query."""
+class PrecedentCase(BaseModel):
+    """A court case retrieved by the RAG system as a relevant precedent for a chatbot query."""
     case_name:  str   = Field(..., description="Name / identifier of the court case")
     case_type:  str   = Field(..., description="Category of the case (e.g. 'Supreme Court Case')")
     summary:    str   = Field(..., description="Brief summary of the case facts")
@@ -356,7 +356,7 @@ class QueryResponse(BaseModel):
     )
 
     # RAG: court precedents that grounded this response
-    similar_cases: List[SimilarCase] = Field(
+    similar_cases: List[PrecedentCase] = Field(
         default_factory=list,
         description="Indian court precedents retrieved by the RAG system and used to ground this response"
     )
