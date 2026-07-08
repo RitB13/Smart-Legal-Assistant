@@ -9,6 +9,7 @@ const NAV_LINKS = [
   { path: '/predict',   label: 'Case Predictor' },
   { path: '/mediation', label: 'Mediation' },
   { path: '/rights',    label: 'Know Your Rights' },
+  { path: '/about',     label: 'About Us' },
 ];
 
 function ThemeToggleButton({ className = '' }: { className?: string }) {
