@@ -10,7 +10,7 @@ pinned: false
 
 # Smart Legal Assistant 🏛️
 
-An **AI-powered legal assistance platform** with **multilingual support** for 10+ languages. Ask legal questions in any language and get instant, accurate guidance powered by LLaMA 3.1 (via Groq API).
+An **AI-powered legal assistance platform** with **multilingual support** for English + 9 Indian languages. Ask legal questions in any language and get instant, accurate guidance powered by LLaMA 3.1 (via Groq API).
 
 ## 🌟 Features
 
@@ -59,13 +59,13 @@ python -m venv venv
 pip install -r requirements.txt
 
 # Configure environment
-# Edit .env and add your GROQ_API_KEY
+# Create or Edit .env and add your GROQ_API_KEY
 
 # Start backend
 uvicorn app:app --reload --port 8000
 ```
 
-**Expected**: `Uvicorn running on http://127.0.0.1:8000`
+**Expected Result**: `Uvicorn running on http://127.0.0.1:8000`
 
 ### Step 2: Frontend Setup
 ```bash
@@ -74,7 +74,7 @@ npm install
 npm run dev
 ```
 
-**Expected**: `Local: http://127.0.0.1:8080/`
+**Expected Result**: `Local: http://127.0.0.1:8080/`
 
 ### Step 3: Test It
 - Open http://127.0.0.1:8080
