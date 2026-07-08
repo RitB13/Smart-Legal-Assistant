@@ -877,10 +877,6 @@ const CasePredictor = () => {
 
           {/* Page header */}
           <div className="text-center mb-8 animate-fade-up">
-            <div className="inline-flex items-center gap-2 bg-blue-100 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full mb-3 dark:bg-blue-900/40 dark:text-blue-300">
-              <TrendingUp className="w-3.5 h-3.5" />
-              Powered by InLegalBERT
-            </div>
             <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-2">
               Case Outcome Predictor
             </h1>

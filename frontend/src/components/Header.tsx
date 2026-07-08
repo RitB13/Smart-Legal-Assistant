@@ -1,5 +1,5 @@
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Scale, Menu, X, LogOut, User, ChevronDown, History, Sun, Moon } from 'lucide-react';
+import { Scale, Menu, X, LogOut, User, ChevronDown, History, Sun, Moon, Gavel } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { useTheme } from '@/context/ThemeContext';
@@ -149,6 +149,13 @@ export default function Header() {
                       >
                         <History className="h-4 w-4" /> My Predictions
                       </Link>
+                      <Link
+                        to="/mediation/history"
+                        onClick={() => setUserMenuOpen(false)}
+                        className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors dark:text-slate-300 dark:hover:bg-slate-700/50 dark:hover:text-white"
+                      >
+                        <Gavel className="h-4 w-4" /> My Disputes
+                      </Link>
                       <button
                         onClick={handleLogout}
                         className="w-full flex items-center gap-2 px-3 py-2 text-sm text-slate-600 hover:bg-slate-50 hover:text-red-600 transition-colors dark:text-slate-300 dark:hover:bg-red-900/20 dark:hover:text-red-400"
@@ -223,6 +230,17 @@ export default function Header() {
                 }`}
               >
                 My Predictions
+              </Link>
+              <Link
+                to="/mediation/history"
+                onClick={() => setMobileOpen(false)}
+                className={`block px-3 py-2.5 text-sm rounded-lg transition-colors ${
+                  isActive('/mediation/history')
+                    ? 'bg-primary/8 text-primary font-medium dark:bg-blue-500/15 dark:text-blue-300'
+                    : 'text-slate-600 hover:bg-slate-50 dark:text-slate-300 dark:hover:bg-slate-700/30'
+                }`}
+              >
+                My Disputes
               </Link>
               <button
                 onClick={handleLogout}
