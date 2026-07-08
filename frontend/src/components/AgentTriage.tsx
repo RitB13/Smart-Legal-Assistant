@@ -285,6 +285,7 @@ export default function AgentTriage() {
               onKeyDown={handleKeyDown}
               rows={3}
               disabled={isRecording || isTranscribing}
+              maxLength={2000}
               placeholder={
                 'Describe your legal situation in plain language…\n' +
                 'e.g. "My employer fired me without notice" or "Will I get bail?"'
@@ -313,9 +314,14 @@ export default function AgentTriage() {
             )}
 
             {!isRecording && !isTranscribing && (
-              <p className="absolute bottom-2.5 right-3 text-[10px] text-slate-300 dark:text-slate-600 pointer-events-none select-none">
-                Enter ↵ to submit
-              </p>
+              <div className="absolute bottom-2.5 right-3 flex items-center gap-2 pointer-events-none select-none">
+                <span className={`text-[10px] font-mono tabular-nums ${
+                  text.length > 1500 ? "text-red-400" : text.length > 1000 ? "text-amber-400" : "text-slate-300 dark:text-slate-600"
+                }`}>
+                  {text.length}/2000
+                </span>
+                <span className="text-[10px] text-slate-300 dark:text-slate-600">Enter ↵</span>
+              </div>
             )}
           </div>
 

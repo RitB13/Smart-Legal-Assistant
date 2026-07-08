@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Link } from "react-router-dom";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
 import {
   Send, Bot, User, Loader2, Plus, Trash2, MessageSquare,
   Menu, X, Scale, Mic, MicOff, PhoneCall, Volume2, Wand2, Paperclip, FileText,
@@ -1331,9 +1333,13 @@ const ChatPage = () => {
           {/* Conversation list */}
           <div className="flex-1 overflow-y-auto px-2 pb-4">
             {conversations.length === 0 ? (
-              <p className="text-xs text-slate-400 dark:text-slate-600 text-center mt-10 px-4 leading-relaxed">
-                No conversations yet.<br />Start a new chat above.
-              </p>
+              <div className="flex flex-col items-center text-center mt-10 px-4 gap-2">
+                <div className="w-9 h-9 rounded-xl bg-slate-100 dark:bg-slate-800 flex items-center justify-center">
+                  <MessageSquare className="h-4 w-4 text-slate-400 dark:text-slate-600" />
+                </div>
+                <p className="text-xs font-medium text-slate-400 dark:text-slate-500">No conversations yet</p>
+                <p className="text-[11px] text-slate-300 dark:text-slate-600 leading-snug">Ask a legal question to start your first chat</p>
+              </div>
             ) : (
               <>
                 <p className="text-[10px] font-semibold text-slate-400 dark:text-slate-600 uppercase tracking-wider px-2 mb-1 mt-1">
@@ -1484,9 +1490,9 @@ const ChatPage = () => {
                     </div>
                     <div className={`max-w-[80%] flex flex-col gap-1 ${msg.role === "user" ? "items-end" : "items-start"}`}>
                       <div
-                        className={`px-4 py-3 rounded-2xl text-sm leading-relaxed whitespace-pre-wrap ${
+                        className={`px-4 py-3 rounded-2xl text-sm leading-relaxed ${
                           msg.role === "user"
-                            ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-br-sm"
+                            ? "bg-gradient-to-br from-blue-500 to-indigo-600 text-white rounded-br-sm whitespace-pre-wrap"
                             : "bg-slate-100 dark:bg-slate-800 text-slate-800 dark:text-slate-100 rounded-bl-sm"
                         }`}
                       >
@@ -1506,6 +1512,15 @@ const ChatPage = () => {
                               ))}
                             </span>
                           </span>
+                        ) : msg.role === "assistant" ? (
+                          <div className="prose prose-sm dark:prose-invert max-w-none prose-p:leading-relaxed prose-p:my-1 prose-headings:font-semibold prose-headings:mt-3 prose-headings:mb-1 prose-ul:my-1 prose-li:my-0.5 prose-code:text-xs prose-code:bg-slate-200 dark:prose-code:bg-slate-700 prose-code:px-1 prose-code:rounded prose-code:before:content-none prose-code:after:content-none prose-strong:font-semibold">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                              {msg.content}
+                            </ReactMarkdown>
+                            {msg.streaming && (
+                              <span className="inline-block w-0.5 h-4 bg-slate-500 dark:bg-slate-300 animate-pulse ml-0.5 align-middle" />
+                            )}
+                          </div>
                         ) : (
                           <>
                             {msg.content}

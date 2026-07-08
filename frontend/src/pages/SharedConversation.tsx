@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react";
 import { useParams, Link } from "react-router-dom";
 import { Bot, User, Scale, Loader2, AlertCircle, CheckCircle2 } from "lucide-react";
+import Footer from "@/components/Footer";
 
 interface SharedMessage {
   role: "user" | "assistant";
@@ -42,6 +43,27 @@ const SharedConversation = () => {
     }
     if (token) load();
   }, [token, apiUrl]);
+
+  useEffect(() => {
+    if (!conv) return;
+    const title = `${conv.title} — Smart Legal Assistant`;
+    const desc = `AI legal consultation with ${conv.messages.length} messages. View this shared conversation on Smart Legal Assistant.`;
+    document.title = title;
+    const setMeta = (property: string, content: string, useProperty = false) => {
+      const attr = useProperty ? 'property' : 'name';
+      let el = document.querySelector(`meta[${attr}="${property}"]`) as HTMLMetaElement | null;
+      if (!el) { el = document.createElement('meta'); el.setAttribute(attr, property); document.head.appendChild(el); }
+      el.setAttribute('content', content);
+    };
+    setMeta('description', desc);
+    setMeta('og:title', title, true);
+    setMeta('og:description', desc, true);
+    setMeta('og:type', 'article', true);
+    setMeta('twitter:card', 'summary');
+    setMeta('twitter:title', title);
+    setMeta('twitter:description', desc);
+    return () => { document.title = 'Smart Legal Assistant'; };
+  }, [conv]);
 
   if (loading) return (
     <div className="min-h-screen flex items-center justify-center bg-white dark:bg-slate-900">
@@ -183,6 +205,8 @@ const SharedConversation = () => {
           <strong>Disclaimer:</strong> This is a shared AI-generated legal consultation. It is for informational purposes only and does not constitute legal advice. Please consult a qualified legal professional before taking any action.
         </div>
       </div>
+
+      <Footer />
     </div>
   );
 };

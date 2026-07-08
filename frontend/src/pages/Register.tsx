@@ -47,68 +47,98 @@ export default function Register() {
     }
   }
 
+  const pwStrength = form.password.length === 0 ? null
+    : form.password.length < 8 ? 'weak'
+    : form.password.length < 12 ? 'fair'
+    : 'strong';
+
+  const inputCls = "w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700/60 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500";
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4 py-12">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center px-4 py-12">
       <div className="w-full max-w-sm">
         <Link to="/" className="flex items-center gap-2 mb-8 justify-center group">
           <Scale className="h-5 w-5 text-primary" />
-          <span className="text-sm font-semibold text-slate-700 group-hover:text-primary transition-colors">
+          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">
             Smart Legal Assistant
           </span>
         </Link>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
-          <h1 className="text-xl font-bold text-slate-900 mb-1">Create an account</h1>
-          <p className="text-sm text-slate-500 mb-6">Free to get started. No credit card needed.</p>
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm">
+          <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Create an account</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Free to get started. No credit card needed.</p>
 
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">Full name</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Full name</label>
               <input
                 type="text"
                 value={form.name}
                 onChange={e => set('name', e.target.value)}
                 placeholder="Rahul Sharma"
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400"
+                className={inputCls}
                 autoComplete="name"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">Email</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Email</label>
               <input
                 type="email"
                 value={form.email}
                 onChange={e => set('email', e.target.value)}
                 placeholder="you@example.com"
-                className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400"
+                className={inputCls}
                 autoComplete="email"
               />
             </div>
 
             <div>
-              <label className="block text-xs font-medium text-slate-700 mb-1.5">Password</label>
+              <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Password</label>
               <div className="relative">
                 <input
                   type={showPassword ? 'text' : 'password'}
                   value={form.password}
                   onChange={e => set('password', e.target.value)}
                   placeholder="Min. 8 characters"
-                  className="w-full px-3 py-2.5 pr-10 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400"
+                  className={inputCls + ' pr-10'}
                   autoComplete="new-password"
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(s => !s)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                 >
                   {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                 </button>
               </div>
+
+              {/* Password strength indicator */}
+              {pwStrength && (
+                <div className="mt-2 space-y-1">
+                  <div className="flex gap-1">
+                    {(['weak', 'fair', 'strong'] as const).map((level, i) => {
+                      const reached = pwStrength === 'strong' ? true : pwStrength === 'fair' ? i < 2 : i < 1;
+                      return (
+                        <div key={level} className={`flex-1 h-1 rounded-full transition-colors ${
+                          reached
+                            ? level === 'weak' ? 'bg-red-400' : level === 'fair' ? 'bg-amber-400' : 'bg-green-500'
+                            : 'bg-slate-200 dark:bg-slate-600'
+                        }`} />
+                      );
+                    })}
+                  </div>
+                  <p className={`text-[10px] font-medium ${
+                    pwStrength === 'weak' ? 'text-red-500' : pwStrength === 'fair' ? 'text-amber-500' : 'text-green-600 dark:text-green-400'
+                  }`}>
+                    {pwStrength === 'weak' ? 'Weak — at least 8 characters needed' : pwStrength === 'fair' ? 'Fair — try adding numbers or symbols' : 'Strong password'}
+                  </p>
+                </div>
+              )}
             </div>
 
             {error && (
-              <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+              <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/40 rounded-lg px-3 py-2">{error}</p>
             )}
 
             <button
@@ -122,13 +152,13 @@ export default function Register() {
             </button>
           </form>
 
-          <p className="text-xs text-slate-500 text-center mt-5">
+          <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-5">
             Already have an account?{' '}
             <Link to="/login" className="text-primary font-medium hover:underline">Sign in</Link>
           </p>
         </div>
 
-        <p className="text-xs text-slate-400 text-center mt-4 px-4">
+        <p className="text-xs text-slate-400 dark:text-slate-500 text-center mt-4 px-4">
           By creating an account, you agree to our Terms of Service. This platform provides legal information, not legal advice.
         </p>
       </div>

@@ -134,8 +134,25 @@ const PredictionResult = ({
 
   const [showCounterArgs, setShowCounterArgs] = useState(false);
   const [expandedCases, setExpandedCases] = useState<Set<number>>(new Set());
+  const [animatedConf, setAnimatedConf] = useState(0);
 
   const confNum            = parseFloat(confPct);
+
+  useEffect(() => {
+    if (isNaN(confNum)) return;
+    const target = confNum;
+    let start: number | null = null;
+    const duration = 900;
+    function step(ts: number) {
+      if (!start) start = ts;
+      const elapsed = ts - start;
+      const progress = Math.min(elapsed / duration, 1);
+      const eased = 1 - Math.pow(1 - progress, 3);
+      setAnimatedConf(parseFloat((eased * target).toFixed(1)));
+      if (progress < 1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }, [confNum]);
   const riskLevel          = prediction.risk_level || "";
   const showMediation      =
     !isAccepted ||
@@ -177,9 +194,27 @@ const PredictionResult = ({
               </span>
             )}
           </div>
-          <div className={`text-right flex-shrink-0 ${isAccepted ? "text-green-700" : "text-red-700"}`}>
-            <p className="text-5xl font-bold">{confPct}%</p>
-            <p className="text-xs text-gray-500 mt-1">model confidence</p>
+          <div className="flex-shrink-0 flex flex-col items-center">
+            {/* Animated circular gauge */}
+            <svg width="88" height="88" viewBox="0 0 88 88" className="-rotate-90">
+              <circle cx="44" cy="44" r="36" fill="none"
+                className={isAccepted ? "stroke-green-100 dark:stroke-green-900/30" : "stroke-red-100 dark:stroke-red-900/30"}
+                strokeWidth="8" />
+              <circle cx="44" cy="44" r="36" fill="none"
+                className={isAccepted ? "stroke-green-500" : "stroke-red-500"}
+                strokeWidth="8"
+                strokeLinecap="round"
+                strokeDasharray={`${2 * Math.PI * 36}`}
+                strokeDashoffset={`${2 * Math.PI * 36 * (1 - (isNaN(animatedConf) ? 0 : animatedConf) / 100)}`}
+                style={{ transition: 'stroke-dashoffset 0.05s linear' }}
+              />
+            </svg>
+            <div className="-mt-14 mb-6 text-center">
+              <p className={`text-2xl font-bold leading-none ${isAccepted ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>
+                {isNaN(confNum) ? confPct : `${animatedConf.toFixed(0)}%`}
+              </p>
+              <p className="text-[10px] text-gray-400 dark:text-slate-500 mt-0.5">confidence</p>
+            </div>
           </div>
         </div>
         {llm?.verdict_summary && (
