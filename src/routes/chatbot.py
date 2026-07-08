@@ -1,4 +1,5 @@
 import json as _json
+import concurrent.futures as _cf
 from fastapi import APIRouter, HTTPException, status, Request
 from fastapi.responses import StreamingResponse
 from src.models.query_model import QueryRequest, QueryResponse, ImpactScoreModel
@@ -9,6 +10,9 @@ from src.services.llm_service import (
     create_streaming_prompt,
     parse_streaming_output,
     get_legal_response_stream,
+    classify_query_intent,
+    CASUAL_SYSTEM_PROMPT,
+    _is_raw_filename,
 )
 from src.services.precedent_service import get_precedent_service
 from src.services.parser import parse_llm_output
@@ -23,6 +27,63 @@ import time
 logger = logging.getLogger(__name__)
 router = APIRouter()
 smart_router = get_smart_mode_router()
+
+_STREAM_TIMEOUT_SECONDS = 90  # SSE stream killed after this many seconds of no completion
+
+
+def _run_rag(query: str) -> list:
+    """
+    Run dual-index RAG retrieval (dense InLegalBERT → TF-IDF fallback).
+    Returns an empty list on any failure so callers never need to guard.
+    """
+    try:
+        from src.services.dense_retrieval_service import get_dense_retrieval_service
+        dense_svc = get_dense_retrieval_service()
+        if dense_svc.available:
+            results = dense_svc.search(query, top_k=4)
+            if results:
+                return results
+        precedent_svc = get_precedent_service()
+        if precedent_svc.available:
+            return precedent_svc.search(query, top_k=4)
+        return []
+    except Exception as exc:
+        logger.warning(f"[RAG] Retrieval failed: {exc}")
+        return []
+
+
+def _build_rag_system_prompt(language: str, precedents: list, state: str = "") -> str:
+    """
+    Build the legal system prompt augmented with RAG precedents.
+    Applies state-level jurisdiction addendum when `state` is provided.
+    """
+    system_prompt = create_streaming_prompt(language, state=state)
+
+    relevant = [p for p in precedents if float(p.get("similarity", 0.0)) >= 0.08]
+    if relevant:
+        rag_ctx = "\n\nRELEVANT INDIAN COURT PRECEDENTS (background context only):\n"
+        rag_ctx += (
+            "Use these only as factual background. "
+            "DO NOT cite them by number, filename, or ID. "
+            "Only mention a case by name if it has a proper descriptive name.\n"
+        )
+        for i, p in enumerate(relevant, 1):
+            raw_name = p.get("case_name", "")
+            summary  = (p.get("summary", "") or "")[:350]
+            has_real_name = raw_name and not _is_raw_filename(raw_name)
+            label = f"[Context {i}]" + (f" {raw_name}" if has_real_name else "")
+            rag_ctx += f"\n{label}: {summary}\n"
+        system_prompt += rag_ctx
+
+    if state and state not in ("National", "All India"):
+        addendum = (
+            f"\n\nJURISDICTION: The user is asking about laws in {state}, India. "
+            f"Prioritise {state}-specific legislation, High Court judgments, and state regulations. "
+            f"Explicitly note when advice is specific to {state}."
+        )
+        system_prompt += addendum
+
+    return system_prompt
 
 
 @router.post("/detect-mode")
@@ -222,61 +283,82 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
                 logger.warning(f"[{request_id}] Simulator failed, falling back to chat: {sim_err}")
                 # Fall through to normal LLM chat flow below
 
-        # RAG: retrieve precedents — dense (InLegalBERT) if available, TF-IDF fallback
-        rag_system_prompt = None
-        precedents: list = []   # populated inside try; used below to build similar_cases
-        try:
-            from src.services.dense_retrieval_service import get_dense_retrieval_service
+        # Parallel: classify query intent + run RAG retrieval concurrently
+        with _cf.ThreadPoolExecutor(max_workers=2) as _pool:
+            _clf_fut = _pool.submit(classify_query_intent, req.query)
+            _rag_fut = _pool.submit(_run_rag, req.query)
+            try:
+                query_intent = _clf_fut.result(timeout=8)
+            except Exception:
+                query_intent = "legal"
+            try:
+                precedents: list = _rag_fut.result(timeout=8)
+            except Exception:
+                precedents = []
+        # Discard RAG results for casual queries — they are irrelevant
+        if query_intent != "legal":
             precedents = []
 
-            dense_svc = get_dense_retrieval_service()
-            if dense_svc.available:
-                rag_start  = time.time()
-                precedents = dense_svc.search(req.query, top_k=4)
-                rag_time   = time.time() - rag_start
-                if precedents:
-                    logger.info(
-                        f"[{request_id}] Dense RAG: {len(precedents)} results "
-                        f"in {rag_time:.2f}s (top_sim={precedents[0].get('similarity',0):.3f})"
-                    )
-                else:
-                    logger.debug(f"[{request_id}] Dense RAG: no results above threshold")
+        logger.info(f"[{request_id}] Intent: {query_intent}, RAG hits: {len(precedents)}")
 
-            # Fall back to TF-IDF precedent index when dense index is not ready
-            if not precedents:
-                precedent_svc = get_precedent_service()
-                if precedent_svc.available:
-                    rag_start  = time.time()
-                    precedents = precedent_svc.search(req.query, top_k=4)
-                    rag_time   = time.time() - rag_start
-                    if precedents:
-                        logger.info(
-                            f"[{request_id}] TF-IDF RAG: {len(precedents)} results "
-                            f"in {rag_time:.2f}s (top_sim={precedents[0].get('similarity',0):.3f})"
-                        )
-                    else:
-                        logger.debug(f"[{request_id}] TF-IDF RAG: no results above threshold")
-                else:
-                    logger.debug(f"[{request_id}] Precedent index not available — skipping RAG")
+        # Handle casual queries: warm conversational reply, no legal analysis
+        if query_intent == "casual":
+            try:
+                casual_text = get_legal_response(
+                    req.query,
+                    language=language,
+                    system_prompt=CASUAL_SYSTEM_PROMPT,
+                    conversation_history=None,
+                )
+            except Exception:
+                casual_text = (
+                    "Hello! I'm Nyaya, your AI legal assistant. "
+                    "Feel free to ask me any legal questions!"
+                )
+            elapsed = time.time() - start_time
+            logger.info(f"[{request_id}] Casual response in {elapsed:.2f}s")
+            return QueryResponse(
+                request_id=request_id,
+                summary=casual_text,
+                laws=[],
+                suggestions=[],
+                impact_score=ImpactScoreModel(
+                    overall_score=0,
+                    financial_risk_score=0,
+                    legal_exposure_score=0,
+                    long_term_impact_score=0,
+                    rights_lost_score=0,
+                    risk_level="",
+                    breakdown={},
+                    key_factors=[],
+                    mitigating_factors=[],
+                    recommendation="",
+                ),
+                language=language,
+                suggested_mode="chat",
+                mode_confidence=1.0,
+                mode_reasoning="Casual query — no legal analysis needed.",
+                extracted_action=None,
+                response_type="casual",
+                conversation_id=None,
+            )
 
-            if precedents:
-                rag_system_prompt = create_rag_enhanced_prompt(language, precedents)
-
-        except Exception as rag_err:
-            logger.warning(f"[{request_id}] RAG retrieval failed, proceeding without context: {rag_err}")
+        # Legal query: build RAG-augmented system prompt
+        rag_system_prompt = None
+        if precedents:
+            rag_system_prompt = create_rag_enhanced_prompt(language, precedents)
+            logger.info(f"[{request_id}] RAG: {len(precedents)} precedents injected")
 
         # Apply state-level jurisdiction context when caller specifies a state
         req_state = (req.state or "").strip()
         if req_state and req_state not in ("National", "All India"):
-            base = rag_system_prompt if rag_system_prompt else None
-            # Build or augment the system prompt with a jurisdiction note
             jurisdiction_addendum = (
                 f"\n\nJURISDICTION: The user is asking about laws in {req_state}, India. "
                 f"Prioritise {req_state}-specific legislation, High Court judgments, and state regulations. "
                 f"Explicitly note when advice is specific to {req_state}."
             )
-            if base:
-                rag_system_prompt = base + jurisdiction_addendum
+            if rag_system_prompt:
+                rag_system_prompt += jurisdiction_addendum
             else:
                 from src.services.llm_service import create_language_aware_prompt
                 rag_system_prompt = create_language_aware_prompt(language) + jurisdiction_addendum
@@ -437,7 +519,7 @@ def handle_query_stream(req: QueryRequest, request: Request):
     else:
         language = detect_language(req.query) or "en"
 
-    # ── Smart mode detection (mirrors /query logic) ──────────────────────────
+    # ── Smart mode detection ─────────────────────────────────────────────────
     mode_rec = None
     try:
         mode_result = smart_router.route_query(req.query, language=language, session_id=None)
@@ -449,21 +531,31 @@ def handle_query_stream(req: QueryRequest, request: Request):
     except Exception as mode_err:
         logger.warning(f"[{request_id}] Stream mode detection failed: {mode_err}")
 
-    # ── RAG retrieval (same dual-index logic as /query) ──────────────────────
-    precedents: list = []
-    try:
-        from src.services.dense_retrieval_service import get_dense_retrieval_service
-        dense_svc = get_dense_retrieval_service()
-        if dense_svc.available:
-            precedents = dense_svc.search(req.query, top_k=4)
-        if not precedents:
-            precedent_svc = get_precedent_service()
-            if precedent_svc.available:
-                precedents = precedent_svc.search(req.query, top_k=4)
-    except Exception as rag_err:
-        logger.warning(f"[{request_id}] Stream RAG failed: {rag_err}")
+    # ── Parallel: classify intent + RAG retrieval ────────────────────────────
+    with _cf.ThreadPoolExecutor(max_workers=2) as _pool:
+        _clf_fut = _pool.submit(classify_query_intent, req.query)
+        _rag_fut = _pool.submit(_run_rag, req.query)
+        try:
+            query_intent = _clf_fut.result(timeout=8)
+        except Exception:
+            query_intent = "legal"
+        try:
+            precedents: list = _rag_fut.result(timeout=8)
+        except Exception:
+            precedents = []
+    if query_intent != "legal":
+        precedents = []
 
-    # Court precedents to attach in the done event
+    logger.info(
+        f"[{request_id}] Stream intent: {query_intent}, RAG hits: {len(precedents)}, "
+        f"lang={language}"
+    )
+
+    # ── Build legal system prompt (RAG-augmented) ────────────────────────────
+    req_state = (req.state or "").strip()
+    legal_system_prompt = _build_rag_system_prompt(language, precedents, state=req_state)
+
+    # Court precedents attached in the done event (legal queries only)
     similar_cases = [
         {
             "case_name":  p.get("case_name",  ""),
@@ -475,59 +567,27 @@ def handle_query_stream(req: QueryRequest, request: Request):
         if float(p.get("similarity", 0.0)) >= 0.08
     ]
 
-    # ── Build streaming system prompt ────────────────────────────────────────
-    req_state = (req.state or "").strip()
-    system_prompt = create_streaming_prompt(language, state=req_state)
-
-    # Inject retrieved precedents as grounding context
-    relevant_prec = [p for p in precedents if float(p.get("similarity", 0.0)) >= 0.08]
-    if relevant_prec:
-        rag_ctx = "\n\nRELEVANT INDIAN COURT PRECEDENTS (ground your answer in these):\n"
-        for i, p in enumerate(relevant_prec, 1):
-            rag_ctx += (
-                f"\n[{i}] {p.get('case_name', '')}: "
-                f"{(p.get('summary', '') or '')[:350]}\n"
-            )
-        rag_ctx += "\nCite these cases in your SUMMARY where applicable.\n"
-        system_prompt += rag_ctx
-
     # ── Conversation history ─────────────────────────────────────────────────
     history = (
         [{"role": m.role, "content": m.content} for m in req.conversation_history]
         if req.conversation_history else None
     )
 
-    logger.info(
-        f"[{request_id}] Stream query: lang={language}, state={req_state or 'national'}, "
-        f"rag_hits={len(similar_cases)}"
-    )
-
-    _CONV_STARTERS = frozenset({
-        "ok", "okay", "sure", "thanks", "thank", "noted", "great", "alright",
-        "understood", "perfect", "cool", "sounds", "fine", "got", "nice",
-        "yep", "nope", "hmm",
-    })
-    _STREAM_TIMEOUT_SECONDS = 90  # kill the stream if LLM hangs beyond this
-
     def event_stream():
-        # Conversational acknowledgments (≤10 words, starts with ack word)
-        # — skip the LLM entirely and return a brief natural reply.
-        _qwords = req.query.strip().split()
-        if _qwords and len(_qwords) <= 10 and _qwords[0].lower().rstrip(",.!?") in _CONV_STARTERS:
-            _reply = "Got it! Feel free to ask me any other legal questions whenever you're ready."
-            yield f"data: {_json.dumps({'type': 'chunk', 'content': _reply})}\n\n"
-            yield f"data: {_json.dumps({'type': 'done', 'summary': _reply, 'laws': [], 'suggestions': [], 'follow_up_questions': [], 'risk_level': '', 'similar_cases': [], 'request_id': request_id, 'language': language})}\n\n"
-            return
-
         full_text = ""
         stream_start = time.time()
         timed_out = False
+
+        # Route to appropriate system prompt
+        active_prompt = CASUAL_SYSTEM_PROMPT if query_intent == "casual" else legal_system_prompt
+        active_history = None if query_intent == "casual" else history
+
         try:
             for chunk in get_legal_response_stream(
                 req.query,
                 language=language,
-                system_prompt=system_prompt,
-                conversation_history=history,
+                system_prompt=active_prompt,
+                conversation_history=active_history,
             ):
                 if time.time() - stream_start > _STREAM_TIMEOUT_SECONDS:
                     logger.error(
@@ -557,32 +617,48 @@ def handle_query_stream(req: QueryRequest, request: Request):
             yield f"data: {_json.dumps({'type': 'done', 'summary': timeout_msg, 'laws': [], 'suggestions': ['Try rephrasing with more specific details.'], 'follow_up_questions': [], 'risk_level': '', 'similar_cases': [], 'request_id': request_id, 'language': language})}\n\n"
             return
 
-        # Parse the full accumulated response into structured fields
-        try:
-            parsed = parse_streaming_output(full_text)
-        except Exception:
-            parsed = {"summary": full_text.strip(), "laws": [], "suggestions": []}
-
         elapsed = time.time() - start_time
         logger.info(f"[{request_id}] Stream completed in {elapsed:.2f}s ({len(full_text)} chars)")
 
-        is_predict = (
-            mode_rec is not None
-            and mode_rec.primary_mode == "predict"
-            and mode_rec.confidence >= 0.80
-        )
-        done_payload = {
-            "type":               "done",
-            "summary":            parsed.get("summary", ""),
-            "laws":               parsed.get("laws", []),
-            "suggestions":        parsed.get("suggestions", []),
-            "follow_up_questions": parsed.get("follow_up_questions", []),
-            "risk_level":         parsed.get("risk_level", ""),
-            "similar_cases":      similar_cases,
-            "request_id":         request_id,
-            "language":           language,
-            "response_type":      "prediction_prompt" if is_predict else None,
-        }
+        if query_intent == "casual":
+            # Casual responses are plain text — skip JSON parsing
+            done_payload = {
+                "type":                "done",
+                "summary":             full_text.strip(),
+                "laws":                [],
+                "suggestions":         [],
+                "follow_up_questions": [],
+                "risk_level":          "",
+                "similar_cases":       [],
+                "request_id":          request_id,
+                "language":            language,
+                "response_type":       "casual",
+            }
+        else:
+            # Legal response: parse structured fields from accumulated text
+            try:
+                parsed = parse_streaming_output(full_text)
+            except Exception:
+                parsed = {"summary": full_text.strip(), "laws": [], "suggestions": []}
+
+            is_predict = (
+                mode_rec is not None
+                and mode_rec.primary_mode == "predict"
+                and mode_rec.confidence >= 0.80
+            )
+            done_payload = {
+                "type":                "done",
+                "summary":             parsed.get("summary", ""),
+                "laws":                parsed.get("laws", []),
+                "suggestions":         parsed.get("suggestions", []),
+                "follow_up_questions": parsed.get("follow_up_questions", []),
+                "risk_level":          parsed.get("risk_level", ""),
+                "similar_cases":       similar_cases,
+                "request_id":          request_id,
+                "language":            language,
+                "response_type":       "prediction_prompt" if is_predict else None,
+            }
+
         yield f"data: {_json.dumps(done_payload)}\n\n"
 
     return StreamingResponse(
@@ -590,7 +666,7 @@ def handle_query_stream(req: QueryRequest, request: Request):
         media_type="text/event-stream",
         headers={
             "Cache-Control":     "no-cache",
-            "X-Accel-Buffering": "no",    # disable nginx buffering in production
+            "X-Accel-Buffering": "no",
         },
     )
 

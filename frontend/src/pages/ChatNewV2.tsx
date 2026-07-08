@@ -1589,29 +1589,6 @@ const ChatPage = () => {
                         </div>
                       )}
 
-                      {/* Legal risk gauge */}
-                      {msg.role === "assistant" && msg.risk_level && !msg.streaming && (() => {
-                        const clean = msg.risk_level.replace(/[^\w\s]/g, "").trim().toLowerCase();
-                        const label = clean.includes("critical") ? "Critical" : clean.includes("high") ? "High" : clean.includes("medium") ? "Medium" : "Low";
-                        const pct   = label === "Critical" ? 92 : label === "High" ? 68 : label === "Medium" ? 42 : 18;
-                        const barCls = label === "Critical" ? "bg-red-500" : label === "High" ? "bg-orange-500" : label === "Medium" ? "bg-yellow-400" : "bg-green-500";
-                        const txtCls = label === "Critical" ? "text-red-600 dark:text-red-400" : label === "High" ? "text-orange-600 dark:text-orange-400" : label === "Medium" ? "text-yellow-600 dark:text-yellow-400" : "text-green-600 dark:text-green-400";
-                        return (
-                          <div className="w-full mt-2 rounded-xl border border-slate-200 dark:border-slate-700/60 bg-white dark:bg-slate-800/50 px-3 py-2.5">
-                            <div className="flex items-center justify-between mb-2">
-                              <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Legal Risk</span>
-                              <span className={`text-[11px] font-bold ${txtCls}`}>{label}</span>
-                            </div>
-                            <div className="h-2 rounded-full bg-slate-100 dark:bg-slate-700 overflow-hidden">
-                              <div className={`h-full rounded-full transition-all duration-700 ${barCls}`} style={{ width: `${pct}%` }} />
-                            </div>
-                            <div className="flex justify-between mt-1">
-                              <span className="text-[9px] text-slate-400">Low</span>
-                              <span className="text-[9px] text-slate-400">Critical</span>
-                            </div>
-                          </div>
-                        );
-                      })()}
 
                       {/* Prediction bridge — shown when chatbot redirects to case predictor */}
                       {msg.role === "assistant" && msg.response_type === "prediction_prompt" && !msg.streaming && (
