@@ -74,39 +74,41 @@ export default function Login() {
     }
   }
 
+  const inputCls = "w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700/60 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500";
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
         {/* Logo */}
         <Link to="/" className="flex items-center gap-2 mb-8 justify-center group">
           <Scale className="h-5 w-5 text-primary" />
-          <span className="text-sm font-semibold text-slate-700 group-hover:text-primary transition-colors">
+          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">
             Smart Legal Assistant
           </span>
         </Link>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm">
           {view === 'login' ? (
             <>
-              <h1 className="text-xl font-bold text-slate-900 mb-1">Welcome back</h1>
-              <p className="text-sm text-slate-500 mb-6">Sign in to your account</p>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Welcome back</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Sign in to your account</p>
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1.5">Email</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Email</label>
                   <input
                     type="email"
                     value={form.email}
                     onChange={e => set('email', e.target.value)}
                     placeholder="you@example.com"
-                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400"
+                    className={inputCls}
                     autoComplete="email"
                   />
                 </div>
 
                 <div>
                   <div className="flex items-center justify-between mb-1.5">
-                    <label className="block text-xs font-medium text-slate-700">Password</label>
+                    <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">Password</label>
                     <button
                       type="button"
                       onClick={() => { setView('forgot'); setError(''); setSuccess(''); }}
@@ -121,13 +123,13 @@ export default function Login() {
                       value={form.password}
                       onChange={e => set('password', e.target.value)}
                       placeholder="••••••••"
-                      className="w-full px-3 py-2.5 pr-10 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400"
+                      className={inputCls + ' pr-10'}
                       autoComplete="current-password"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(s => !s)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600"
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
                     >
                       {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
                     </button>
@@ -135,7 +137,7 @@ export default function Login() {
                 </div>
 
                 {error && (
-                  <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+                  <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/40 rounded-lg px-3 py-2">{error}</p>
                 )}
 
                 <button
@@ -149,7 +151,7 @@ export default function Login() {
                 </button>
               </form>
 
-              <p className="text-xs text-slate-500 text-center mt-5">
+              <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-5">
                 No account?{' '}
                 <Link to="/register" className="text-primary font-medium hover:underline">
                   Create one
@@ -160,27 +162,27 @@ export default function Login() {
             <>
               <button
                 onClick={() => { setView('login'); setError(''); setSuccess(''); }}
-                className="text-xs text-slate-500 hover:text-slate-700 mb-4 flex items-center gap-1"
+                className="text-xs text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 mb-4 flex items-center gap-1"
               >
                 ← Back to sign in
               </button>
-              <h1 className="text-xl font-bold text-slate-900 mb-1">Reset password</h1>
-              <p className="text-sm text-slate-500 mb-6">We'll send a reset code to your email.</p>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Reset password</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">We'll send a reset code to your email.</p>
 
               <form onSubmit={handleForgot} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1.5">Email</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">Email</label>
                   <input
                     type="email"
                     value={forgotEmail}
                     onChange={e => { setForgotEmail(e.target.value); setError(''); setSuccess(''); }}
                     placeholder="you@example.com"
-                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400"
+                    className={inputCls}
                   />
                 </div>
 
-                {error && <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>}
-                {success && <p className="text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2">{success}</p>}
+                {error && <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/40 rounded-lg px-3 py-2">{error}</p>}
+                {success && <p className="text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800/40 rounded-lg px-3 py-2">{success}</p>}
 
                 <button
                   type="submit"
@@ -192,7 +194,7 @@ export default function Login() {
               </form>
 
               {success && (
-                <p className="text-xs text-slate-500 text-center mt-4">
+                <p className="text-xs text-slate-500 dark:text-slate-400 text-center mt-4">
                   Have the code?{' '}
                   <Link
                     to="/verify-otp"

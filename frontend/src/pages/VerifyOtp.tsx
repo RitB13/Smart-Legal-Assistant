@@ -22,7 +22,6 @@ export default function VerifyOtp() {
   const [error, setError] = useState('');
   const [resent, setResent] = useState(false);
 
-  // For reset mode
   const [step, setStep] = useState<'otp' | 'newpass'>('otp');
   const [newPassword, setNewPassword] = useState('');
   const [verifiedOtp, setVerifiedOtp] = useState('');
@@ -75,15 +74,11 @@ export default function VerifyOtp() {
         login(data.access_token, { user_id: data.user_id, email: data.email, name: data.name });
         navigate('/', { replace: true });
       } else {
-        // For reset, validate OTP then move to new password step
         await apiFetch('/auth/verify-otp', {
           method: 'POST',
           body: { email, otp_code: otp },
           skipAuth: true,
-        }).catch(() => {
-          // verify-otp marks user as verified which we don't want for reset flow
-          // Instead use reset-password endpoint directly with the OTP
-        });
+        }).catch(() => {});
         setVerifiedOtp(otp);
         setStep('newpass');
       }
@@ -133,29 +128,30 @@ export default function VerifyOtp() {
 
   if (!email) return null;
 
+  const inputCls = "w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700/60 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400 dark:placeholder:text-slate-500";
+
   return (
-    <div className="min-h-screen bg-slate-50 flex flex-col items-center justify-center px-4">
+    <div className="min-h-screen bg-slate-50 dark:bg-slate-900 flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
         <Link to="/" className="flex items-center gap-2 mb-8 justify-center group">
           <Scale className="h-5 w-5 text-primary" />
-          <span className="text-sm font-semibold text-slate-700 group-hover:text-primary transition-colors">
+          <span className="text-sm font-semibold text-slate-700 dark:text-slate-200 group-hover:text-primary transition-colors">
             Smart Legal Assistant
           </span>
         </Link>
 
-        <div className="bg-white border border-slate-200 rounded-2xl p-8 shadow-sm">
+        <div className="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-2xl p-8 shadow-sm">
           {step === 'otp' ? (
             <>
-              <h1 className="text-xl font-bold text-slate-900 mb-1">
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-1">
                 {mode === 'verify' ? 'Verify your email' : 'Enter reset code'}
               </h1>
-              <p className="text-sm text-slate-500 mb-6">
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">
                 We sent a 6-digit code to{' '}
-                <span className="font-medium text-slate-700">{email}</span>
+                <span className="font-medium text-slate-700 dark:text-slate-200">{email}</span>
               </p>
 
               <form onSubmit={handleVerify}>
-                {/* OTP digit inputs */}
                 <div className="flex gap-2 justify-between mb-4" onPaste={handlePaste}>
                   {digits.map((d, i) => (
                     <input
@@ -167,16 +163,16 @@ export default function VerifyOtp() {
                       value={d}
                       onChange={e => handleDigitChange(i, e.target.value)}
                       onKeyDown={e => handleKeyDown(i, e)}
-                      className="w-11 h-12 text-center text-lg font-semibold border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                      className="w-11 h-12 text-center text-lg font-semibold border border-slate-200 dark:border-slate-600 rounded-lg bg-slate-50 dark:bg-slate-700/60 text-slate-900 dark:text-slate-100 focus:bg-white dark:focus:bg-slate-700 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
                     />
                   ))}
                 </div>
 
                 {error && (
-                  <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mb-4">{error}</p>
+                  <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/40 rounded-lg px-3 py-2 mb-4">{error}</p>
                 )}
                 {resent && (
-                  <p className="text-xs text-green-700 bg-green-50 border border-green-100 rounded-lg px-3 py-2 mb-4">
+                  <p className="text-xs text-green-700 dark:text-green-400 bg-green-50 dark:bg-green-900/20 border border-green-100 dark:border-green-800/40 rounded-lg px-3 py-2 mb-4">
                     New code sent — check your inbox.
                   </p>
                 )}
@@ -193,7 +189,7 @@ export default function VerifyOtp() {
               </form>
 
               <div className="flex items-center justify-center mt-4 gap-1">
-                <span className="text-xs text-slate-500">Didn't receive it?</span>
+                <span className="text-xs text-slate-500 dark:text-slate-400">Didn't receive it?</span>
                 <button
                   onClick={handleResend}
                   disabled={resending}
@@ -206,24 +202,24 @@ export default function VerifyOtp() {
             </>
           ) : (
             <>
-              <h1 className="text-xl font-bold text-slate-900 mb-1">Set new password</h1>
-              <p className="text-sm text-slate-500 mb-6">Choose a strong password for your account.</p>
+              <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Set new password</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Choose a strong password for your account.</p>
 
               <form onSubmit={handleReset} className="space-y-4">
                 <div>
-                  <label className="block text-xs font-medium text-slate-700 mb-1.5">New password</label>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300 mb-1.5">New password</label>
                   <input
                     type="password"
                     value={newPassword}
                     onChange={e => { setNewPassword(e.target.value); setError(''); }}
                     placeholder="Min. 8 characters"
-                    className="w-full px-3 py-2.5 text-sm border border-slate-200 rounded-lg bg-slate-50 focus:bg-white focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all placeholder:text-slate-400"
+                    className={inputCls}
                     autoFocus
                   />
                 </div>
 
                 {error && (
-                  <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2">{error}</p>
+                  <p className="text-xs text-red-600 dark:text-red-400 bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800/40 rounded-lg px-3 py-2">{error}</p>
                 )}
 
                 <button

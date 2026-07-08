@@ -180,9 +180,7 @@ const RightsPage = () => {
 
   const toggleSection = (sectionId: string) => {
     setExpandedSections(prev =>
-      prev.includes(sectionId)
-        ? prev.filter(id => id !== sectionId)
-        : [...prev, sectionId]
+      prev.includes(sectionId) ? [] : [sectionId]
     );
   };
 

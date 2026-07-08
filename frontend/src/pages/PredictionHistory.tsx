@@ -120,28 +120,37 @@ export default function PredictionHistory() {
 
           {/* Stats strip */}
           {!loading && items.length > 0 && (
-            <div className="grid grid-cols-3 gap-3 mb-6">
-              <div className="rounded-xl border border-slate-200 bg-white px-4 py-3 flex items-center gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-6">
+              <div className="rounded-xl border border-slate-200 bg-white dark:bg-slate-800 dark:border-slate-700 px-4 py-3 flex items-center gap-3">
                 <BarChart3 className="w-5 h-5 text-slate-400 flex-shrink-0" />
                 <div>
-                  <p className="text-xl font-bold text-slate-900">{items.length}{hasMore ? '+' : ''}</p>
-                  <p className="text-xs text-slate-500">Total</p>
+                  <p className="text-xl font-bold text-slate-900 dark:text-white">{items.length}{hasMore ? '+' : ''}</p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400">Total</p>
                 </div>
               </div>
-              <div className="rounded-xl border border-green-100 bg-green-50 px-4 py-3 flex items-center gap-3">
+              <div className="rounded-xl border border-green-100 dark:border-green-800/40 bg-green-50 dark:bg-green-900/15 px-4 py-3 flex items-center gap-3">
                 <CheckCircle2 className="w-5 h-5 text-green-500 flex-shrink-0" />
                 <div>
-                  <p className="text-xl font-bold text-green-800">{accepted}</p>
-                  <p className="text-xs text-green-600">Accepted</p>
+                  <p className="text-xl font-bold text-green-800 dark:text-green-300">{accepted}</p>
+                  <p className="text-xs text-green-600 dark:text-green-500">Accepted</p>
                 </div>
               </div>
-              <div className="rounded-xl border border-red-100 bg-red-50 px-4 py-3 flex items-center gap-3">
+              <div className="rounded-xl border border-red-100 dark:border-red-800/40 bg-red-50 dark:bg-red-900/15 px-4 py-3 flex items-center gap-3">
                 <XCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
                 <div>
-                  <p className="text-xl font-bold text-red-800">{rejected}</p>
-                  <p className="text-xs text-red-600">Rejected</p>
+                  <p className="text-xl font-bold text-red-800 dark:text-red-300">{rejected}</p>
+                  <p className="text-xs text-red-600 dark:text-red-500">Rejected</p>
                 </div>
               </div>
+              {avgConf !== null && (
+                <div className="rounded-xl border border-blue-100 dark:border-blue-800/40 bg-blue-50 dark:bg-blue-900/15 px-4 py-3 flex items-center gap-3">
+                  <BarChart3 className="w-5 h-5 text-blue-400 flex-shrink-0" />
+                  <div>
+                    <p className="text-xl font-bold text-blue-800 dark:text-blue-300">{avgConf}%</p>
+                    <p className="text-xs text-blue-600 dark:text-blue-500">Avg. confidence</p>
+                  </div>
+                </div>
+              )}
             </div>
           )}
 

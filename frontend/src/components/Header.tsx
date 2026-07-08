@@ -55,13 +55,23 @@ export default function Header() {
   const userMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    function handler(e: MouseEvent) {
+    function handleClick(e: MouseEvent) {
       if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
         setUserMenuOpen(false);
       }
     }
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
+    function handleKey(e: KeyboardEvent) {
+      if (e.key === 'Escape') {
+        setUserMenuOpen(false);
+        setMobileOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
   }, []);
 
   function handleLogout() {
@@ -177,8 +187,12 @@ export default function Header() {
         </div>
 
         {/* Mobile nav menu (authenticated) */}
-        {isAuthenticated && mobileOpen && (
-          <nav className="md:hidden border-t border-slate-100 dark:border-slate-700/50 py-3 space-y-0.5">
+        {isAuthenticated && (
+          <nav
+            className={`md:hidden border-t border-slate-100 dark:border-slate-700/50 overflow-hidden transition-all duration-200 ease-in-out ${
+              mobileOpen ? 'max-h-96 py-3 opacity-100' : 'max-h-0 py-0 opacity-0'
+            } space-y-0.5`}
+          >
             {NAV_LINKS.map(link => (
               <Link
                 key={link.path}
