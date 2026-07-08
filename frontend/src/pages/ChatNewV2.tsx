@@ -226,6 +226,17 @@ const ChatPage = () => {
     return token ? { Authorization: `Bearer ${token}` } : {};
   }, []);
 
+  // ── Agent triage prefill — runs once on mount ─────────────────────────────────
+  useEffect(() => {
+    const prefill = sessionStorage.getItem("agent_prefill");
+    if (!prefill) return;
+    sessionStorage.removeItem("agent_prefill");
+    setInputText(prefill);
+    // Focus the input so the user can review and press Enter to send
+    setTimeout(() => inputRef.current?.focus(), 100);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── State sync helpers ────────────────────────────────────────────────────────
 
   // Keep refs in sync with state so async callbacks always read the latest value

@@ -47,6 +47,15 @@ export default function CreateDispute() {
     };
   }, []);
 
+  // Agent triage prefill — pre-fill case_description if arriving from the home agent
+  useEffect(() => {
+    const prefill = sessionStorage.getItem('agent_prefill');
+    if (!prefill) return;
+    sessionStorage.removeItem('agent_prefill');
+    set('case_description', prefill);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
   // ── Voice helpers (MediaRecorder → Groq Whisper) ─────────────────────────
 
   function getBestMimeType(): string {

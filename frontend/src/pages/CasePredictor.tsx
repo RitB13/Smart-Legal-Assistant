@@ -545,12 +545,14 @@ const CasePredictor = () => {
 
   const progress = Math.round((step / STEP_LABELS.length) * 100);
 
-  // Pre-fill the statement field when navigating from the chatbot prediction bridge
+  // Pre-fill the statement field from router state (chatbot bridge) or agent triage sessionStorage
   useEffect(() => {
-    const prefill = (routerLocation.state as { prefillQuery?: string } | null)?.prefillQuery;
+    const routerPrefill = (routerLocation.state as { prefillQuery?: string } | null)?.prefillQuery;
+    const agentPrefill  = sessionStorage.getItem("agent_prefill");
+    const prefill = routerPrefill || agentPrefill;
     if (prefill) {
-      setStatement(prefill);
-      statementRef.current = prefill;
+      if (agentPrefill) sessionStorage.removeItem("agent_prefill");
+      updateStatement(prefill);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
