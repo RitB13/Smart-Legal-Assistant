@@ -1,6 +1,7 @@
 import { MessageSquare, Shield, ArrowRight, Scale, TrendingUp, Sparkles, CheckCircle, Star } from "lucide-react";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
+import AgentTriage from "../components/AgentTriage";
 
 const FEATURES = [
   {
@@ -155,7 +156,7 @@ const Home = () => {
       <div className="relative overflow-hidden -mt-16">
 
         {/* ── Hero ──────────────────────────────────────────────────────────── */}
-        <div className="relative overflow-hidden bg-gradient-to-b from-sky-50 via-blue-50 to-white dark:from-[#060d1a] dark:via-[#080f20] dark:to-[#060d1a] pt-16 min-h-screen flex items-center">
+        <div className="relative overflow-hidden bg-gradient-to-b from-sky-50 via-blue-50 to-white dark:from-[#060d1a] dark:via-[#080f20] dark:to-[#060d1a] pt-16 pb-6">
 
           {/* Soft blobs */}
           <div className="absolute -top-24 -left-24 w-[500px] h-[500px] bg-blue-200/40 dark:bg-blue-500/5 rounded-full blur-3xl pointer-events-none" />
@@ -172,18 +173,11 @@ const Home = () => {
           {/* Small scales — far right top */}
           <ScalesOfJustice className="absolute right-1/4 top-10 w-[80px] h-[80px] text-indigo-400 opacity-[0.07] pointer-events-none select-none" />
 
-          <div className="container mx-auto px-4 py-12 relative z-10 w-full">
+          <div className="container mx-auto px-4 py-5 relative z-10 w-full">
             <div className="mx-auto max-w-3xl text-center">
 
-              {/* Badge */}
-              <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full border border-blue-200 bg-white/80 backdrop-blur-sm text-blue-700 text-sm font-semibold mb-7 shadow-sm dark:border-blue-500/30 dark:bg-slate-800/80 dark:text-blue-300">
-                <Sparkles className="h-3.5 w-3.5 text-blue-500" />
-                AI-Powered Legal Platform for India
-                <span className="flex h-2 w-2 rounded-full bg-blue-500 animate-pulse" />
-              </div>
-
               {/* Heading */}
-              <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-6 leading-[0.95]">
+              <h1 className="text-5xl md:text-7xl font-black tracking-tighter mb-3 leading-[0.95]">
                 <span className="text-slate-900 dark:text-white">Smart Legal</span>
                 <br />
                 <span className="bg-gradient-to-r from-blue-600 via-cyan-500 to-blue-500 bg-clip-text text-transparent">
@@ -192,25 +186,26 @@ const Home = () => {
               </h1>
 
               {/* Subtitle */}
-              <p className="text-lg md:text-xl text-slate-500 dark:text-slate-300 font-medium leading-relaxed max-w-2xl mx-auto mb-10">
+              <p className="text-base md:text-lg text-slate-500 dark:text-slate-300 font-medium leading-relaxed max-w-2xl mx-auto mb-5">
                 Ask legal questions, predict case outcomes, and resolve disputes — all powered by AI trained on Indian law.
               </p>
 
-              {/* CTAs */}
-              <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
-                <Link
-                  to="/chat"
-                  className="group inline-flex items-center justify-center rounded-full bg-gradient-to-r from-blue-600 to-cyan-500 px-8 py-4 text-base font-bold text-white shadow-lg shadow-blue-300/50 hover:shadow-xl hover:shadow-blue-300/60 hover:scale-105 hover:-translate-y-0.5 transition-all duration-300"
-                >
-                  Get Started Free
-                  <ArrowRight className="ml-2 h-5 w-5 transition-transform group-hover:translate-x-1" />
-                </Link>
-                <Link
-                  to="/rights"
-                  className="inline-flex items-center justify-center rounded-full border-2 border-slate-200 bg-white px-8 py-4 text-base font-bold text-slate-700 hover:border-blue-300 hover:text-blue-600 hover:bg-blue-50 hover:scale-105 hover:-translate-y-0.5 transition-all duration-300 shadow-sm dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-blue-400 dark:hover:text-blue-300 dark:hover:bg-blue-900/20"
-                >
-                  Know Your Rights
-                </Link>
+              {/* Agent triage */}
+              <div className="mb-4 w-full">
+                <p className="text-xs font-semibold text-slate-400 dark:text-slate-500 uppercase tracking-widest mb-3">
+                  Not sure where to start?
+                </p>
+                <AgentTriage />
+                <p className="mt-4 text-xs text-slate-400 dark:text-slate-500">
+                  Or go directly to a tool →{" "}
+                  <Link to="/chat"      className="text-blue-500 hover:underline">Chat</Link>
+                  {" · "}
+                  <Link to="/predict"   className="text-violet-500 hover:underline">Predictor</Link>
+                  {" · "}
+                  <Link to="/mediation" className="text-indigo-500 hover:underline">Mediation</Link>
+                  {" · "}
+                  <Link to="/rights"    className="text-orange-500 hover:underline">Know Your Rights</Link>
+                </p>
               </div>
 
 

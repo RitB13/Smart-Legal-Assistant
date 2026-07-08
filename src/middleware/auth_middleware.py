@@ -47,6 +47,7 @@ async def jwt_auth_middleware(request: Request, call_next: Callable):
         "/auth/forgot-password",
         "/auth/reset-password",
         "/shared/",
+        "/agent/",   # triage endpoint — public home page, no token required
     ]
     
     request_path = request.url.path

@@ -77,4 +77,21 @@ export async function apiFetch<T = unknown>(
   }
 }
 
+// ── Agent Triage ──────────────────────────────────────────────────────────────
+
+export interface TriageResult {
+  tool:         "chat" | "predict" | "mediation";
+  reason:       string;
+  prefill_text: string;
+}
+
+export async function triageAgent(text: string): Promise<TriageResult> {
+  return apiFetch<TriageResult>("/agent/triage", {
+    method:   "POST",
+    body:     { text },
+    skipAuth: true,   // public endpoint — no JWT header sent
+    timeout:  20000,  // 20 s — LLM call can take a few seconds
+  });
+}
+
 export { BASE_URL };

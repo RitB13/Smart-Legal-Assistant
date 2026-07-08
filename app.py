@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 from src.routes import chatbot, summarizer, case_outcome, auth_routes, conversation_routes, prediction_routes, chat_intelligence, simulator, database
 from src.routes import mediation as mediation_routes
 from src.routes import bail as bail_routes
+from src.routes import agent as agent_routes
 from src.middleware.auth_middleware import jwt_auth_middleware
 from config import CORS_ORIGINS, DEBUG
 from src.services.model_manager import get_model_manager
@@ -57,6 +58,7 @@ app.include_router(simulator.router, tags=["Consequence Simulator"])
 app.include_router(database.router, prefix="/db", tags=["Database"])
 app.include_router(mediation_routes.router, tags=["AI Mediation"])
 app.include_router(bail_routes.router, tags=["Bail Prediction"])
+app.include_router(agent_routes.router, tags=["Legal Triage Agent"])
 
 # Health check endpoint
 @app.get("/health", tags=["Health"])
