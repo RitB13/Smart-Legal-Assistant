@@ -32,6 +32,62 @@ Guidelines:
 - Do not include any text outside the JSON structure"""
 
 
+CASUAL_SYSTEM_PROMPT = (
+    "You are Nyaya, a friendly AI legal assistant. "
+    "The user's message is a greeting, small talk, or something unrelated to law. "
+    "Reply warmly and naturally in 1-2 short sentences. "
+    "For greetings say hello back and mention you are ready to help with legal questions. "
+    "For off-topic messages, acknowledge it briefly then invite them to share any legal questions. "
+    "Do NOT provide legal advice. Do NOT produce JSON. Just write your reply as plain text."
+)
+
+
+def classify_query_intent(query: str) -> str:
+    """
+    Classify a query as 'legal' or 'casual' with a single minimal Groq API call.
+    Uses max_tokens=5, temperature=0 for speed and determinism.
+    Falls back to 'legal' on any error (safe default — routes through full pipeline).
+    """
+    try:
+        payload = {
+            "model": GROQ_MODEL,
+            "messages": [
+                {
+                    "role": "system",
+                    "content": (
+                        "You are a one-word classifier. Reply with ONLY one word.\n"
+                        "Reply 'legal' if the message is about: law, rights, courts, "
+                        "contracts, disputes, crime, police, property, employment, "
+                        "family law, tenancy, FIR, bail, petition, affidavit, "
+                        "consumer rights, divorce, inheritance, legal procedures, or legal advice.\n"
+                        "Reply 'casual' if the message is: a greeting, small talk, "
+                        "personal health, random fact, joke, or anything unrelated to law.\n"
+                        "ONLY reply with the single word:  legal  OR  casual"
+                    ),
+                },
+                {"role": "user", "content": query[:300]},
+            ],
+            "max_tokens": 5,
+            "temperature": 0,
+        }
+        response = requests.post(
+            BASE_URL,
+            headers={"Authorization": f"Bearer {GROQ_API_KEY}", "Content-Type": "application/json"},
+            json=payload,
+            timeout=8,
+        )
+        response.raise_for_status()
+        result = response.json()["choices"][0]["message"]["content"].strip().lower()
+        if "casual" in result:
+            logger.debug(f"[CLASSIFY] '{query[:50]}' -> casual")
+            return "casual"
+        logger.debug(f"[CLASSIFY] '{query[:50]}' -> legal")
+        return "legal"
+    except Exception as exc:
+        logger.warning(f"[CLASSIFY] Failed ('{query[:40]}'), defaulting to 'legal': {exc}")
+        return "legal"
+
+
 def create_language_aware_prompt(language_code: str) -> str:
     """
     Create a language-aware system prompt for multilingual support.
@@ -140,6 +196,22 @@ Guidelines:
     return prompt
 
 
+def _is_raw_filename(name: str) -> bool:
+    """Return True if the case name looks like a raw file ID rather than a proper case name."""
+    import re
+    # Matches things like "1358333.txt", "2002_727", "598156", "CJPE_ext_123"
+    stripped = name.strip()
+    if not stripped or stripped.lower() in ("unknown", ""):
+        return True
+    # Contains a file extension
+    if re.search(r'\.\w{2,4}$', stripped):
+        return True
+    # Looks like a pure number or underscore-joined numbers
+    if re.fullmatch(r'[\d_\-]+', stripped):
+        return True
+    return False
+
+
 def create_rag_enhanced_prompt(language_code: str, precedents: list) -> str:
     """
     Build a system prompt that includes retrieved court precedents as context.
@@ -163,16 +235,24 @@ def create_rag_enhanced_prompt(language_code: str, precedents: list) -> str:
     if not relevant:
         return base
 
-    context_block = "\n\nRELEVANT INDIAN COURT PRECEDENTS (retrieved from verified legal database):\n"
-    context_block += "Use these cases to ground your response. Cite case names in your summary where applicable.\n"
+    context_block = "\n\nRELEVANT INDIAN COURT PRECEDENTS (background context from verified legal database):\n"
+    context_block += (
+        "Use these only as factual background to inform your answer. "
+        "DO NOT cite them by number, filename, or ID in your response. "
+        "Only mention a case by name if it has a proper descriptive name (e.g. 'State vs. Sharma').\n"
+    )
 
     for i, p in enumerate(relevant, 1):
-        case_name = p.get("case_name", "Unknown")
+        raw_name  = p.get("case_name", "")
         case_type = p.get("case_type", "").strip()
         summary   = (p.get("summary", "") or "").strip()[:500]
         outcome   = (p.get("outcome", "") or "").strip()[:200]
 
-        context_block += f"\n[Case {i}] {case_name}"
+        # Only include the case name in the prompt if it looks like a real name
+        has_real_name = raw_name and not _is_raw_filename(raw_name)
+        context_block += f"\n[Context {i}]"
+        if has_real_name:
+            context_block += f" {raw_name}"
         if case_type and case_type.lower() not in ("unknown", ""):
             context_block += f" ({case_type})"
         if summary:
