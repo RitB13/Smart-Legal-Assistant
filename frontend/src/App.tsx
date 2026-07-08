@@ -21,6 +21,7 @@ import Privacy from "./pages/Privacy";
 import Terms from "./pages/Terms";
 import Disclaimer from "./pages/Disclaimer";
 import MediationHome from "./pages/mediation/MediationHome";
+import MediationHistory from "./pages/mediation/MediationHistory";
 import CreateDispute from "./pages/mediation/CreateDispute";
 import DisputeRoom from "./pages/mediation/DisputeRoom";
 import DisputeResult from "./pages/mediation/DisputeResult";
@@ -64,6 +65,7 @@ const App = () => (
 
               {/* Mediation routes — all protected */}
               <Route path="/mediation"              element={<ProtectedRoute><MediationHome /></ProtectedRoute>} />
+              <Route path="/mediation/history"      element={<ProtectedRoute><MediationHistory /></ProtectedRoute>} />
               <Route path="/mediation/create"       element={<ProtectedRoute><CreateDispute /></ProtectedRoute>} />
               <Route path="/mediation/:id/room"     element={<ProtectedRoute><DisputeRoom /></ProtectedRoute>} />
               <Route path="/mediation/:id/result"   element={<ProtectedRoute><DisputeResult /></ProtectedRoute>} />

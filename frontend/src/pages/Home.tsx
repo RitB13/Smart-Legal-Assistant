@@ -187,7 +187,7 @@ const Home = () => {
 
               {/* Subtitle */}
               <p className="text-base md:text-lg text-slate-500 dark:text-slate-300 font-medium leading-relaxed max-w-2xl mx-auto mb-5">
-                Indian law, in plain language. Ask questions, size up your case, and settle disputes — without a lawyer's fee.
+                Ask legal questions, predict case outcomes, and resolve disputes — all powered by AI trained on Indian law
               </p>
 
               {/* Agent triage */}
