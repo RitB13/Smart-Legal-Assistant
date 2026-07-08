@@ -41,7 +41,7 @@ class DocumentTemplate:
             "jurisdiction": self.jurisdiction,
             "applicable_issues": self.applicable_issues,
             "category": self.category,
-            "download_url": f"/api/templates/{self.template_id}"
+            "download_url": None
         }
 
 

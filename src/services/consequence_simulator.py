@@ -22,9 +22,6 @@ from src.models.simulator_model import (
 )
 from src.services.llm_service import get_legal_response
 from src.services.feature_extractor import LegalFeatureExtractor
-from src.services.legal_impact_scorer import LegalImpactScorer
-from src.services.checklist_generator import ChecklistGenerator
-from src.services.explainability_service import ExplainabilityService
 from src.services.jurisdiction_detector import JurisdictionDetector
 from src.services.law_matcher import LawMatcher
 from src.services.language_service import detect_language
@@ -38,11 +35,7 @@ class ConsequenceSimulatorService:
 
     def __init__(self):
         """Initialize simulator with required services"""
-        self.llm_service = None  # Used indirectly through get_legal_response
         self.feature_extractor = LegalFeatureExtractor()
-        self.impact_scorer = LegalImpactScorer()
-        self.checklist_generator = ChecklistGenerator()
-        self.explainability_service = ExplainabilityService()
         self.jurisdiction_detector = JurisdictionDetector()
         self.law_matcher = LawMatcher()
         
@@ -470,7 +463,7 @@ Be thorough and specific to {jurisdiction} law."""
         # Penalties
         if any(p.penalty_type == PenaltyType.IMPRISONMENT for p in penalties):
             score += 20
-        if any(p.penalty_type in [PenaltyType.CRIMINAL, PenaltyType.CRIMINAL] for p in penalties):
+        if any(p.penalty_type == PenaltyType.CRIMINAL for p in penalties):
             score += 15
         
         # Normalize

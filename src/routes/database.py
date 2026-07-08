@@ -14,7 +14,7 @@ from src.models.database_models import (
     UserSessionModel, QueryRecordModel, SimulationRecordModel,
     ModeDecisionModel, UserFeedbackModel, UserAnalyticsModel
 )
-from src.routes.auth_routes import get_current_user
+from src.dependencies import get_current_user
 from src.services.auth_service import TokenData
 
 logger = logging.getLogger(__name__)

@@ -301,7 +301,7 @@ class ExplainabilityService:
         }
         
         level = "high" if score >= 70 else "medium" if score >= 40 else "low"
-        component_key = component.lower().replace(" score", "").replace("-", "_")
+        component_key = component.lower().replace(" score", "").replace(" ", "_").replace("-", "_")
         
         base = explanations.get(component_key, {}).get(level, "Impact assessment in progress.")
         

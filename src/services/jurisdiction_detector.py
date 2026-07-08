@@ -3,11 +3,17 @@ Jurisdiction Detection Service
 Detects user's legal jurisdiction based on multiple signals
 """
 
-import requests
 import json
 from typing import Optional, Dict, Tuple
 from datetime import datetime
 import logging
+
+try:
+    import httpx as _http_client
+    _USE_HTTPX = True
+except ImportError:
+    import requests as _http_client  # type: ignore[no-redef]
+    _USE_HTTPX = False
 
 logger = logging.getLogger(__name__)
 
@@ -182,17 +188,21 @@ class JurisdictionDetector:
     def _detect_from_ip(self, ip_address: str) -> Optional[Dict]:
         """Detect jurisdiction using IP geolocation"""
         try:
-            # Check cache first
+            # Check cache first — use total_seconds() so entries older than 24 h actually expire
             if ip_address in self.cache:
                 cached = self.cache[ip_address]
-                if (datetime.utcnow() - cached["cached_at"]).seconds < 86400:
+                if (datetime.utcnow() - cached["cached_at"]).total_seconds() < 86400:
                     return cached["data"]
-            
-            # Query IP geolocation API
-            response = requests.get(
-                f"{self.geoip_provider}/?query={ip_address}",
-                timeout=5
-            )
+
+            # Query IP geolocation API using httpx (preferred) or requests fallback
+            if _USE_HTTPX:
+                with _http_client.Client(timeout=5) as client:
+                    response = client.get(f"{self.geoip_provider}/?query={ip_address}")
+            else:
+                response = _http_client.get(
+                    f"{self.geoip_provider}/?query={ip_address}",
+                    timeout=5
+                )
             response.raise_for_status()
             data = response.json()
             

@@ -280,36 +280,3 @@ def extract_token_from_header(authorization_header: str) -> Optional[str]:
         logger.error(f"[AUTH] Error extracting token: {e}")
         return None
 
-
-# ==================== DEMONSTRATION ====================
-
-if __name__ == "__main__":
-    # Example usage
-    print("[TEST] Authentication Module Demo\n")
-    
-    # Password hashing
-    password = "mySecurePassword123!"
-    hashed = hash_password(password)
-    print(f"Original: {password}")
-    print(f"Hashed:   {hashed}\n")
-    
-    # Password verification
-    is_valid = verify_password(password, hashed)
-    print(f"Password valid: {is_valid}\n")
-    
-    # Token creation
-    token_response = create_access_token(
-        user_id="507f1f77bcf86cd799439011",
-        email="test@example.com"
-    )
-    print(f"Token created: {token_response.access_token[:50]}...")
-    print(f"Expires in: {token_response.expires_in} seconds\n")
-    
-    # Token verification
-    token_data = verify_token(token_response.access_token)
-    if token_data:
-        print(f"Token verified!")
-        print(f"User ID: {token_data.user_id}")
-        print(f"Email: {token_data.email}")
-    else:
-        print("Token invalid!")

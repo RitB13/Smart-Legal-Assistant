@@ -52,6 +52,8 @@ class ConversationService:
             "user_id": conv_data.user_id,
             "title": conv_data.title,
             "language": conv_data.language,
+            "case_type": getattr(conv_data, "case_type", "general"),
+            "jurisdiction": getattr(conv_data, "jurisdiction", "india"),
             "messages": [],
             "created_at": datetime.utcnow(),
             "updated_at": datetime.utcnow(),
@@ -95,29 +97,24 @@ class ConversationService:
             return None
     
     @staticmethod
-    def get_user_conversations(user_id: str, limit: int = 50) -> List[ConversationInDB]:
+    def get_user_conversations(user_id: str, skip: int = 0, limit: int = 50) -> List[ConversationInDB]:
         """
         Get all conversations for a user, sorted by most recent first.
-        
+
         Args:
             user_id: User's MongoDB ObjectId as string
+            skip: Number of documents to skip for pagination
             limit: Maximum number of conversations to return (default 50)
-            
+
         Returns:
             List of ConversationInDB objects (newest first)
-            
-        Example:
-            >>> conversations = ConversationService.get_user_conversations(
-            ...     "507f1f77bcf86cd799439011",
-            ...     limit=20
-            ... )
         """
         collection = get_collection("conversations")
-        
+
         try:
             conversations = list(collection.find(
                 {"user_id": user_id}
-            ).sort("created_at", DESCENDING).limit(limit))
+            ).sort("created_at", DESCENDING).skip(skip).limit(limit))
             
             logger.info(f"✅ [CONV] Found {len(conversations)} conversation(s) for user")
             return [ConversationInDB(**conv) for conv in conversations]

@@ -13,7 +13,7 @@ from pymongo import DESCENDING
 from bson import ObjectId
 from datetime import datetime
 import logging
-from typing import Optional, List
+from typing import Optional, List, Dict
 from src.models.db_models import (
     CasePrediction, CasePredictionCreate, CasePredictionInDB,
     CasePredictionMetadata, PredictionResult
@@ -188,6 +188,48 @@ class PredictionHistoryService:
             return []
     
     @staticmethod
+    def search_predictions_filtered(
+        user_id: str,
+        verdict: Optional[str] = None,
+        case_type: Optional[str] = None,
+        jurisdiction: Optional[str] = None,
+        min_confidence_pct: Optional[float] = None,
+    ) -> List[CasePredictionInDB]:
+        """
+        Filter predictions entirely in MongoDB — no Python-side scanning.
+
+        Args:
+            user_id: Owner of the predictions.
+            verdict: Exact verdict string match (optional).
+            case_type: Exact case_type string match (optional).
+            jurisdiction: Exact jurisdiction_state match (optional).
+            min_confidence_pct: Minimum confidence as a 0-100 percentage (optional).
+
+        Returns:
+            Matching predictions, newest first.
+        """
+        collection = get_collection("case_predictions")
+        query: dict = {"user_id": user_id}
+        if verdict:
+            query["result.verdict"] = verdict
+        if case_type:
+            query["metadata.case_type"] = case_type
+        if jurisdiction:
+            query["metadata.jurisdiction_state"] = jurisdiction
+        if min_confidence_pct is not None:
+            query["result.confidence"] = {"$gte": min_confidence_pct}
+
+        try:
+            predictions = list(
+                collection.find(query).sort("created_at", DESCENDING)
+            )
+            logger.info(f"✅ [PRED] search_predictions_filtered: {len(predictions)} result(s)")
+            return [CasePredictionInDB(**p) for p in predictions]
+        except Exception as e:
+            logger.error(f"❌ [PRED] Error in search_predictions_filtered: {e}")
+            return []
+
+    @staticmethod
     def search_predictions(user_id: str, query: str) -> List[CasePredictionInDB]:
         """
         Search predictions by case name (case-insensitive).
@@ -293,21 +335,25 @@ class PredictionHistoryService:
             ]))
             case_type_counts = {item["_id"]: item["count"] for item in case_type_aggregation}
             
-            # Get average confidence
-            confidence_aggregation = list(collection.aggregate([
+            # Average confidence and average impact score in one aggregation pass
+            stats_aggregation = list(collection.aggregate([
                 {"$match": {"user_id": user_id}},
                 {"$group": {
                     "_id": None,
-                    "avg_confidence": {"$avg": "$result.confidence"}
+                    "avg_confidence": {"$avg": "$result.confidence"},
+                    "avg_impact_score": {"$avg": "$result.risk_assessment.impact_score"},
                 }}
             ]))
-            avg_confidence = confidence_aggregation[0]["avg_confidence"] if confidence_aggregation else 0
-            
+            stats_row = stats_aggregation[0] if stats_aggregation else {}
+            avg_confidence = stats_row.get("avg_confidence") or 0
+            avg_impact = stats_row.get("avg_impact_score")  # None when no documents have the field
+
             return {
                 "total_predictions": total,
                 "by_verdict": verdict_counts,
                 "by_case_type": case_type_counts,
                 "average_confidence": round(avg_confidence, 2),
+                "average_impact_score": round(avg_impact, 2) if avg_impact is not None else None,
             }
         except Exception as e:
             logger.error(f"❌ [PRED] Error getting stats: {e}")

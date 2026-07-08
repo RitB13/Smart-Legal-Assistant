@@ -303,9 +303,37 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
         except Exception as e:
             llm_time = time.time() - llm_start
             logger.error(f"[{request_id}] LLM service failed after {llm_time:.2f}s: {str(e)}")
-            raise HTTPException(
-                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-                detail=f"Legal AI service unavailable: {str(e)}"
+            # Return a graceful fallback instead of a hard 503 so the frontend
+            # can display something helpful rather than a blank error page.
+            fallback_summary = (
+                "I'm currently unable to reach the legal AI service. "
+                "Please try again in a moment, or consult a qualified legal professional "
+                "for urgent matters."
+            )
+            return QueryResponse(
+                request_id=request_id,
+                summary=fallback_summary,
+                laws=[],
+                suggestions=["Please try your question again shortly."],
+                impact_score=ImpactScoreModel(
+                    overall_score=0,
+                    financial_risk_score=0,
+                    legal_exposure_score=0,
+                    long_term_impact_score=0,
+                    rights_lost_score=0,
+                    risk_level="Unavailable",
+                    breakdown={},
+                    key_factors=[],
+                    mitigating_factors=[],
+                    recommendation="Consult a qualified legal professional for urgent matters.",
+                ),
+                language=language,
+                suggested_mode=mode_rec.primary_mode if mode_rec else "chat",
+                mode_confidence=mode_rec.confidence if mode_rec else 0.0,
+                mode_reasoning="",
+                extracted_action=None,
+                response_type="error_fallback",
+                conversation_id=None,
             )
         
         # Parse LLM response
@@ -479,6 +507,7 @@ def handle_query_stream(req: QueryRequest, request: Request):
         "understood", "perfect", "cool", "sounds", "fine", "got", "nice",
         "yep", "nope", "hmm",
     })
+    _STREAM_TIMEOUT_SECONDS = 90  # kill the stream if LLM hangs beyond this
 
     def event_stream():
         # Conversational acknowledgments (≤10 words, starts with ack word)
@@ -491,6 +520,8 @@ def handle_query_stream(req: QueryRequest, request: Request):
             return
 
         full_text = ""
+        stream_start = time.time()
+        timed_out = False
         try:
             for chunk in get_legal_response_stream(
                 req.query,
@@ -498,14 +529,32 @@ def handle_query_stream(req: QueryRequest, request: Request):
                 system_prompt=system_prompt,
                 conversation_history=history,
             ):
+                if time.time() - stream_start > _STREAM_TIMEOUT_SECONDS:
+                    logger.error(
+                        f"[{request_id}] Stream timeout after {_STREAM_TIMEOUT_SECONDS}s — aborting"
+                    )
+                    timed_out = True
+                    break
                 full_text += chunk
                 yield f"data: {_json.dumps({'type': 'chunk', 'content': chunk})}\n\n"
 
         except Exception as stream_err:
             logger.error(f"[{request_id}] Streaming generation error: {stream_err}")
-            yield (
-                f"data: {_json.dumps({'type': 'error', 'message': 'AI service error. Please try again.'})}\n\n"
+            fallback = (
+                "I'm having trouble generating a response right now. "
+                "Please try again, or rephrase your question."
             )
+            yield f"data: {_json.dumps({'type': 'chunk', 'content': fallback})}\n\n"
+            yield f"data: {_json.dumps({'type': 'done', 'summary': fallback, 'laws': [], 'suggestions': ['Please try again shortly.'], 'follow_up_questions': [], 'risk_level': '', 'similar_cases': [], 'request_id': request_id, 'language': language})}\n\n"
+            return
+
+        if timed_out:
+            timeout_msg = (
+                "The response is taking longer than expected. "
+                "Please try again with a shorter or more specific question."
+            )
+            yield f"data: {_json.dumps({'type': 'chunk', 'content': timeout_msg})}\n\n"
+            yield f"data: {_json.dumps({'type': 'done', 'summary': timeout_msg, 'laws': [], 'suggestions': ['Try rephrasing with more specific details.'], 'follow_up_questions': [], 'risk_level': '', 'similar_cases': [], 'request_id': request_id, 'language': language})}\n\n"
             return
 
         # Parse the full accumulated response into structured fields

@@ -1,11 +1,15 @@
 from pydantic import BaseModel, Field
-from typing import Optional, List
+from typing import Optional
 from datetime import datetime
-import json
 import logging
-from pathlib import Path
 
 logger = logging.getLogger(__name__)
+
+try:
+    from src.services.db_connection import get_collection as _get_collection
+    _HAS_DB = True
+except ImportError:
+    _HAS_DB = False
 
 
 class ScoreFeedback(BaseModel):
@@ -52,136 +56,100 @@ class ScoreFeedbackResponse(BaseModel):
 
 class FeedbackProcessor:
     """
-    Processes and stores user feedback for continuous improvement of scoring algorithm.
-    In production, this would connect to a database. For now, uses JSON file storage.
+    Processes and stores user feedback for continuous improvement of scoring.
+    Feedback is persisted to MongoDB (score_feedback collection) so it survives
+    container restarts in Docker / Hugging Face Spaces.
     """
-    
-    def __init__(self, storage_dir: str = "data"):
-        self.storage_dir = Path(storage_dir)
-        self.storage_dir.mkdir(exist_ok=True)
-        self.feedback_file = self.storage_dir / "score_feedback.jsonl"
-        self.analysis_file = self.storage_dir / "feedback_analysis.json"
-        logger.info(f"Initialized FeedbackProcessor with storage: {self.storage_dir}")
-    
+
+    def __init__(self):
+        logger.info("FeedbackProcessor initialised (MongoDB backend)")
+
     def submit_feedback(self, feedback: ScoreFeedback) -> dict:
-        """
-        Store user feedback and trigger analysis.
-        
-        Args:
-            feedback: ScoreFeedback object
-            
-        Returns:
-            Dictionary with status and feedback_id
-        """
+        """Store user feedback in MongoDB."""
         try:
-            # Store feedback in JSONL format (one JSON per line)
-            with open(self.feedback_file, "a", encoding="utf-8") as f:
-                f.write(feedback.model_dump_json() + "\n")
-            
-            logger.info(
-                f"Stored feedback for request {feedback.request_id}: "
-                f"rating={feedback.user_rating}, score_diff={feedback.actual_score_expected - feedback.overall_score_given if feedback.actual_score_expected else 'N/A'}"
+            score_diff = (
+                feedback.actual_score_expected - feedback.overall_score_given
+                if feedback.actual_score_expected is not None
+                else None
             )
-            
-            # Analyze feedback patterns
-            self._analyze_feedback()
-            
+            logger.info(
+                f"[FEEDBACK] request={feedback.request_id} "
+                f"rating={feedback.user_rating} score_diff={score_diff}"
+            )
+
+            if _HAS_DB:
+                col = _get_collection("score_feedback")
+                doc = feedback.model_dump()
+                doc["created_at"] = feedback.created_at  # already a datetime
+                col.insert_one(doc)
+                logger.info(f"[FEEDBACK] Persisted to MongoDB for request {feedback.request_id}")
+            else:
+                logger.warning("[FEEDBACK] No DB connection — feedback not persisted")
+
             return {
                 "status": "success",
                 "message": "Thank you for your feedback! It helps us improve.",
-                "feedback_id": feedback.request_id
+                "feedback_id": feedback.request_id,
             }
-        except Exception as e:
-            logger.error(f"Failed to store feedback: {str(e)}", exc_info=True)
+        except Exception as exc:
+            logger.error(f"[FEEDBACK] Failed to store: {exc}", exc_info=True)
             return {
                 "status": "error",
                 "message": "Failed to store feedback. Please try again.",
-                "feedback_id": None
+                "feedback_id": None,
             }
-    
-    def _analyze_feedback(self) -> None:
-        """
-        Analyze feedback patterns and generate insights for algorithm improvement.
-        This identifies systematic biases in the scoring algorithm.
-        """
-        try:
-            if not self.feedback_file.exists():
-                return
-            
-            # Read all feedback
-            feedbacks = []
-            with open(self.feedback_file, "r", encoding="utf-8") as f:
-                for line in f:
-                    if line.strip():
-                        feedbacks.append(json.loads(line))
-            
-            if not feedbacks:
-                return
-            
-            # Analyze patterns
-            analysis = {
-                "total_feedback_count": len(feedbacks),
-                "average_user_rating": sum(f["user_rating"] for f in feedbacks) / len(feedbacks),
-                "feedback_by_type": {},
-                "score_accuracy": {
-                    "overestimated": 0,  # Given score > expected
-                    "underestimated": 0,
-                    "accurate": 0
-                },
-                "improvement_areas": []
-            }
-            
-            # Count feedback by type
-            for feedback in feedbacks:
-                feedback_type = feedback.get("feedback_type", "accuracy")
-                analysis["feedback_by_type"][feedback_type] = \
-                    analysis["feedback_by_type"].get(feedback_type, 0) + 1
-                
-                # Track accuracy patterns
-                if feedback.get("actual_score_expected"):
-                    diff = feedback["actual_score_expected"] - feedback["overall_score_given"]
-                    if diff > 5:
-                        analysis["score_accuracy"]["underestimated"] += 1
-                    elif diff < -5:
-                        analysis["score_accuracy"]["overestimated"] += 1
-                    else:
-                        analysis["score_accuracy"]["accurate"] += 1
-            
-            # Identify improvement areas based on feedback
-            ratings_below_3 = [f for f in feedbacks if f["user_rating"] < 3]
-            if len(ratings_below_3) / len(feedbacks) > 0.2:  # >20% low ratings
-                analysis["improvement_areas"].append(
-                    "Significant portion of scores rated as inaccurate. Consider revising weights."
-                )
-            
-            overestimated = analysis["score_accuracy"]["overestimated"]
-            if overestimated / len(feedbacks) > 0.3:  # >30% overestimated
-                analysis["improvement_areas"].append(
-                    "Tendency to overestimate risk. Consider reducing weight on severity keywords."
-                )
-            
-            # Save analysis
-            with open(self.analysis_file, "w", encoding="utf-8") as f:
-                json.dump(analysis, f, indent=2, default=str)
-            
-            logger.info(f"Updated feedback analysis: {len(feedbacks)} total feedback entries")
-            logger.info(f"Avg user rating: {analysis['average_user_rating']:.2f}/5.0")
-            
-        except Exception as e:
-            logger.error(f"Failed to analyze feedback: {str(e)}", exc_info=True)
-    
+
     def get_analysis(self) -> dict:
         """
-        Get current feedback analysis.
-        
-        Returns:
-            Dictionary with feedback patterns and insights
+        Compute a live feedback analysis from MongoDB.
+        Returns aggregated counts and average rating.
         """
+        if not _HAS_DB:
+            return {"message": "Database not available"}
         try:
-            if self.analysis_file.exists():
-                with open(self.analysis_file, "r", encoding="utf-8") as f:
-                    return json.load(f)
-            return {"message": "No feedback analysis available yet"}
-        except Exception as e:
-            logger.error(f"Failed to read analysis: {str(e)}")
-            return {"error": str(e)}
+            col = _get_collection("score_feedback")
+            total = col.count_documents({})
+            if total == 0:
+                return {"message": "No feedback collected yet", "total_feedback_count": 0}
+
+            pipeline = [
+                {"$group": {
+                    "_id": None,
+                    "avg_rating": {"$avg": "$user_rating"},
+                    "overestimated": {"$sum": {
+                        "$cond": [{"$lt": [{"$subtract": [
+                            {"$ifNull": ["$actual_score_expected", "$overall_score_given"]},
+                            "$overall_score_given"
+                        ]}, -5]}, 1, 0]
+                    }},
+                    "underestimated": {"$sum": {
+                        "$cond": [{"$gt": [{"$subtract": [
+                            {"$ifNull": ["$actual_score_expected", "$overall_score_given"]},
+                            "$overall_score_given"
+                        ]}, 5]}, 1, 0]
+                    }},
+                }}
+            ]
+            agg = list(col.aggregate(pipeline))
+            agg_row = agg[0] if agg else {}
+
+            # Count by feedback_type
+            type_pipeline = [
+                {"$group": {"_id": "$feedback_type", "count": {"$sum": 1}}}
+            ]
+            by_type = {r["_id"]: r["count"] for r in col.aggregate(type_pipeline)}
+
+            analysis = {
+                "total_feedback_count": total,
+                "average_user_rating": round(agg_row.get("avg_rating", 0), 2),
+                "feedback_by_type": by_type,
+                "score_accuracy": {
+                    "overestimated": agg_row.get("overestimated", 0),
+                    "underestimated": agg_row.get("underestimated", 0),
+                    "accurate": total - agg_row.get("overestimated", 0) - agg_row.get("underestimated", 0),
+                },
+            }
+            return analysis
+        except Exception as exc:
+            logger.error(f"[FEEDBACK] Analysis failed: {exc}")
+            return {"error": str(exc)}
