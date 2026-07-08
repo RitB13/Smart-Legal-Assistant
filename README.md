@@ -1,4 +1,4 @@
----
+--- 
 title: Smart Legal Assistant
 emoji: ⚖️
 colorFrom: blue
