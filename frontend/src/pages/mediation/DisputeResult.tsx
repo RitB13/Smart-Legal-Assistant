@@ -174,8 +174,8 @@ export default function DisputeResult() {
                 : 'bg-green-50 text-green-700 border border-green-200'
             }`}>
               {fa.bias_detected
-                ? `Language advantage detected (${fa.bias_direction?.replace('_', ' ')}) — AI compensated`
-                : 'No significant language bias detected'}
+                ? `${fa.bias_direction === 'party_a' ? 'Party A' : 'Party B'}'s statement had a language advantage — the settlement was adjusted to account for this`
+                : 'Both sides used language of similar strength — no adjustment needed'}
             </p>
 
             {showFullFairness && (
@@ -260,7 +260,7 @@ export default function DisputeResult() {
           {/* Feedback */}
           <div className="bg-white border border-slate-200 rounded-xl p-6 text-center">
             <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-1">Was this mediation helpful?</h2>
-            <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Your rating helps us improve the system.</p>
+            <p className="text-xs text-slate-400 dark:text-slate-500 mb-4">Your feedback helps us improve mediation quality.</p>
             {feedbackSent ? (
               <p className="text-sm text-green-600 dark:text-green-400 font-medium">Thank you for your feedback!</p>
             ) : (

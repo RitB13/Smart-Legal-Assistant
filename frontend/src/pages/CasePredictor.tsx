@@ -160,11 +160,11 @@ const PredictionResult = ({
     riskLevel === "high" ||
     riskLevel === "very_high";
   const mediationHeadline  = !isAccepted
-    ? "The model predicts an unfavorable outcome"
-    : "The model is uncertain about this outcome";
+    ? "This case faces an uphill climb in court"
+    : "The outcome is too close to call";
   const mediationBody      = !isAccepted
-    ? "Going to court carries significant risk here. AI Mediation lets both parties reach a fair settlement privately — faster, cheaper, and without a judge."
-    : "When confidence is below 70%, outcomes can go either way. AI Mediation may give you a faster, more certain resolution than litigation.";
+    ? "Going to court carries real risk here. AI Mediation lets both parties reach a fair settlement privately — without the cost or uncertainty of a trial."
+    : "When the odds are this close, a settlement is often smarter than a gamble. AI Mediation gives you a concrete answer faster than a court date.";
 
   return (
     <div className="space-y-4 animate-fade-up">
@@ -172,7 +172,7 @@ const PredictionResult = ({
       <div className="flex items-center gap-2 text-green-700 bg-green-50 border border-green-200 rounded-xl px-4 py-3 dark:bg-green-900/20 dark:border-green-800/40 dark:text-green-300">
         <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
         <span className="text-sm font-medium">
-          Analysis complete — here is what the AI model predicts
+          Your case analysis is ready.
         </span>
       </div>
 
@@ -897,8 +897,7 @@ const CasePredictor = () => {
               </div>
               <h2 className="text-xl font-bold text-gray-800 mb-2 dark:text-white">Analysing your case…</h2>
               <p className="text-sm text-muted-foreground max-w-sm mx-auto leading-relaxed">
-                We're converting your statement into legal language and running it
-                through InLegalBERT. This takes a few seconds.
+                Running your statement through InLegalBERT — trained on thousands of Indian court judgments. This takes a few seconds.
               </p>
             </div>
           )}
@@ -1239,8 +1238,7 @@ const CasePredictor = () => {
                         Which state are you based in?
                       </h2>
                       <p className="text-sm text-gray-500 dark:text-slate-400 leading-relaxed">
-                        Jurisdiction determines which laws apply and how courts in that
-                        region typically handle similar matters.
+                        The state you're in affects which laws apply and how local courts tend to rule on similar cases.
                       </p>
                     </div>
 
@@ -1273,7 +1271,7 @@ const CasePredictor = () => {
                     {/* Summary of collected answers */}
                     <div className="bg-gray-50 rounded-xl border border-gray-200 p-4 space-y-2 dark:bg-slate-800/50 dark:border-slate-700">
                       <p className="text-xs font-semibold text-gray-400 dark:text-slate-500 uppercase tracking-wider mb-2">
-                        Summary before prediction
+                        What you've told us
                       </p>
                       <div className="text-xs text-gray-600 dark:text-slate-300 space-y-1.5">
                         <p>

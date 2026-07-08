@@ -106,7 +106,7 @@ export default function PredictionHistory() {
             <div>
               <h1 className="text-2xl font-bold text-slate-900">My Predictions</h1>
               <p className="text-sm text-slate-500 mt-1">
-                Your past case outcome analyses, most recent first.
+                Your case analyses, newest first.
               </p>
             </div>
             <Link

@@ -25,7 +25,7 @@ const FEATURES = [
   {
     icon: Shield,
     title: "Know Your Rights",
-    desc: "Explore your constitutional, consumer, and fundamental rights under Indian law — clearly explained.",
+    desc: "Your constitutional, consumer, and fundamental rights under Indian law, in plain language.",
     link: "/rights",
     iconBg: "bg-gradient-to-br from-orange-500 to-amber-400",
     cardBg: "bg-gradient-to-br from-orange-50 to-amber-50",
@@ -187,7 +187,7 @@ const Home = () => {
 
               {/* Subtitle */}
               <p className="text-base md:text-lg text-slate-500 dark:text-slate-300 font-medium leading-relaxed max-w-2xl mx-auto mb-5">
-                Ask legal questions, predict case outcomes, and resolve disputes — all powered by AI trained on Indian law.
+                Indian law, in plain language. Ask questions, size up your case, and settle disputes — without a lawyer's fee.
               </p>
 
               {/* Agent triage */}
@@ -225,12 +225,11 @@ const Home = () => {
           <div className="container mx-auto px-4 py-20 max-w-5xl">
 
             <div className="text-center mb-14">
-              <p className="text-xs font-bold text-blue-600 dark:text-blue-400 uppercase tracking-[0.2em] mb-3">What We Offer</p>
               <h2 className="text-4xl md:text-5xl font-black text-slate-900 dark:text-white mb-4 tracking-tight">
                 Four tools, one platform
               </h2>
               <p className="text-lg text-slate-400 max-w-xl mx-auto">
-                From understanding your rights to predicting case outcomes — built specifically for Indian law.
+                Every tool trained on Indian statutes, court judgments, and constitutional law.
               </p>
             </div>
 
@@ -250,7 +249,7 @@ const Home = () => {
                     <span className="text-[10px] font-bold bg-gradient-to-r from-blue-600 to-indigo-600 text-white px-2.5 py-0.5 rounded-full">NEW</span>
                   </div>
                   <p className="text-sm text-slate-500 leading-relaxed">
-                    Both parties submit their side privately. Our AI mediates, detects bias, and proposes a fair settlement backed by 71,000+ Indian court cases.
+                    Both parties submit their account privately. The AI reads both sides, checks for language imbalance, and proposes a settlement grounded in 71,000+ Indian court cases.
                   </p>
                 </div>
                 <div className="flex items-center gap-1.5 text-blue-600 font-semibold text-sm flex-shrink-0 relative z-10 group-hover:gap-3 transition-all">
@@ -320,7 +319,7 @@ const Home = () => {
               Ready to get legal help?
             </h2>
             <p className="text-lg text-blue-100/80 mb-10 max-w-lg mx-auto leading-relaxed">
-              Join thousands of Indians who have simplified their legal journey with our AI assistant.
+              Built for people who need real legal answers — not a ₹5,000 consultation just to understand what their rights are.
             </p>
             <Link
               to="/chat"

@@ -103,7 +103,7 @@ export default function CreateDispute() {
       timerRef.current = setInterval(() => setRecordingSeconds(s => s + 1), 1000);
     } catch (err: any) {
       if (err.name === 'NotAllowedError') {
-        setVoiceError('Microphone access denied. Please allow microphone access in your browser settings.');
+        setVoiceError('Microphone access denied. Allow access in your browser settings.');
       } else {
         setVoiceError('Could not access microphone. Please check your device settings.');
       }
@@ -455,9 +455,6 @@ export default function CreateDispute() {
             {voiceError && (
               <p className="text-xs text-red-600 bg-red-50 border border-red-100 rounded-lg px-3 py-2 mt-1.5">{voiceError}</p>
             )}
-            <p className="text-xs text-slate-400 mt-1.5">
-              The other party will not see this. Only the AI mediator sees both sides.
-            </p>
           </div>
 
           {error && (

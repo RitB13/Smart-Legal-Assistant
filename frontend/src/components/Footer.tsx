@@ -38,9 +38,9 @@ const Footer = () => {
             <div>
               <p className="font-semibold text-slate-700 dark:text-slate-300 mb-2.5 uppercase tracking-widest text-[10px]">Legal</p>
               <ul className="space-y-2 text-slate-500 dark:text-slate-400">
-                <li><span className="cursor-default">Privacy Policy</span></li>
-                <li><span className="cursor-default">Terms of Service</span></li>
-                <li><span className="cursor-default">Disclaimer</span></li>
+                <li><Link to="/privacy"    className="hover:text-primary transition-colors">Privacy Policy</Link></li>
+                <li><Link to="/terms"      className="hover:text-primary transition-colors">Terms of Service</Link></li>
+                <li><Link to="/disclaimer" className="hover:text-primary transition-colors">Disclaimer</Link></li>
               </ul>
             </div>
           </div>

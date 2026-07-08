@@ -91,7 +91,7 @@ export default function Login() {
           {view === 'login' ? (
             <>
               <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-1">Welcome back</h1>
-              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Sign in to your account</p>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mb-6">Good to have you back.</p>
 
               <form onSubmit={handleLogin} className="space-y-4">
                 <div>
