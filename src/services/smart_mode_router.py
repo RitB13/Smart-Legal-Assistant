@@ -173,7 +173,7 @@ class SmartModeRouter:
         _conv_starters = {
             "ok", "okay", "sure", "thanks", "thank", "noted", "great", "alright",
             "understood", "perfect", "cool", "sounds", "fine", "got", "nice", "yep",
-            "yes", "no", "nope", "hmm", "interesting", "i", "will"
+            "nope", "hmm",
         }
         if len(_words) <= 10 and _words and _words[0].rstrip(",.!?") in _conv_starters:
             return ModeRecommendation(
