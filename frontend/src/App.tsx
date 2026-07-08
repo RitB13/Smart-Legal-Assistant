@@ -25,6 +25,7 @@ import MediationHistory from "./pages/mediation/MediationHistory";
 import CreateDispute from "./pages/mediation/CreateDispute";
 import DisputeRoom from "./pages/mediation/DisputeRoom";
 import DisputeResult from "./pages/mediation/DisputeResult";
+import AboutUs from "./pages/AboutUs";
 
 const queryClient = new QueryClient();
 
@@ -53,6 +54,7 @@ const App = () => (
               <Route path="/register"     element={<Register />} />
               <Route path="/verify-otp"   element={<VerifyOtp />} />
               <Route path="/rights"       element={<RightsPage />} />
+              <Route path="/about"        element={<AboutUs />} />
               <Route path="/shared/:token" element={<SharedConversation />} />
               <Route path="/privacy"      element={<Privacy />} />
               <Route path="/terms"        element={<Terms />} />
