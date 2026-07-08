@@ -232,9 +232,11 @@ class ConversationService:
         collection = get_collection("conversations")
         
         try:
+            import re as _re
+            safe_query = _re.escape(query)  # Prevent ReDoS via user-supplied regex metacharacters
             conversations = list(collection.find({
                 "user_id": user_id,
-                "title": {"$regex": query, "$options": "i"}  # Case-insensitive regex search
+                "title": {"$regex": safe_query, "$options": "i"}
             }).sort("created_at", DESCENDING))
             
             logger.info(f"✅ [CONV] Found {len(conversations)} matching conversation(s)")

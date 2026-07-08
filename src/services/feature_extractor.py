@@ -102,26 +102,56 @@ class LegalFeatureExtractor:
         else:
             return "low"
 
+    # Multipliers to convert each unit to its rupee value
+    _UNIT_MULTIPLIERS = {
+        "crore":   10_000_000,  # 1 crore = 10,000,000
+        "lakh":       100_000,  # 1 lakh  = 100,000
+        "thousand":     1_000,
+        "rupees":           1,
+        "rupee":            1,
+        "rs":               1,
+        "₹":                1,
+    }
+
     def _extract_financial_figures(self, text: str) -> List[Dict]:
-        """Extract monetary amounts from text."""
-        # Pattern: number (crore/lakh/thousand/rupees/rs/₹)
-        patterns = [
-            (r'(\d+(?:,\d{2})?)\s*(crore|lakh|thousand|rupees?|rs|₹)', 100),  # crore multiplier
-            (r'₹\s*(\d+(?:,\d{2})?)', 1),  # Direct currency
-            (r'rs\s*(\d+(?:,\d{2})?)', 1),
-        ]
-        
+        """Extract monetary amounts from text and convert them to rupee values."""
         figures = []
-        for pattern, multiplier in patterns:
-            matches = re.finditer(pattern, text, re.IGNORECASE)
-            for match in matches:
-                amount = match.group(1).replace(",", "")
-                figures.append({
-                    "amount": amount,
-                    "unit": match.group(2) if len(match.groups()) > 1 else "rupees",
-                    "estimated_value": int(amount) * multiplier
-                })
-        
+
+        # Pattern 1: "<number> crore/lakh/thousand/rupees/rs/₹"
+        unit_pattern = re.compile(
+            r'(\d[\d,]*)\s*(crore|lakh|thousand|rupees?|rs|₹)',
+            re.IGNORECASE
+        )
+        for match in unit_pattern.finditer(text):
+            raw_amount = match.group(1).replace(",", "")
+            unit = match.group(2).lower().rstrip("s")  # normalise "rupees" → "rupee"
+            multiplier = self._UNIT_MULTIPLIERS.get(unit, 1)
+            figures.append({
+                "amount": raw_amount,
+                "unit": match.group(2),
+                "estimated_value": int(raw_amount) * multiplier,
+            })
+
+        # Pattern 2: "₹<number>" (no unit word, plain rupee amount)
+        bare_pattern = re.compile(r'₹\s*(\d[\d,]*)', re.IGNORECASE)
+        for match in bare_pattern.finditer(text):
+            raw_amount = match.group(1).replace(",", "")
+            figures.append({
+                "amount": raw_amount,
+                "unit": "rupees",
+                "estimated_value": int(raw_amount),
+            })
+
+        # Pattern 3: "rs<number>" (no space, e.g. "rs50000")
+        rs_bare = re.compile(r'\brs\.?\s*(\d[\d,]*)\b', re.IGNORECASE)
+        for match in rs_bare.finditer(text):
+            raw_amount = match.group(1).replace(",", "")
+            figures.append({
+                "amount": raw_amount,
+                "unit": "rupees",
+                "estimated_value": int(raw_amount),
+            })
+
         return figures
 
     def _extract_financial_risk(self, text: str) -> str:

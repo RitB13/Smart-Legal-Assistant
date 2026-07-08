@@ -8,9 +8,16 @@ from src.routes import mediation as mediation_routes
 from src.routes import bail as bail_routes
 from src.routes import agent as agent_routes
 from src.middleware.auth_middleware import jwt_auth_middleware
-from config import CORS_ORIGINS, DEBUG
+from src.middleware.rate_limiter import RateLimiter
+from config import CORS_ORIGINS, DEBUG, validate_config
 from src.services.model_manager import get_model_manager
 from src.services.monitoring_service import get_prediction_monitor
+from src.services.auth_service import validate_jwt_config
+
+# Rate limiters — tighter window for security-sensitive auth endpoints
+_login_limiter    = RateLimiter(max_requests=5,  window_seconds=60)   # 5/min
+_register_limiter = RateLimiter(max_requests=3,  window_seconds=60)   # 3/min
+_otp_limiter      = RateLimiter(max_requests=3,  window_seconds=60)   # 3/min
 
 
 # Configure logging
@@ -94,11 +101,49 @@ async def global_exception_handler(request: Request, exc: Exception):
         }
     )
 
+# ── Rate limiting middleware — protects auth endpoints from brute-force ───────
+# Applied as a Starlette middleware so it intercepts every request before
+# FastAPI route dispatch, with no changes needed inside auth_routes.py.
+
+_RATE_LIMITED_PATHS = {
+    "/auth/login":           _login_limiter,
+    "/auth/register":        _register_limiter,
+    "/auth/resend-otp":      _otp_limiter,
+    "/auth/forgot-password": _otp_limiter,
+}
+
+
+async def _rate_limit_middleware(request: Request, call_next):
+    """Block excessive POST requests to auth endpoints by client IP."""
+    from fastapi import HTTPException as _HTTPException
+    limiter = _RATE_LIMITED_PATHS.get(request.url.path)
+    if limiter and request.method == "POST":
+        try:
+            limiter.check(request)
+        except _HTTPException as exc:
+            # BaseHTTPMiddleware does not forward HTTPException to FastAPI's handler,
+            # so we convert it to a JSONResponse directly here.
+            return JSONResponse(
+                status_code=exc.status_code,
+                content={"detail": exc.detail},
+                headers=dict(exc.headers) if exc.headers else {},
+            )
+    return await call_next(request)
+
+
+app.add_middleware(BaseHTTPMiddleware, dispatch=_rate_limit_middleware)
+
+
 # Log app startup
 @app.on_event("startup")
 async def startup_event():
     logger.info("Smart Legal Assistant API starting up...")
     logger.info(f"Debug mode: {DEBUG}")
+
+    # Validate all required environment variables before allowing any traffic.
+    # Both functions raise RuntimeError with a clear message if anything is wrong.
+    validate_config()
+    validate_jwt_config()
     
     # PHASE 9: Load models at startup
     logger.info("\n" + "=" * 70)

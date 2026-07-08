@@ -11,6 +11,7 @@ This module provides:
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Union
 import logging
+import os
 from jose import JWTError, jwt
 from passlib.context import CryptContext
 from pydantic import BaseModel
@@ -22,10 +23,33 @@ logger = logging.getLogger(__name__)
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-# JWT Configuration
-SECRET_KEY = "your-secret-key-change-this-in-production-use-env-variable"  # TODO: Move to env
+# JWT Configuration — loaded from environment, validated at startup via validate_jwt_config()
+SECRET_KEY = os.getenv("JWT_SECRET_KEY", "")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 24 * 60  # 24 hours
+
+
+def validate_jwt_config() -> None:
+    """
+    Validate that JWT_SECRET_KEY is set and safe.
+    Call this once at application startup (not at import time).
+    Raises RuntimeError if the key is missing or is the old hardcoded placeholder.
+    """
+    global SECRET_KEY
+    key = os.getenv("JWT_SECRET_KEY", "")
+    if not key:
+        raise RuntimeError(
+            "JWT_SECRET_KEY environment variable is not set. "
+            "Generate a strong random key and add it to your .env file: "
+            "python -c \"import secrets; print(secrets.token_hex(32))\""
+        )
+    if "your-secret-key" in key.lower() or "change-this" in key.lower():
+        raise RuntimeError(
+            "JWT_SECRET_KEY appears to be the insecure placeholder value. "
+            "Replace it with a strong random key."
+        )
+    SECRET_KEY = key
+    logger.info("[AUTH] JWT configuration validated successfully")
 
 # ==================== TOKEN MODELS ====================
 
