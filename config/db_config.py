@@ -14,5 +14,6 @@ DB_CONFIG = {
     "timeout": 5000,
 }
 
-print(f"[DB CONFIG] MongoDB URL: {MONGODB_URL}")
-print(f"[DB CONFIG] Database Name: {MONGODB_DB_NAME}")
+logger = __import__('logging').getLogger(__name__)
+logger.debug(f"[DB CONFIG] MongoDB URL loaded (host only logged in DEBUG mode)")
+logger.debug(f"[DB CONFIG] Database: {MONGODB_DB_NAME}")

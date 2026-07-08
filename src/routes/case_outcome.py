@@ -493,20 +493,6 @@ async def predict_case_outcome(
             duration_ms=elapsed_ms
         )
         
-        # PERSISTENCE: Save full prediction result to MongoDB
-        AuditTrailService.save_case_prediction(
-            request_id=prediction_id,
-            case_name=case_input.case_name,
-            predicted_verdict=verdict_name,
-            confidence=prob,
-            verdict_id=prediction_result.get('verdict_id', 0),
-            risk_level=risk_assessment.get('overall_risk', 'medium'),  # Use 'overall_risk' key
-            risk_assessment=risk_assessment,
-            input_data=case_dict,
-            probabilities=verdict_probabilities,
-            model_version=model_manager.get_current_version()
-        )
-        
         # PHASE 9: Record prediction metrics for monitoring
         prediction_monitor.log_prediction(
             model_version=model_manager.get_current_version(),
@@ -645,8 +631,7 @@ async def batch_predict_outcomes(
             for case in batch_request.cases
         ]
         
-        # Run batch prediction
-        batch_start_time = time.time()
+        # Run batch prediction (batch_start_time already set at top of function)
         batch_result = service.batch_predict(cases_dicts)
         batch_processing_time = time.time() - batch_start_time
         
@@ -965,114 +950,39 @@ def _get_recommendations(verdict: str, case_dict: Dict[str, Any]) -> List[str]:
 
 def _get_similar_cases(verdict: str, case_dict: Dict[str, Any]) -> List[SimilarCase]:
     """
-    Get similar historical cases with similar verdicts and characteristics.
-    
-    Args:
-        verdict: Predicted verdict
-        case_dict: Case information
-    
-    Returns:
-        List of similar cases from mock database
+    Retrieve similar historical cases using the TF-IDF precedent search index.
+    Falls back to an empty list on any failure so the prediction response is
+    never blocked by a retrieval error.
     """
-    # Mock similar cases database - in production, this would query a real database
-    # with vector similarity search or semantic matching
-    similar_cases_db = {
-        'Accepted': [
-            SimilarCase(
-                case_id='SC_2023_001',
-                case_name='Corporation v. State Authority - Contract Dispute',
-                case_type='writ_petition',
-                year=2023,
-                verdict='Accepted',
-                similarity_score=0.92,
-                jurisdiction='Karnataka'
-            ),
-            SimilarCase(
-                case_id='SC_2022_045',
-                case_name='Sharma v. Municipal Corporation - Public Interest',
-                case_type='writ_petition',
-                year=2022,
-                verdict='Accepted',
-                similarity_score=0.87,
-                jurisdiction='Delhi'
-            ),
-            SimilarCase(
-                case_id='SC_2023_082',
-                case_name='Tech Solutions Ltd v. Government - Administrative Law',
-                case_type='appeal',
-                year=2023,
-                verdict='Accepted',
-                similarity_score=0.84,
-                jurisdiction='Mumbai'
-            )
-        ],
-        'Rejected': [
-            SimilarCase(
-                case_id='SC_2023_102',
-                case_name='Individual v. State - Property Matter',
-                case_type='property_dispute',
-                year=2023,
-                verdict='Rejected',
-                similarity_score=0.88,
-                jurisdiction='Tamil Nadu'
-            ),
-            SimilarCase(
-                case_id='SC_2022_067',
-                case_name='Sharma v. Bank - Financial Claim',
-                case_type='criminal_complaint',
-                year=2022,
-                verdict='Rejected',
-                similarity_score=0.85,
-                jurisdiction='Maharashtra'
-            )
-        ],
-        'Settlement': [
-            SimilarCase(
-                case_id='SC_2023_156',
-                case_name='Company A v. Company B - Commercial Dispute',
-                case_type='property_dispute',
-                year=2023,
-                verdict='Settlement',
-                similarity_score=0.90,
-                jurisdiction='Delhi'
-            ),
-            SimilarCase(
-                case_id='SC_2023_178',
-                case_name='Individual v. Individual - Family Matter',
-                case_type='divorce_contested',
-                year=2023,
-                verdict='Settlement',
-                similarity_score=0.86,
-                jurisdiction='Karnataka'
-            )
-        ],
-        'Acquitted': [
-            SimilarCase(
-                case_id='SC_2023_203',
-                case_name='Defendant v. State - Criminal Case',
-                case_type='criminal_complaint',
-                year=2023,
-                verdict='Acquitted',
-                similarity_score=0.89,
-                jurisdiction='Delhi'
-            )
-        ],
-        'Convicted': [
-            SimilarCase(
-                case_id='SC_2023_245',
-                case_name='State v. Accused - Criminal Conviction',
-                case_type='criminal_complaint',
-                year=2023,
-                verdict='Convicted',
-                similarity_score=0.91,
-                jurisdiction='West Bengal'
-            )
+    try:
+        query_parts = [
+            case_dict.get("case_name", ""),
+            case_dict.get("case_type", ""),
+            case_dict.get("jurisdiction_state", ""),
         ]
-    }
-    
-    # Return top 2-3 similar cases for the predicted verdict
-    cases = similar_cases_db.get(verdict, [])
-    return cases[:3]  # Return up to 3 most similar cases
+        query = " ".join(p for p in query_parts if p).strip()
+        if not query:
+            return []
+
+        precedent_svc = get_precedent_service()
+        raw_results = precedent_svc.search(query, top_k=3)
+
+        similar: List[SimilarCase] = []
+        for i, r in enumerate(raw_results):
+            similar.append(SimilarCase(
+                case_id=r.get("case_id", f"case_{i}"),
+                case_name=r.get("case_name", r.get("title", "Unknown Case")),
+                case_type=case_dict.get("case_type", "general"),
+                year=r.get("year", 0),
+                verdict=r.get("verdict", verdict),
+                similarity_score=round(float(r.get("score", 0.75)), 4),
+                jurisdiction=r.get("jurisdiction", case_dict.get("jurisdiction_state", "")),
+            ))
+        return similar
+
+    except Exception as e:
+        logger.warning(f"[SIMILAR_CASES] Retrieval failed, returning empty list: {e}")
+        return []
 
 
 # ============================================================================

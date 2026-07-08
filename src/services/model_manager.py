@@ -49,34 +49,38 @@ class ModelManager:
     """
     
     _instance = None
-    
+    _initialized = False
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(ModelManager, cls).__new__(cls)
         return cls._instance
-    
+
     def __init__(self, base_model_dir: str = "src/data/case_outcomes"):
         """
         Initialize model manager.
-        
-        Args:
-            base_model_dir: Base directory containing model versions
+        Python calls __init__ on every ModelManager() call even though __new__
+        returns the same instance. The _initialized guard ensures the state is
+        set up exactly once, so subsequent calls do not wipe loaded models.
         """
+        if self._initialized:
+            return
+
         self.base_model_dir = base_model_dir
         self.production_dir = os.path.join(base_model_dir, "production")
         self.versions_dir = os.path.join(base_model_dir, "versions")
-        
+
         # In-memory caches
         self.active_model = None
         self.active_scaler = None
         self.active_feature_names = None
         self.active_metadata = None
-        
+
         # Version tracking
         self.versions: Dict[str, ModelVersion] = {}
         self.current_version: Optional[str] = None
         self.fallback_version: Optional[str] = None
-        
+
         # Performance metrics
         self.prediction_metrics = {
             "total_predictions": 0,
@@ -84,7 +88,8 @@ class ModelManager:
             "avg_inference_time_ms": 0.0,
             "errors": []
         }
-        
+
+        ModelManager._initialized = True
         logger.info("ModelManager initialized")
     
     def load_model_at_startup(self) -> bool:

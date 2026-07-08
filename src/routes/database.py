@@ -3,7 +3,7 @@ Phase 4: Database Routes
 API endpoints for storing and retrieving legal assistant data from MongoDB
 """
 
-from fastapi import APIRouter, HTTPException, status, Request
+from fastapi import APIRouter, HTTPException, status, Request, Depends
 from typing import List, Optional
 import uuid
 import logging
@@ -14,14 +14,21 @@ from src.models.database_models import (
     UserSessionModel, QueryRecordModel, SimulationRecordModel,
     ModeDecisionModel, UserFeedbackModel, UserAnalyticsModel
 )
+from src.routes.auth_routes import get_current_user
+from src.services.auth_service import TokenData
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
 db = get_database_service()
 
+# All /db/* endpoints require authentication except /db/health.
+# Protected endpoints use _auth as a dependency so the router-level
+# guard cannot be bypassed and there is no way to forget it per-route.
+_auth = Depends(get_current_user)
+
 
 @router.post("/session/create")
-def create_session(language: str = "en", user_id: Optional[str] = None):
+def create_session(language: str = "en", user_id: Optional[str] = None, _: TokenData = _auth):
     """
     Create a new user session for tracking conversation context
     
@@ -67,7 +74,7 @@ def create_session(language: str = "en", user_id: Optional[str] = None):
 
 
 @router.get("/session/{session_id}")
-def get_session(session_id: str):
+def get_session(session_id: str, _: TokenData = _auth):
     """
     Retrieve session information
     
@@ -98,7 +105,7 @@ def get_session(session_id: str):
 
 
 @router.post("/query/save")
-def save_query(query_record: QueryRecordModel):
+def save_query(query_record: QueryRecordModel, _: TokenData = _auth):
     """
     Save a query and its response
     
@@ -139,7 +146,7 @@ def save_query(query_record: QueryRecordModel):
 
 
 @router.get("/query/{query_id}")
-def get_query(query_id: str):
+def get_query(query_id: str, _: TokenData = _auth):
     """
     Retrieve a query record
     
@@ -170,7 +177,7 @@ def get_query(query_id: str):
 
 
 @router.get("/session/{session_id}/queries")
-def get_session_queries(session_id: str, limit: int = 50):
+def get_session_queries(session_id: str, limit: int = 50, _: TokenData = _auth):
     """
     Get all queries in a session
     
@@ -203,7 +210,7 @@ def get_session_queries(session_id: str, limit: int = 50):
 
 
 @router.post("/query/{query_id}/feedback")
-def save_query_feedback(query_id: str, rating: int, comment: Optional[str] = None):
+def save_query_feedback(query_id: str, rating: int, comment: Optional[str] = None, _: TokenData = _auth):
     """
     Save user feedback on a query response
     
@@ -241,7 +248,7 @@ def save_query_feedback(query_id: str, rating: int, comment: Optional[str] = Non
 
 
 @router.post("/simulation/save")
-def save_simulation(simulation_record: SimulationRecordModel):
+def save_simulation(simulation_record: SimulationRecordModel, _: TokenData = _auth):
     """
     Save a consequence simulation record
     
@@ -281,7 +288,7 @@ def save_simulation(simulation_record: SimulationRecordModel):
 
 
 @router.get("/simulation/{simulation_id}")
-def get_simulation(simulation_id: str):
+def get_simulation(simulation_id: str, _: TokenData = _auth):
     """
     Retrieve a simulation record
     
@@ -312,7 +319,7 @@ def get_simulation(simulation_id: str):
 
 
 @router.get("/session/{session_id}/simulations")
-def get_session_simulations(session_id: str, limit: int = 50):
+def get_session_simulations(session_id: str, limit: int = 50, _: TokenData = _auth):
     """
     Get all simulations in a session
     
@@ -348,7 +355,8 @@ def save_simulation_feedback(
     simulation_id: str,
     rating: int,
     comment: Optional[str] = None,
-    helpful: Optional[bool] = None
+    helpful: Optional[bool] = None,
+    _: TokenData = _auth,
 ):
     """
     Save user feedback on a simulation
@@ -388,7 +396,7 @@ def save_simulation_feedback(
 
 
 @router.post("/mode-decision/save")
-def save_mode_decision(decision: ModeDecisionModel):
+def save_mode_decision(decision: ModeDecisionModel, _: TokenData = _auth):
     """
     Save a mode detection decision
     
@@ -419,7 +427,7 @@ def save_mode_decision(decision: ModeDecisionModel):
 
 
 @router.get("/analytics/{session_id}")
-def get_analytics(session_id: str):
+def get_analytics(session_id: str, _: TokenData = _auth):
     """
     Get session analytics/summary
     
@@ -450,7 +458,7 @@ def get_analytics(session_id: str):
 
 
 @router.get("/stats")
-def get_system_stats():
+def get_system_stats(_: TokenData = _auth):
     """
     Get overall system statistics
     

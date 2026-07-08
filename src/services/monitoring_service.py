@@ -59,40 +59,48 @@ class PredictionMonitor:
     """
     
     _instance = None
-    
+    _initialized = False
+
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super(PredictionMonitor, cls).__new__(cls)
         return cls._instance
-    
+
     def __init__(self, window_size: int = 1000):
         """
         Initialize prediction monitor.
-        
-        Args:
-            window_size: Number of recent predictions to keep in memory
+        Python calls __init__ on every PredictionMonitor() call even though __new__
+        returns the same instance. The _initialized guard ensures state is set up
+        exactly once so accumulated metrics are never wiped between requests.
+
+        Also caps confidence_scores and inference_times to avoid unbounded growth
+        by using deques with the same window_size as predictions.
         """
+        if self._initialized:
+            return
+
         self.window_size = window_size
-        
+
         # Track predictions
         self.predictions: deque = deque(maxlen=window_size)
-        
-        # Performance metrics
+
+        # Performance metrics — use deques for scores/times to prevent unbounded growth
         self.metrics = {
             "total_predictions": 0,
             "total_correct": 0,
-            "confidence_scores": [],
-            "inference_times": [],
+            "confidence_scores": deque(maxlen=window_size),
+            "inference_times": deque(maxlen=window_size),
             "predictions_by_class": {},
             "errors": 0
         }
-        
+
         # Feature statistics for drift detection
         self.feature_stats = {}
-        
+
         # Historical data drift
         self.drift_history: List[DriftIndicator] = []
-        
+
+        PredictionMonitor._initialized = True
         logger.info(f"PredictionMonitor initialized (window_size={window_size})")
     
     def log_prediction(

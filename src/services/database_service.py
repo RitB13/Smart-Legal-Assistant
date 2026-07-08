@@ -41,10 +41,8 @@ class DatabaseService:
         """
         
         if not connection_string:
-            connection_string = os.getenv(
-                "MONGODB_URL",
-                "mongodb://localhost:27017"
-            )
+            from config.db_config import DB_CONFIG
+            connection_string = DB_CONFIG["url"]
         
         self.connection_string = connection_string
         self.client = None
@@ -68,10 +66,11 @@ class DatabaseService:
                 connectTimeoutMS=10000
             )
             # Test connection
-            self.client.admin.command('ismaster')
+            self.client.admin.command('ping')
 
-            # Use DB name from env var or default
-            db_name = os.getenv("MONGODB_DB_NAME", "smart_legal_assistant")
+            # Use DB name from the shared config (same source as db_connection.py)
+            from config.db_config import DB_CONFIG
+            db_name = DB_CONFIG["db_name"]
             self.db = self.client[db_name]
             self._setup_collections()
             self.is_connected = True
