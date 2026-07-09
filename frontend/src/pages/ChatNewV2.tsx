@@ -1454,7 +1454,7 @@ const ChatPage = () => {
                   <Scale className="h-7 w-7 text-white" />
                 </div>
                 <h2 className="text-xl font-bold text-slate-900 dark:text-white mb-2">
-                  Smart Legal Assistant
+                  Legal Assistant
                 </h2>
                 <p className="text-sm text-slate-500 dark:text-slate-400 mb-8 max-w-sm leading-relaxed">
                   Ask any legal question about Indian law — rights, disputes, procedures, or consequences.

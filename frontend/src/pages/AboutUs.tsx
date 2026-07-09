@@ -131,23 +131,23 @@ function Photo({ src, alt, initials, gradient, fontSize = "2.25rem" }: PhotoProp
 const PILLARS = [
   {
     icon:  "⚖️",
-    title: "Legal Chatbot with RAG",
-    desc:  "Ask any legal question and get answers grounded in real Indian court precedents, statutes, and case law.",
+    title: "Legal Assistant",
+    desc:  "An AI chatbot grounded in real Indian court precedents and statutes — ask any legal question and get a clear, cited answer in your language.",
   },
   {
     icon:  "📊",
-    title: "Case Outcome Prediction",
-    desc:  "ML models trained on thousands of Indian court cases estimate the likelihood of bail, acquittal, and conviction outcomes.",
+    title: "Case Predictor",
+    desc:  "ML models trained on thousands of Indian court cases estimate bail, acquittal, and conviction likelihoods for a given situation.",
   },
   {
-    icon:  "🔍",
-    title: "Consequence Simulator",
-    desc:  "Planning an action with legal implications? See potential consequences and safer alternatives before you act.",
+    icon:  "🤝",
+    title: "AI Mediation",
+    desc:  "Both parties submit their account privately. The AI reads both sides and proposes a fair, court-data-backed settlement — no lawyer required.",
   },
   {
-    icon:  "🌐",
-    title: "Multi-Language Support",
-    desc:  "Legal advice in Hindi, Bengali, Tamil, Telugu, Marathi and more — because justice shouldn't require English fluency.",
+    icon:  "📖",
+    title: "Know Your Rights",
+    desc:  "A plain-language guide to fundamental Indian rights — property, labour, consumer, and more — no login needed.",
   },
 ];
 
