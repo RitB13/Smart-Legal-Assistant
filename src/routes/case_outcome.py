@@ -412,13 +412,41 @@ async def predict_case_outcome(
         # Gracefully returns [] if the precedent index has not been built yet.
         similar_cases_raw: List[SimilarCase] = []
         try:
-            precedent_svc = get_precedent_service()
             query_text = case_dict.get('description') or case_dict.get('case_name', '')
-            raw_results = precedent_svc.search(
-                query=query_text,
-                case_type_filter=case_dict.get('case_type'),
-                top_k=3,
-            )
+
+            # Primary: dense (MiniLM semantic) retrieval — better at matching
+            # layperson descriptions to formal court-document language.
+            raw_results: list = []
+            try:
+                from src.services.dense_retrieval_service import get_dense_retrieval_service
+                dense_svc = get_dense_retrieval_service()
+                if dense_svc.available:
+                    raw_results = dense_svc.search(query=query_text, top_k=3)
+                    if raw_results:
+                        logger.info(
+                            "[%s] Similar cases via dense retrieval (%d results)",
+                            prediction_id, len(raw_results),
+                        )
+            except Exception as _dense_err:
+                logger.warning(
+                    "[%s] Dense similar-cases skipped, trying TF-IDF fallback: %s",
+                    prediction_id, _dense_err,
+                )
+
+            # Fallback: TF-IDF + SVD precedent index
+            if not raw_results:
+                precedent_svc = get_precedent_service()
+                raw_results = precedent_svc.search(
+                    query=query_text,
+                    case_type_filter=case_dict.get('case_type'),
+                    top_k=3,
+                )
+                if raw_results:
+                    logger.info(
+                        "[%s] Similar cases via TF-IDF fallback (%d results)",
+                        prediction_id, len(raw_results),
+                    )
+
             # Generate meaningful titles and complete descriptions via Groq (single call for all 3)
             llm_enrichments = _enrich_similar_cases(raw_results)
 
