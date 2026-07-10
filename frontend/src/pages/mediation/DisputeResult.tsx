@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   CheckCircle, XCircle, Scale, AlertTriangle, FileText,
-  Star, ChevronDown, ChevronUp, ArrowLeft, Loader2, Library,
+  Star, ChevronDown, ChevronUp, ArrowLeft, Loader2, Library, BarChart2,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import Layout from '@/components/Layout';
-import type { DisputeResultResponse, MediationReport, ConflictPoint, SimilarPrecedent } from '@/types/mediation';
+import type { DisputeResultResponse, MediationReport, ConflictPoint, SimilarPrecedent, StatementStructure } from '@/types/mediation';
 
 export default function DisputeResult() {
   const { id } = useParams<{ id: string }>();
@@ -143,6 +143,38 @@ export default function DisputeResult() {
                   <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Optimistic</div>
                   <div className="font-semibold text-slate-800 dark:text-slate-100">₹{sr.high!.toLocaleString('en-IN')}</div>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Statement structure (rhetorical role breakdown) */}
+          {(report.statement_structure_a || report.statement_structure_b) && (
+            <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
+              <div className="flex items-center gap-2 mb-4">
+                <BarChart2 className="h-4 w-4 text-primary" />
+                <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Statement structure</h2>
+                <span className="text-xs text-slate-400 ml-1">— InLegalBERT rhetorical role analysis</span>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {[
+                  { label: 'Party A', data: report.statement_structure_a },
+                  { label: 'Party B', data: report.statement_structure_b },
+                ].map(({ label, data }) =>
+                  data ? (
+                    <div key={label} className="bg-slate-50 dark:bg-slate-800/40 rounded-lg p-4 border border-slate-100 dark:border-slate-700">
+                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">{label}</p>
+                      <div className="space-y-2 mb-3">
+                        <StructureBar label="Narrative" pct={data.groups.narrative_pct} color="bg-blue-400" />
+                        <StructureBar label="Legal argument" pct={data.groups.legal_argument_pct} color="bg-purple-500" />
+                        <StructureBar label="Legal authority" pct={data.groups.legal_authority_pct} color="bg-indigo-500" />
+                        <StructureBar label="Issue / ratio" pct={data.groups.issue_core_pct} color="bg-amber-400" />
+                        <StructureBar label="Rulings" pct={data.groups.rulings_pct} color="bg-emerald-400" />
+                      </div>
+                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed italic">{data.summary}</p>
+                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">{data.total_sentences} sentences analysed</p>
+                    </div>
+                  ) : null
+                )}
               </div>
             </div>
           )}
@@ -369,6 +401,23 @@ export default function DisputeResult() {
         </div>
       </div>
     </Layout>
+  );
+}
+
+function StructureBar({ label, pct, color }: { label: string; pct: number; color: string }) {
+  return (
+    <div>
+      <div className="flex items-center justify-between mb-0.5">
+        <span className="text-[11px] text-slate-500 dark:text-slate-400">{label}</span>
+        <span className="text-[11px] text-slate-400 tabular-nums">{pct.toFixed(0)}%</span>
+      </div>
+      <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full">
+        <div
+          className={`h-1.5 rounded-full transition-all ${color}`}
+          style={{ width: `${Math.min(pct, 100)}%` }}
+        />
+      </div>
+    </div>
   );
 }
 

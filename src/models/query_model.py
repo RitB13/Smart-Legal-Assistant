@@ -366,6 +366,11 @@ class QueryResponse(BaseModel):
         description="Suggested follow-up questions the user might want to ask next"
     )
 
+    bail_likelihood: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="Bail prediction result when the query is bail-related: {prediction, confidence, risk_level, probabilities, model_source}"
+    )
+
     class Config:
         json_schema_extra = {
             "example": {

@@ -19,6 +19,15 @@ interface SimilarCase {
   similarity: number;
 }
 
+interface BailLikelihood {
+  prediction:    string;
+  label:         string;
+  confidence:    number;
+  risk_level:    string;
+  probabilities: { bail_granted: number; bail_denied: number };
+  model_source:  string;
+}
+
 interface ChatMessage {
   id:           string;
   role:         "user" | "assistant";
@@ -35,6 +44,7 @@ interface ChatMessage {
   detected_language?: string;
   response_type?: string; // "prediction_prompt" triggers a link to /predict
   source_query?: string;  // the user question that produced a prediction_prompt
+  bail_likelihood?: BailLikelihood;
 }
 
 interface ConvSummary {
@@ -402,6 +412,8 @@ const ChatPage = () => {
         risk_level:          riskLevel,
         detected_language:   data.language || "",
         response_type:       data.response_type || "",
+        bail_likelihood:     data.bail_likelihood && typeof data.bail_likelihood === 'object'
+          ? (data.bail_likelihood as BailLikelihood) : undefined,
       };
     } catch (e) {
       clearTimeout(tid);
@@ -488,6 +500,8 @@ const ChatPage = () => {
               const request_id   = String(data.request_id ?? "");
               const responseType = String(data.response_type ?? "") || undefined;
               const riskLvl      = String(data.risk_level ?? "") || undefined;
+              const bailLikelihood = data.bail_likelihood && typeof data.bail_likelihood === 'object'
+                ? (data.bail_likelihood as BailLikelihood) : undefined;
 
               setMessages(prev => prev.map(m =>
                 m.id === botMsgId
@@ -505,6 +519,7 @@ const ChatPage = () => {
                       detected_language:   String(data.language ?? "") || undefined,
                       response_type:       responseType,
                       source_query:        responseType === "prediction_prompt" ? query : undefined,
+                      bail_likelihood:     bailLikelihood,
                     }
                   : m
               ));
@@ -1589,6 +1604,61 @@ const ChatPage = () => {
                         </div>
                       )}
 
+
+                      {/* Bail likelihood indicator */}
+                      {msg.role === "assistant" && msg.bail_likelihood && !msg.streaming && (
+                        <div className={`w-full mt-2 rounded-xl border-2 p-3 ${
+                          msg.bail_likelihood.label === '1'
+                            ? 'bg-emerald-50 dark:bg-emerald-900/15 border-emerald-300 dark:border-emerald-700/50'
+                            : msg.bail_likelihood.risk_level === 'uncertain'
+                            ? 'bg-slate-50 dark:bg-slate-800/40 border-slate-200 dark:border-slate-700'
+                            : 'bg-red-50 dark:bg-red-900/15 border-red-300 dark:border-red-700/50'
+                        }`}>
+                          <div className="flex items-start justify-between gap-2">
+                            <div>
+                              <p className={`text-[10px] font-semibold uppercase tracking-widest mb-0.5 ${
+                                msg.bail_likelihood.label === '1' ? 'text-emerald-600' :
+                                msg.bail_likelihood.risk_level === 'uncertain' ? 'text-slate-500' : 'text-red-600'
+                              }`}>
+                                Bail Specialist Model
+                              </p>
+                              <p className={`text-base font-bold ${
+                                msg.bail_likelihood.label === '1'
+                                  ? 'text-emerald-900 dark:text-emerald-300'
+                                  : msg.bail_likelihood.risk_level === 'uncertain'
+                                  ? 'text-slate-700 dark:text-slate-300'
+                                  : 'text-red-900 dark:text-red-300'
+                              }`}>
+                                {msg.bail_likelihood.prediction}
+                              </p>
+                              <div className="flex items-center gap-1.5 mt-1">
+                                <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium capitalize ${
+                                  msg.bail_likelihood.risk_level === 'low'      ? 'bg-emerald-100 text-emerald-700' :
+                                  msg.bail_likelihood.risk_level === 'medium'   ? 'bg-amber-100 text-amber-700' :
+                                  msg.bail_likelihood.risk_level === 'high'     ? 'bg-red-100 text-red-700' :
+                                                                                  'bg-slate-100 text-slate-600'
+                                }`}>
+                                  {msg.bail_likelihood.risk_level} risk
+                                </span>
+                                <span className="text-[10px] text-slate-500">
+                                  {msg.bail_likelihood.confidence?.toFixed(0)}% confidence
+                                </span>
+                              </div>
+                            </div>
+                            <div className="text-right flex-shrink-0">
+                              <div className="text-[10px] text-slate-400 mb-0.5">Bail probability</div>
+                              <div className={`text-lg font-bold ${
+                                msg.bail_likelihood.label === '1' ? 'text-emerald-600' : 'text-slate-500'
+                              }`}>
+                                {msg.bail_likelihood.probabilities?.bail_granted?.toFixed(0)}%
+                              </div>
+                            </div>
+                          </div>
+                          <p className="text-[10px] text-slate-500 dark:text-slate-400 mt-2 pt-2 border-t border-slate-200 dark:border-slate-700">
+                            Specialist model trained on 123,742 Indian bail judgments · {msg.bail_likelihood.model_source === 'inlegalbert' ? 'InLegalBERT' : 'LinearSVC'} · Use Case Predictor for a full analysis
+                          </p>
+                        </div>
+                      )}
 
                       {/* Prediction bridge — shown when chatbot redirects to case predictor */}
                       {msg.role === "assistant" && msg.response_type === "prediction_prompt" && !msg.streaming && (

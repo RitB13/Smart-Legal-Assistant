@@ -127,6 +127,14 @@ class MediationReport(BaseModel):
     next_steps: List[str] = Field(default_factory=list)
     generated_at: datetime
     model_version: str = Field(default="llm_only_v1")
+    statement_structure_a: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="InLegalBERT rhetorical role breakdown of Party A's statement"
+    )
+    statement_structure_b: Optional[Dict[str, Any]] = Field(
+        default=None,
+        description="InLegalBERT rhetorical role breakdown of Party B's statement"
+    )
 
 
 # ─── Response Models ───────────────────────────────────────────────────────────

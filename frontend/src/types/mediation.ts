@@ -70,6 +70,22 @@ export interface SimilarPrecedent {
   llm_decision?: string;
 }
 
+export interface StatementStructureGroups {
+  narrative_pct: number;
+  legal_argument_pct: number;
+  legal_authority_pct: number;
+  issue_core_pct: number;
+  rulings_pct: number;
+}
+
+export interface StatementStructure {
+  total_sentences: number;
+  dominant_type: string;
+  groups: StatementStructureGroups;
+  role_counts: Record<string, number>;
+  summary: string;
+}
+
 export interface MediationReport {
   dispute_id: string;
   points_of_agreement: AgreementPoint[];
@@ -83,6 +99,8 @@ export interface MediationReport {
   next_steps: string[];
   generated_at: string;
   model_version: string;
+  statement_structure_a?: StatementStructure;
+  statement_structure_b?: StatementStructure;
 }
 
 export interface DisputeResultResponse {
