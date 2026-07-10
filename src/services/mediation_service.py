@@ -8,6 +8,7 @@ Architecture (three layers):
 """
 
 import json
+import json as _json
 import logging
 from datetime import datetime
 from typing import Optional
@@ -25,6 +26,100 @@ logger = logging.getLogger(__name__)
 
 COLLECTION = "mediations"
 FEEDBACK_COLLECTION = "mediation_feedback"
+
+
+def _enrich_similar_precedents(raw_results: list) -> list:
+    """
+    Call Groq once with all precedent summaries to generate a readable title,
+    2-3 sentence description, cited laws, and court decision for each case.
+    Returns [] on any failure so the caller falls back gracefully.
+    """
+    if not raw_results:
+        return []
+    try:
+        case_blocks = ""
+        for i, r in enumerate(raw_results):
+            summary = (r.get("summary") or "").strip()
+            if summary:
+                case_blocks += f"\nCase {i + 1}:\n{summary[:800]}\n"
+
+        if not case_blocks.strip():
+            return []
+
+        prompt = (
+            "You are a legal analyst reviewing Indian court case excerpts.\n"
+            "For each excerpt below, provide four fields:\n"
+            "1. TITLE: A concise headline (5–10 words) naming the legal dispute "
+            "(e.g. 'SARFAESI Bank Recovery — NPA Challenge', "
+            "'Tenant Eviction — Arrears and Unauthorised Subletting').\n"
+            "2. DESCRIPTION: Exactly 2–3 complete sentences in plain English "
+            "explaining what the case is about. Every sentence must end with a full stop. "
+            "Do NOT use '...' or leave sentences incomplete. "
+            "If the excerpt ends mid-sentence, infer a logical conclusion from context.\n"
+            "3. LAWS_CITED: A JSON array of strings listing every Act, Code, Section, or Rule "
+            "explicitly mentioned or clearly applicable to this case "
+            "(e.g. [\"Indian Contract Act 1872\", \"Negotiable Instruments Act 1881\"]). "
+            "Return an empty array [] if none are identifiable.\n"
+            "4. DECISION: One complete sentence stating what the court decided or ordered, "
+            "or what relief was granted/refused. "
+            "If the excerpt does not reveal the final outcome, write what stage the case was at.\n\n"
+            "Rules:\n"
+            "- Title must be specific to this case, not a generic label.\n"
+            "- Do not put judge names or citation numbers in the title.\n"
+            "- Respond with ONLY valid JSON — no markdown fences, no extra text.\n\n"
+            f"{case_blocks}\n"
+            "Return a JSON array with one object per case in the same order:\n"
+            '[\n'
+            '  {"title": "...", "description": "...", "laws_cited": [...], "decision": "..."},\n'
+            '  {"title": "...", "description": "...", "laws_cited": [...], "decision": "..."}\n'
+            ']'
+        )
+
+        raw_response = get_legal_response(
+            prompt,
+            language="en",
+            max_tokens=1200,
+            temperature=0.15,
+            timeout=60,
+            system_prompt=(
+                "You are a legal analyst. Respond ONLY with a valid JSON array exactly "
+                "matching the structure the user specifies. "
+                "No extra text, no markdown fences, no prose outside the JSON array."
+            ),
+        )
+        cleaned = raw_response.strip()
+
+        if "```" in cleaned:
+            for block in cleaned.split("```"):
+                b = block.strip()
+                if b.startswith("json"):
+                    b = b[4:].strip()
+                if b.startswith("["):
+                    cleaned = b
+                    break
+
+        try:
+            result = _json.loads(cleaned)
+            if isinstance(result, list):
+                return result
+        except _json.JSONDecodeError:
+            pass
+
+        try:
+            start = cleaned.index("[")
+            end = cleaned.rindex("]") + 1
+            result = _json.loads(cleaned[start:end])
+            if isinstance(result, list):
+                return result
+        except Exception:
+            pass
+
+        logger.warning("[MediationService] LLM precedent enrichment: could not parse JSON")
+        return []
+
+    except Exception as e:
+        logger.warning("[MediationService] LLM precedent enrichment failed: %s", e)
+        return []
 
 
 class MediationService:
@@ -323,18 +418,47 @@ class MediationService:
             prior_context_b=dispute.get("prior_context_b")
         )
 
+        # Settlement range fallback: if no monetary amounts were in party statements,
+        # parse from the LLM's proposed settlement (which always contains a specific figure).
+        if settlement_range.low is None:
+            from src.services.mediation_ml_service import _parse_amounts
+            inferred = _parse_amounts([analysis.get("proposed_settlement", "")])
+            if inferred:
+                ref = max(inferred)
+                settlement_range = SettlementRange(
+                    low=round(ref * 0.80, 2),
+                    median=round(ref, 2),
+                    high=round(ref * 1.20, 2),
+                    confidence=0.20,
+                    basis="llm_estimate",
+                )
+                logger.info(f"[MediationService] Settlement range inferred from proposed_settlement: {ref}")
+
         # Layer 3b: semantic precedent retrieval (InLegalBERT index)
         logger.debug(f"[MediationService] Layer 3b: semantic precedent retrieval")
         precedent_svc = get_precedent_service()
         query_text = f"{case_type} dispute: {dispute.get('case_description', '')} {extraction_a.primary_legal_issue} {extraction_b.primary_legal_issue}"
         if precedent_svc.available:
             raw_precedents = precedent_svc.search(query_text, case_type_filter=case_type, top_k=3)
-            similar_precedents = precedent_svc.format_for_report(raw_precedents)
-            logger.info(f"[MediationService] Retrieved {len(similar_precedents)} real precedents via InLegalBERT")
+            enriched = _enrich_similar_precedents(raw_precedents)
+            similar_precedents = []
+            for i, r in enumerate(raw_precedents):
+                enc = enriched[i] if i < len(enriched) else {}
+                similar_precedents.append({
+                    "case_name":        r.get("case_name", ""),
+                    "case_type":        r.get("case_type", ""),
+                    "summary":          r.get("summary", ""),
+                    "outcome":          r.get("outcome", ""),
+                    "similarity":       r.get("similarity", 0.0),
+                    "llm_title":        enc.get("title"),
+                    "llm_description":  enc.get("description"),
+                    "llm_laws_cited":   enc.get("laws_cited", []),
+                    "llm_decision":     enc.get("decision"),
+                })
+            logger.info(f"[MediationService] Retrieved {len(similar_precedents)} enriched precedents via InLegalBERT")
         else:
-            # Fall back to whatever the LLM suggested (may be hallucinated)
-            similar_precedents = analysis.get("similar_precedents", [])
-            logger.warning("[MediationService] Precedent index unavailable — using LLM-generated precedents")
+            similar_precedents = []
+            logger.warning("[MediationService] Precedent index unavailable — skipping similar cases")
 
         model_version = "inlegalbert_v1" if precedent_svc.available else "llm_only_v1"
 

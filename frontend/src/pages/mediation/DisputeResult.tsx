@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   CheckCircle, XCircle, Scale, AlertTriangle, FileText,
-  Star, ChevronDown, ChevronUp, ArrowLeft, Loader2, ExternalLink,
+  Star, ChevronDown, ChevronUp, ArrowLeft, Loader2, Library,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import Layout from '@/components/Layout';
-import type { DisputeResultResponse, MediationReport, ConflictPoint } from '@/types/mediation';
+import type { DisputeResultResponse, MediationReport, ConflictPoint, SimilarPrecedent } from '@/types/mediation';
 
 export default function DisputeResult() {
   const { id } = useParams<{ id: string }>();
@@ -19,6 +19,7 @@ export default function DisputeResult() {
   const [hoverRating, setHoverRating] = useState(0);
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [showFullFairness, setShowFullFairness] = useState(false);
+  const [expandedPrecedents, setExpandedPrecedents] = useState<Set<number>>(new Set());
 
   useEffect(() => {
     if (!id) return;
@@ -208,37 +209,117 @@ export default function DisputeResult() {
             </div>
           )}
 
-          {/* Two-column: laws + precedents */}
-          <div className="grid sm:grid-cols-2 gap-4">
-            {report.applicable_laws.length > 0 && (
-              <div className="bg-white border border-slate-200 rounded-xl p-5">
-                <h2 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                  <FileText className="h-4 w-4 text-slate-400" /> Applicable laws
-                </h2>
-                <ul className="space-y-1.5">
-                  {report.applicable_laws.map((law, i) => (
-                    <li key={i} className="text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2">
-                      <span className="w-1.5 h-1.5 rounded-full bg-primary/40 mt-1.5 flex-shrink-0" />
-                      {law}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            )}
+          {/* Applicable laws */}
+          {report.applicable_laws.length > 0 && (
+            <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+              <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200 mb-3 flex items-center gap-2">
+                <FileText className="h-4 w-4 text-slate-400" /> Applicable laws
+              </h2>
+              <ul className="space-y-1.5">
+                {report.applicable_laws.map((law, i) => (
+                  <li key={i} className="text-xs text-slate-600 dark:text-slate-300 flex items-start gap-2">
+                    <span className="w-1.5 h-1.5 rounded-full bg-primary/40 mt-1.5 flex-shrink-0" />
+                    {law}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
 
-            {report.similar_precedents.length > 0 && (
-              <div className="bg-white border border-slate-200 rounded-xl p-5">
-                <h2 className="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
-                  <ExternalLink className="h-4 w-4 text-slate-400" /> Similar cases
-                </h2>
-                <ul className="space-y-2">
-                  {report.similar_precedents.map((p, i) => (
-                    <li key={i} className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed border-l-2 border-slate-100 dark:border-slate-600 pl-2">{p}</li>
-                  ))}
-                </ul>
+          {/* Similar precedent cases — expandable cards, LLM-enriched like CasePredictor */}
+          {report.similar_precedents.length > 0 && (
+            <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
+              <div className="flex items-center gap-2 mb-3">
+                <Library className="w-4 h-4 text-blue-500" />
+                <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Similar past cases</h2>
               </div>
-            )}
-          </div>
+              <div className="space-y-2">
+                {report.similar_precedents.map((p: SimilarPrecedent, i: number) => {
+                  const isExpanded = expandedPrecedents.has(i);
+
+                  // Prefer LLM title; fall back to first sentence of summary
+                  const rawSummary = (p.summary || "").trim()
+                    .replace(/^[\w\s.]+,\s+J\.?\s+/i, "")
+                    .replace(/^\d+\.\s+/, "")
+                    .trim();
+
+                  const heading: string = p.llm_title || (() => {
+                    const end = rawSummary.indexOf(". ", 40);
+                    if (end > 0 && end < 220) return rawSummary.slice(0, end + 1);
+                    if (rawSummary.length <= 160) return rawSummary;
+                    return rawSummary.slice(0, rawSummary.lastIndexOf(" ", 160)) + "…";
+                  })();
+
+                  const body: string = p.llm_description || (() => {
+                    const end = rawSummary.indexOf(". ", 40);
+                    return end > 0 && end < 220 ? rawSummary.slice(end + 2).trim() : "";
+                  })();
+
+                  const hasExpandContent = !!(p.llm_laws_cited?.length || p.llm_decision);
+
+                  return (
+                    <div
+                      key={i}
+                      className="rounded-lg bg-slate-50 border border-slate-100 overflow-hidden dark:bg-slate-800/40 dark:border-slate-700"
+                    >
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!hasExpandContent) return;
+                          setExpandedPrecedents(prev => {
+                            const next = new Set(prev);
+                            isExpanded ? next.delete(i) : next.add(i);
+                            return next;
+                          });
+                        }}
+                        className={`w-full flex items-start gap-3 p-3 text-left transition-colors dark:hover:bg-slate-700/50 ${hasExpandContent ? "hover:bg-slate-100 cursor-pointer" : "cursor-default"}`}
+                      >
+                        <div className="flex-1 min-w-0">
+                          <p className="text-xs font-semibold text-slate-800 dark:text-slate-200 leading-snug">{heading}</p>
+                          {body && (
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1 leading-relaxed">{body}</p>
+                          )}
+                        </div>
+                        <div className="flex-shrink-0 flex flex-col items-end gap-1 ml-2 pt-0.5">
+                          <span className="text-xs text-slate-400 font-mono whitespace-nowrap">
+                            {Math.round(p.similarity * 100)}% match
+                          </span>
+                          {hasExpandContent && (
+                            <span className="text-xs text-blue-500 whitespace-nowrap">
+                              {isExpanded ? "Less ▲" : "More ▼"}
+                            </span>
+                          )}
+                        </div>
+                      </button>
+
+                      {isExpanded && hasExpandContent && (
+                        <div className="px-3 pb-3 border-t border-slate-200 dark:border-slate-700 pt-2 space-y-2">
+                          {p.llm_laws_cited && p.llm_laws_cited.length > 0 && (
+                            <div>
+                              <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1.5">Laws &amp; Acts</p>
+                              <div className="flex flex-wrap gap-1.5">
+                                {p.llm_laws_cited.map((law, li) => (
+                                  <span key={li} className="inline-block text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full dark:bg-blue-900/20 dark:text-blue-300 dark:border-blue-800/40">
+                                    {law}
+                                  </span>
+                                ))}
+                              </div>
+                            </div>
+                          )}
+                          {p.llm_decision && (
+                            <div>
+                              <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1">Court's Decision</p>
+                              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{p.llm_decision}</p>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
 
           {/* Next steps */}
           {report.next_steps.length > 0 && (
