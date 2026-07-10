@@ -58,6 +58,18 @@ export interface ConflictPoint {
   severity: 'critical' | 'major' | 'minor';
 }
 
+export interface SimilarPrecedent {
+  case_name: string;
+  case_type: string;
+  summary: string;
+  outcome: string;
+  similarity: number;
+  llm_title?: string;
+  llm_description?: string;
+  llm_laws_cited?: string[];
+  llm_decision?: string;
+}
+
 export interface MediationReport {
   dispute_id: string;
   points_of_agreement: AgreementPoint[];
@@ -67,7 +79,7 @@ export interface MediationReport {
   proposed_settlement_rationale: string;
   applicable_laws: string[];
   fairness_audit: FairnessAudit;
-  similar_precedents: string[];
+  similar_precedents: SimilarPrecedent[];
   next_steps: string[];
   generated_at: string;
   model_version: string;

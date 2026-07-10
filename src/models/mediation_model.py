@@ -123,7 +123,7 @@ class MediationReport(BaseModel):
     proposed_settlement_rationale: str = Field(..., description="Why this settlement is fair")
     applicable_laws: List[str] = Field(default_factory=list)
     fairness_audit: FairnessAudit
-    similar_precedents: List[str] = Field(default_factory=list)
+    similar_precedents: List[Dict[str, Any]] = Field(default_factory=list)  # each: {case_name, case_type, summary, outcome, similarity, llm_title, llm_description, llm_laws_cited, llm_decision}
     next_steps: List[str] = Field(default_factory=list)
     generated_at: datetime
     model_version: str = Field(default="llm_only_v1")

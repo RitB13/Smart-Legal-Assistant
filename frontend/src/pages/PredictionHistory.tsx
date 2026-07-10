@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import {
   Scale, CheckCircle2, XCircle, Loader2, RotateCcw,
   Calendar, MapPin, Trash2, ChevronRight, BarChart3,
@@ -38,6 +38,7 @@ function formatDate(iso: string): string {
 }
 
 export default function PredictionHistory() {
+  const navigate = useNavigate();
   const [items, setItems]         = useState<PredictionRecord[]>([]);
   const [loading, setLoading]     = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -98,14 +99,14 @@ export default function PredictionHistory() {
 
   return (
     <Layout>
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 -mt-16 pt-24 pb-12">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-blue-50 dark:from-[#060d1a] dark:via-[#060d1a] dark:to-[#060d1a] -mt-16 pt-24 pb-12">
         <div className="max-w-3xl mx-auto px-4">
 
           {/* Header */}
           <div className="flex items-start justify-between gap-4 mb-6">
             <div>
-              <h1 className="text-2xl font-bold text-slate-900">My Predictions</h1>
-              <p className="text-sm text-slate-500 mt-1">
+              <h1 className="text-2xl font-bold text-slate-900 dark:text-white">My Predictions</h1>
+              <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
                 Your case analyses, newest first.
               </p>
             </div>
@@ -164,7 +165,7 @@ export default function PredictionHistory() {
 
           {/* Error */}
           {!loading && error && (
-            <div className="rounded-xl border border-red-200 bg-red-50 px-4 py-4 text-sm text-red-700 flex items-start gap-3">
+            <div className="rounded-xl border border-red-200 dark:border-red-800/40 bg-red-50 dark:bg-red-900/20 px-4 py-4 text-sm text-red-700 dark:text-red-300 flex items-start gap-3">
               <XCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
               <div>
                 <p className="font-medium">{error}</p>
@@ -177,10 +178,10 @@ export default function PredictionHistory() {
 
           {/* Empty state */}
           {!loading && !error && items.length === 0 && (
-            <div className="rounded-2xl border-2 border-dashed border-slate-200 bg-white py-16 px-8 text-center">
-              <Scale className="w-10 h-10 text-slate-300 mx-auto mb-3" />
-              <p className="text-slate-600 font-medium mb-1">No predictions yet</p>
-              <p className="text-sm text-slate-400 mb-5">
+            <div className="rounded-2xl border-2 border-dashed border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/40 py-16 px-8 text-center">
+              <Scale className="w-10 h-10 text-slate-300 dark:text-slate-600 mx-auto mb-3" />
+              <p className="text-slate-600 dark:text-slate-300 font-medium mb-1">No predictions yet</p>
+              <p className="text-sm text-slate-400 dark:text-slate-500 mb-5">
                 Run your first case analysis to see it here.
               </p>
               <Link
@@ -208,26 +209,27 @@ export default function PredictionHistory() {
                 return (
                   <div
                     key={id}
-                    className="rounded-xl border border-slate-200 bg-white p-4 hover:shadow-sm transition-shadow"
+                    onClick={() => navigate(`/predictions/${id}`)}
+                    className="rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800/60 p-4 hover:shadow-md dark:hover:shadow-slate-900/40 hover:border-primary/40 dark:hover:border-primary/30 transition-all cursor-pointer"
                   >
                     <div className="flex items-start gap-3">
                       {/* Verdict badge */}
                       <span className={`flex-shrink-0 mt-0.5 text-xs font-bold px-2.5 py-1 rounded-full ${
-                        isAccepted ? 'bg-green-100 text-green-700'
-                        : isRejected ? 'bg-red-100 text-red-700'
-                        : 'bg-slate-100 text-slate-600'
+                        isAccepted ? 'bg-green-100 text-green-700 dark:bg-green-900/30 dark:text-green-300'
+                        : isRejected ? 'bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300'
+                        : 'bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-300'
                       }`}>
                         {record.predicted_verdict ?? 'Unknown'}
                       </span>
 
                       <div className="flex-1 min-w-0">
                         {/* Case type + relief */}
-                        <p className="text-sm font-semibold text-slate-800 truncate">
+                        <p className="text-sm font-semibold text-slate-800 dark:text-slate-100 truncate">
                           {reliefLabel || formatCaseType(record.case_type)}
                         </p>
 
                         {/* Description preview */}
-                        <p className="text-xs text-slate-500 mt-0.5 line-clamp-2 leading-relaxed">
+                        <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5 line-clamp-2 leading-relaxed">
                           {record.description}
                         </p>
 
@@ -235,7 +237,9 @@ export default function PredictionHistory() {
                         <div className="flex flex-wrap items-center gap-3 mt-2">
                           {confPct && (
                             <span className={`text-xs font-medium ${
-                              isAccepted ? 'text-green-600' : isRejected ? 'text-red-600' : 'text-slate-500'
+                              isAccepted ? 'text-green-600 dark:text-green-400'
+                              : isRejected ? 'text-red-600 dark:text-red-400'
+                              : 'text-slate-500 dark:text-slate-400'
                             }`}>
                               {confPct}% confidence
                             </span>
@@ -243,19 +247,19 @@ export default function PredictionHistory() {
                           {riskLevel && (
                             <span className={`text-xs capitalize ${
                               riskLevel === 'very_high' || riskLevel === 'high'
-                                ? 'text-red-500'
-                                : riskLevel === 'medium' ? 'text-amber-600' : 'text-green-600'
+                                ? 'text-red-500 dark:text-red-400'
+                                : riskLevel === 'medium' ? 'text-amber-600 dark:text-amber-400' : 'text-green-600 dark:text-green-400'
                             }`}>
                               {riskLevel.replace(/_/g, ' ')} risk
                             </span>
                           )}
                           {record.jurisdiction && (
-                            <span className="flex items-center gap-1 text-xs text-slate-400">
+                            <span className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
                               <MapPin className="w-3 h-3" />
                               {record.jurisdiction}
                             </span>
                           )}
-                          <span className="flex items-center gap-1 text-xs text-slate-400">
+                          <span className="flex items-center gap-1 text-xs text-slate-400 dark:text-slate-500">
                             <Calendar className="w-3 h-3" />
                             {formatDate(record.created_at)}
                           </span>
@@ -264,10 +268,10 @@ export default function PredictionHistory() {
 
                       {/* Delete button */}
                       <button
-                        onClick={() => handleDelete(record)}
+                        onClick={e => { e.stopPropagation(); handleDelete(record); }}
                         disabled={deletingId === id}
                         title="Delete prediction"
-                        className="flex-shrink-0 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40"
+                        className="flex-shrink-0 p-1.5 text-slate-300 dark:text-slate-600 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-900/20 dark:hover:text-red-400 rounded-lg transition-colors disabled:opacity-40"
                       >
                         {deletingId === id
                           ? <Loader2 className="w-4 h-4 animate-spin" />
@@ -283,7 +287,7 @@ export default function PredictionHistory() {
                 <button
                   onClick={() => fetchPage(items.length, true)}
                   disabled={loadingMore}
-                  className="w-full flex items-center justify-center gap-2 py-3 text-sm text-slate-500 hover:text-slate-700 border border-slate-200 rounded-xl hover:bg-slate-50 transition-colors disabled:opacity-60"
+                  className="w-full flex items-center justify-center gap-2 py-3 text-sm text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 border border-slate-200 dark:border-slate-700 rounded-xl hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors disabled:opacity-60"
                 >
                   {loadingMore
                     ? <><Loader2 className="w-4 h-4 animate-spin" /> Loading…</>
@@ -293,7 +297,7 @@ export default function PredictionHistory() {
             </div>
           )}
 
-          <p className="text-xs text-slate-300 text-center mt-8">
+          <p className="text-xs text-slate-300 dark:text-slate-600 text-center mt-8">
             Predictions are stored for your reference only and are not legal advice.
           </p>
         </div>
