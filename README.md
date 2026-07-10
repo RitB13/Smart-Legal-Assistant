@@ -65,7 +65,7 @@ pip install -r requirements.txt
 uvicorn app:app --reload --port 8000
 ```
 
-**Expected**: `Uvicorn running on http://127.0.0.1:8000`
+**Expected Result**: `Uvicorn running on http://127.0.0.1:8000`
 
 ### Step 2: Frontend Setup
 ```bash
@@ -74,7 +74,7 @@ npm install
 npm run dev
 ```
 
-**Expected**: `Local: http://127.0.0.1:8080/`
+**Expected Result**: `Local: http://127.0.0.1:8080/`
 
 ### Step 3: Test It
 - Open http://127.0.0.1:8080
