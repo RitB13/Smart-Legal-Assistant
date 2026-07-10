@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { Link } from "react-router-dom";
 import Layout from "../components/Layout";
+import { INDIAN_STATES } from "@/types/mediation";
 
 // ── Relief / prayer options ───────────────────────────────────────────────────
 
@@ -550,7 +551,7 @@ const CasePredictor = () => {
   const [error, setError]             = useState<string | null>(null);
 
   const textareaRef     = useRef<HTMLTextAreaElement>(null);
-  const locationRef     = useRef<HTMLInputElement>(null);
+  const locationRef     = useRef<HTMLSelectElement>(null);
   const mediaRecorderRef = useRef<MediaRecorder | null>(null);
   const audioChunksRef   = useRef<Blob[]>([]);
   const streamRef        = useRef<MediaStream | null>(null);
@@ -788,7 +789,7 @@ const CasePredictor = () => {
 
   const handleLocationSubmit = async () => {
     if (!location.trim()) {
-      setError("Please enter your state or union territory.");
+      setError("Please select your state or union territory.");
       return;
     }
     setError(null);
@@ -1246,15 +1247,17 @@ const CasePredictor = () => {
                     )}
 
                     <div className="flex gap-2">
-                      <input
+                      <select
                         ref={locationRef}
-                        type="text"
                         value={location}
                         onChange={e => { setLocation(e.target.value); setError(null); }}
-                        onKeyDown={e => e.key === "Enter" && handleLocationSubmit()}
-                        placeholder="e.g., Delhi, Maharashtra, Karnataka, Tamil Nadu"
-                        className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm text-gray-800 placeholder:text-gray-300 focus:outline-none focus:border-blue-400 transition-colors dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:placeholder:text-slate-600 dark:focus:border-blue-500"
-                      />
+                        className="flex-1 px-4 py-3 rounded-xl border-2 border-gray-200 bg-white text-sm text-gray-800 focus:outline-none focus:border-blue-400 transition-colors dark:border-slate-600 dark:bg-slate-800 dark:text-slate-100 dark:focus:border-blue-500"
+                      >
+                        <option value="">Select your state or union territory…</option>
+                        {INDIAN_STATES.map(s => (
+                          <option key={s} value={s}>{s}</option>
+                        ))}
+                      </select>
                       <button
                         onClick={handleLocationSubmit}
                         disabled={!location.trim()}

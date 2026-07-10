@@ -31,13 +31,11 @@ export default function MediationHome() {
     <Layout>
       <div className="max-w-3xl mx-auto px-4 pb-12 pt-6">
         {/* Header */}
-        <div className="mb-10">
-          <div className="flex items-center gap-2 text-primary mb-3">
-            <Scale className="h-5 w-5" />
-            <span className="text-sm font-medium">AI Mediation</span>
-          </div>
-          <h1 className="text-3xl font-bold text-slate-900 dark:text-white mb-2">Resolve disputes fairly</h1>
-          <p className="text-slate-500 dark:text-slate-400 max-w-xl">
+        <div className="text-center mb-10">
+          <h1 className="text-3xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent mb-2">
+            AI Mediation
+          </h1>
+          <p className="text-slate-500 dark:text-slate-400 text-sm max-w-xl mx-auto">
             Both parties submit their account privately. The AI reads both sides, checks for language imbalance, and proposes a settlement backed by real Indian court data.
           </p>
         </div>

@@ -161,6 +161,8 @@ export default function CreateDispute() {
     }
   }
 
+  const [otherTypeText, setOtherTypeText] = useState('');
+
   const [form, setForm] = useState({
     case_description: '',
     case_type: '',
@@ -222,9 +224,11 @@ export default function CreateDispute() {
 
     setLoading(true); setError('');
     try {
-      const combinedDescription = [form.case_description.trim(), extractedDocText.trim()]
-        .filter(Boolean)
-        .join('\n\n---\n');
+      const parts = [form.case_description.trim(), extractedDocText.trim()].filter(Boolean);
+      const baseDescription = parts.join('\n\n---\n');
+      const combinedDescription = (form.case_type === 'other' && otherTypeText.trim())
+        ? `Dispute type: ${otherTypeText.trim()}\n\n${baseDescription}`
+        : baseDescription;
 
       const payload: Record<string, string> = {
         case_description: combinedDescription,
@@ -285,17 +289,29 @@ export default function CreateDispute() {
                 <button
                   key={val}
                   type="button"
-                  onClick={() => set('case_type', val)}
+                  onClick={() => { set('case_type', val); if (val !== 'other') setOtherTypeText(''); }}
                   className={`py-2.5 px-3 text-sm rounded-lg border text-left transition-all ${
                     form.case_type === val
                       ? 'bg-primary text-white border-primary font-medium'
-                      : 'bg-white text-slate-700 border-slate-200 hover:border-slate-300'
+                      : 'bg-white dark:bg-slate-800/60 text-slate-700 dark:text-slate-200 border-slate-200 dark:border-slate-600 hover:border-slate-300 dark:hover:border-slate-500'
                   }`}
                 >
                   {label}
                 </button>
               ))}
             </div>
+            {form.case_type === 'other' && (
+              <div className="mt-2">
+                <input
+                  type="text"
+                  value={otherTypeText}
+                  onChange={e => setOtherTypeText(e.target.value)}
+                  placeholder="Please specify the type of dispute (e.g. Neighbour dispute, Insurance claim…)"
+                  maxLength={100}
+                  className="w-full px-3 py-2.5 text-sm border border-slate-200 dark:border-slate-600 rounded-lg bg-white dark:bg-slate-800/60 dark:text-slate-100 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
+                />
+              </div>
+            )}
           </div>
 
           {/* State */}
