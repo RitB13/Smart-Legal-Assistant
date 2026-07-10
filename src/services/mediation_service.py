@@ -202,6 +202,83 @@ class MediationService:
 
         return PartyExtraction(evidence_strength_score=0.5, tone="neutral")
 
+    # ─── Rhetorical role structure analysis (InLegalBERT) ────────────────────────
+
+    def analyze_statement_structure(self, statement: str) -> Optional[dict]:
+        """
+        Classify the rhetorical roles of sentences in a party's statement using the
+        InLegalBERT fairness model (13-class IL-TUR RR dataset).
+
+        Groups sentences into five categories and returns fractions plus a plain-
+        English summary.  Returns None silently when the model is unavailable.
+        """
+        try:
+            from src.services.fairness_predictor_service import get_fairness_service
+            svc = get_fairness_service()
+            if not svc.available:
+                return None
+
+            import re
+            # Split on sentence-ending punctuation; keep non-trivial sentences
+            sentences = [
+                s.strip()
+                for s in re.split(r'(?<=[.!?])\s+', statement)
+                if len(s.strip()) > 10
+            ]
+            if not sentences:
+                return None
+
+            predictions = svc.predict_batch(sentences[:60])  # cap at 60 sentences
+
+            # Group role labels into five semantic categories
+            NARRATIVE   = {"Facts", "Other", "None", "Preamble"}
+            LEGAL_ARG   = {"Argument", "Analysis"}
+            AUTHORITY   = {"Statute", "Precedent Relied", "Precedent Not Relied"}
+            ISSUE_CORE  = {"Issue", "Ratio of the Decision"}
+            RULINGS     = {"Ruling by Lower Court", "Ruling by Present Court"}
+
+            role_counts: dict = {}
+            for pred in predictions:
+                role = pred.get("role", "Other")
+                role_counts[role] = role_counts.get(role, 0) + 1
+
+            total = len(predictions)
+
+            def pct(roles: set) -> float:
+                return round(sum(role_counts.get(r, 0) for r in roles) / total * 100, 1)
+
+            groups = {
+                "narrative_pct":       pct(NARRATIVE),
+                "legal_argument_pct":  pct(LEGAL_ARG),
+                "legal_authority_pct": pct(AUTHORITY),
+                "issue_core_pct":      pct(ISSUE_CORE),
+                "rulings_pct":         pct(RULINGS),
+            }
+
+            dominant_key = max(groups, key=lambda k: groups[k])
+            dominant     = dominant_key.replace("_pct", "")
+            dominant_val = groups[dominant_key]
+
+            summaries = {
+                "narrative":       f"Mostly factual narrative ({dominant_val:.0f}%). Consider adding more legal grounding.",
+                "legal_argument":  f"Strong legal argumentation ({dominant_val:.0f}%). Well-structured for mediation analysis.",
+                "legal_authority": f"Grounded in legal authority ({dominant_val:.0f}%). Effective use of statutes and precedents.",
+                "issue_core":      f"Issue-focused ({dominant_val:.0f}%). Clear presentation of core legal issues.",
+                "rulings":         f"Ruling-focused ({dominant_val:.0f}%). Anchored in prior court decisions.",
+            }
+
+            return {
+                "total_sentences": total,
+                "dominant_type":   dominant,
+                "groups":          groups,
+                "role_counts":     role_counts,
+                "summary":         summaries.get(dominant, f"Mixed submission ({dominant_val:.0f}% {dominant})."),
+            }
+
+        except Exception as e:
+            logger.warning("[MediationService] Statement structure analysis skipped: %s", e)
+            return None
+
     # ─── Layer 2a: Fairness audit (ML classifier; fallback to heuristic) ────────
 
     def compute_fairness_audit(self, statement_a: str, statement_b: str) -> FairnessAudit:
@@ -290,7 +367,9 @@ class MediationService:
         case_type: str,
         jurisdiction: str,
         prior_context_a: Optional[dict] = None,
-        prior_context_b: Optional[dict] = None
+        prior_context_b: Optional[dict] = None,
+        structure_a: Optional[dict] = None,
+        structure_b: Optional[dict] = None,
     ) -> dict:
         """
         LLM sees ONLY structured extractions (not raw statements).
@@ -310,6 +389,25 @@ class MediationService:
             prior_b_text = (
                 f"\n- Prior case predictor result for Party B: verdict={prior_context_b.get('predicted_verdict')}, "
                 f"confidence={prior_context_b.get('confidence')}, risk={prior_context_b.get('risk_level')}"
+            )
+
+        structure_context = ""
+        if structure_a or structure_b:
+            structure_context = "\nSTATEMENT STRUCTURE (rhetorical role analysis):\n"
+            if structure_a:
+                structure_context += (
+                    f"- Party A: {structure_a.get('summary', 'N/A')} "
+                    f"(dominant type: {structure_a.get('dominant_type', 'unknown')})\n"
+                )
+            if structure_b:
+                structure_context += (
+                    f"- Party B: {structure_b.get('summary', 'N/A')} "
+                    f"(dominant type: {structure_b.get('dominant_type', 'unknown')})\n"
+                )
+            structure_context += (
+                "Use this structural context to assess how well each party has "
+                "grounded their claims legally, but do NOT penalise narrative submissions — "
+                "treat both parties' underlying facts equally.\n"
             )
 
         fairness_instruction = ""
@@ -345,6 +443,7 @@ class MediationService:
             f"- Key dates: {extraction_b.dates_mentioned}\n"
             f"- Primary legal issue: {extraction_b.primary_legal_issue}\n"
             f"- Evidence strength: {extraction_b.evidence_strength_score}{prior_b_text}\n"
+            f"{structure_context}"
             f"{fairness_instruction}"
             f"{range_instruction}\n\n"
             "Return ONLY valid JSON:\n"
@@ -404,6 +503,15 @@ class MediationService:
         logger.debug(f"[MediationService] Layer 2a: fairness audit")
         fairness = self.compute_fairness_audit(statement_a, statement_b)
 
+        # Layer 2a-rr: rhetorical role structure (optional — skipped if fairness model unavailable)
+        logger.debug(f"[MediationService] Layer 2a-rr: rhetorical role analysis")
+        structure_a = self.analyze_statement_structure(statement_a)
+        structure_b = self.analyze_statement_structure(statement_b)
+        if structure_a:
+            logger.info("[MediationService] Party A dominant type: %s", structure_a.get("dominant_type"))
+        if structure_b:
+            logger.info("[MediationService] Party B dominant type: %s", structure_b.get("dominant_type"))
+
         # Layer 2b
         logger.debug(f"[MediationService] Layer 2b: settlement range estimation")
         settlement_range = self.estimate_settlement_range(extraction_a, extraction_b, case_type, jurisdiction, year)
@@ -415,7 +523,9 @@ class MediationService:
             settlement_range, fairness,
             case_type, jurisdiction,
             prior_context_a=dispute.get("prior_context_a"),
-            prior_context_b=dispute.get("prior_context_b")
+            prior_context_b=dispute.get("prior_context_b"),
+            structure_a=structure_a,
+            structure_b=structure_b,
         )
 
         # Settlement range fallback: if no monetary amounts were in party statements,
@@ -480,7 +590,9 @@ class MediationService:
             similar_precedents=similar_precedents,
             next_steps=analysis.get("next_steps", []),
             generated_at=datetime.utcnow(),
-            model_version=model_version
+            model_version=model_version,
+            statement_structure_a=structure_a,
+            statement_structure_b=structure_b,
         )
 
         logger.info(f"[MediationService] Analysis complete for dispute {dispute_id}")

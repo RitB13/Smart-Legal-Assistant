@@ -31,6 +31,35 @@ smart_router = get_smart_mode_router()
 _STREAM_TIMEOUT_SECONDS = 90  # SSE stream killed after this many seconds of no completion
 
 
+_BAIL_KEYWORDS = frozenset({
+    "bail", "bailable", "non-bailable", "anticipatory", "regular bail",
+    "bail application", "section 437", "section 438", "section 439",
+    "crpc 437", "crpc 438", "crpc 439", "bnss 479", "bnss 480", "bnss 483",
+    "custody", "arrested", "arrest", "detained", "detention", "remand",
+    "bail granted", "bail denied", "bail rejected", "bail hearing",
+    "interim bail", "surety", "undertrial",
+})
+
+
+def _is_bail_query(query: str) -> bool:
+    """Return True when the user's query is likely bail-related."""
+    q_lower = query.lower()
+    return any(kw in q_lower for kw in _BAIL_KEYWORDS)
+
+
+def _run_bail_prediction(query: str) -> dict:
+    """Run bail specialist model on a chatbot query. Returns {} on any failure."""
+    try:
+        from src.services.inlegalbert_bail_service import get_inlegalbert_bail_service
+        svc = get_inlegalbert_bail_service()
+        if not svc.available:
+            return {}
+        return svc.predict(query)
+    except Exception as exc:
+        logger.warning(f"[Bail] Chatbot bail prediction failed: {exc}")
+        return {}
+
+
 def _run_rag(query: str) -> list:
     """
     Run dual-index RAG retrieval (dense InLegalBERT → TF-IDF fallback).
@@ -283,10 +312,14 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
                 logger.warning(f"[{request_id}] Simulator failed, falling back to chat: {sim_err}")
                 # Fall through to normal LLM chat flow below
 
-        # Parallel: classify query intent + run RAG retrieval concurrently
-        with _cf.ThreadPoolExecutor(max_workers=2) as _pool:
-            _clf_fut = _pool.submit(classify_query_intent, req.query)
-            _rag_fut = _pool.submit(_run_rag, req.query)
+        # Parallel: classify query intent + run RAG retrieval (+ bail model when relevant)
+        is_bail = _is_bail_query(req.query)
+        n_workers = 3 if is_bail else 2
+        bail_likelihood = None
+        with _cf.ThreadPoolExecutor(max_workers=n_workers) as _pool:
+            _clf_fut  = _pool.submit(classify_query_intent, req.query)
+            _rag_fut  = _pool.submit(_run_rag, req.query)
+            _bail_fut = _pool.submit(_run_bail_prediction, req.query) if is_bail else None
             try:
                 query_intent = _clf_fut.result(timeout=8)
             except Exception:
@@ -295,6 +328,18 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
                 precedents: list = _rag_fut.result(timeout=8)
             except Exception:
                 precedents = []
+            bail_likelihood = None
+            if _bail_fut is not None:
+                try:
+                    bail_result = _bail_fut.result(timeout=10)
+                    if bail_result:
+                        bail_likelihood = bail_result
+                        logger.info(
+                            f"[{request_id}] Bail prediction: {bail_result.get('prediction')} "
+                            f"({bail_result.get('confidence', 0):.1f}% conf)"
+                        )
+                except Exception:
+                    bail_likelihood = None
         # Discard RAG results for casual queries — they are irrelevant
         if query_intent != "legal":
             precedents = []
@@ -482,6 +527,10 @@ def handle_query(req: QueryRequest, request: Request) -> QueryResponse:
         # conversations itself to avoid duplicates.
         parsed["conversation_id"] = None
 
+        # Attach bail likelihood when a bail prediction was run
+        if bail_likelihood:
+            parsed["bail_likelihood"] = bail_likelihood
+
         # Return response
         response = QueryResponse(**parsed)
         return response
@@ -531,10 +580,13 @@ def handle_query_stream(req: QueryRequest, request: Request):
     except Exception as mode_err:
         logger.warning(f"[{request_id}] Stream mode detection failed: {mode_err}")
 
-    # ── Parallel: classify intent + RAG retrieval ────────────────────────────
-    with _cf.ThreadPoolExecutor(max_workers=2) as _pool:
-        _clf_fut = _pool.submit(classify_query_intent, req.query)
-        _rag_fut = _pool.submit(_run_rag, req.query)
+    # ── Parallel: classify intent + RAG retrieval (+ bail model when relevant) ──
+    _stream_is_bail = _is_bail_query(req.query)
+    _stream_bail_likelihood = None
+    with _cf.ThreadPoolExecutor(max_workers=3 if _stream_is_bail else 2) as _pool:
+        _clf_fut  = _pool.submit(classify_query_intent, req.query)
+        _rag_fut  = _pool.submit(_run_rag, req.query)
+        _bail_fut = _pool.submit(_run_bail_prediction, req.query) if _stream_is_bail else None
         try:
             query_intent = _clf_fut.result(timeout=8)
         except Exception:
@@ -543,6 +595,13 @@ def handle_query_stream(req: QueryRequest, request: Request):
             precedents: list = _rag_fut.result(timeout=8)
         except Exception:
             precedents = []
+        if _bail_fut is not None:
+            try:
+                _br = _bail_fut.result(timeout=10)
+                if _br:
+                    _stream_bail_likelihood = _br
+            except Exception:
+                pass
     if query_intent != "legal":
         precedents = []
 
@@ -657,6 +716,7 @@ def handle_query_stream(req: QueryRequest, request: Request):
                 "request_id":          request_id,
                 "language":            language,
                 "response_type":       "prediction_prompt" if is_predict else None,
+                "bail_likelihood":     _stream_bail_likelihood,
             }
 
         yield f"data: {_json.dumps(done_payload)}\n\n"
