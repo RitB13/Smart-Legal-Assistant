@@ -244,15 +244,22 @@ class MediationMLService:
         year: int,
         amounts_a: List[str],
         amounts_b: List[str],
+        p_accept_override: Optional[float] = None,
     ) -> SettlementRange:
         """
         Compute a data-driven settlement range.
 
-        Uses P(accepted) from the LightGBM model to determine what fraction of
-        the claimed amount is a fair settlement. When both parties mention monetary
-        amounts the range is anchored between the two sets of claims.
+        Uses P(accepted) to determine what fraction of the claimed amount is a fair
+        settlement. When both parties mention monetary amounts the range is anchored
+        between the two sets of claims.
+
+        p_accept_override: if provided, skips the LightGBM model and uses this value
+            directly (e.g. from InLegalBERT outcome model).
         """
-        p_accept = self.predict_acceptance_probability(case_type, state, year)
+        if p_accept_override is not None:
+            p_accept = float(np.clip(p_accept_override, 0.0, 1.0))
+        else:
+            p_accept = self.predict_acceptance_probability(case_type, state, year)
 
         parsed_a = _parse_amounts(amounts_a)
         parsed_b = _parse_amounts(amounts_b)

@@ -21,11 +21,28 @@ from src.services.llm_service import get_legal_response
 from src.services.database_service import get_database_service
 from src.services.mediation_ml_service import get_mediation_ml_service
 from src.services.precedent_service import get_precedent_service
+from src.services.dense_retrieval_service import get_dense_retrieval_service
 
 logger = logging.getLogger(__name__)
 
 COLLECTION = "mediations"
 FEEDBACK_COLLECTION = "mediation_feedback"
+
+# Roles from InLegalBERT IL-TUR that indicate formal legal argumentation.
+# Used to derive a privilege score from rhetorical-role predictions instead of
+# running a separate LR classifier.
+_LEGAL_ARG_ROLES = frozenset({
+    "Argument", "Analysis", "Statute",
+    "Precedent Relied", "Precedent Not Relied", "Ratio of the Decision",
+})
+
+
+def _privilege_from_rr(predictions: list) -> float:
+    """Fraction of sentences classified as formal legal argumentation [0, 1]."""
+    if not predictions:
+        return 0.5
+    legal = sum(1 for p in predictions if p.get("role") in _LEGAL_ARG_ROLES)
+    return round(legal / len(predictions), 3)
 
 
 def _enrich_similar_precedents(raw_results: list) -> list:
@@ -273,25 +290,42 @@ class MediationService:
                 "groups":          groups,
                 "role_counts":     role_counts,
                 "summary":         summaries.get(dominant, f"Mixed submission ({dominant_val:.0f}% {dominant})."),
+                "predictions":     predictions,
             }
 
         except Exception as e:
             logger.warning("[MediationService] Statement structure analysis skipped: %s", e)
             return None
 
-    # ─── Layer 2a: Fairness audit (ML classifier; fallback to heuristic) ────────
+    # ─── Layer 2a: Fairness audit (RR-derived privilege; fallback to LR/heuristic) ─
 
-    def compute_fairness_audit(self, statement_a: str, statement_b: str) -> FairnessAudit:
+    def compute_fairness_audit(
+        self,
+        statement_a: str,
+        statement_b: str,
+        rr_a: Optional[list] = None,
+        rr_b: Optional[list] = None,
+    ) -> FairnessAudit:
         """
         Detect linguistic privilege gap between the two statements.
-        Uses a Logistic Regression classifier trained on 9,180 sentences from the
-        OpenNyAI InRhetoricalRoles dataset (AUC 0.72). Scores each statement on
-        P(formal legal argumentation style). Falls back to vocabulary heuristic
-        if model artifacts are unavailable.
+
+        If InLegalBERT rhetorical-role predictions are provided (rr_a / rr_b),
+        the privilege score is derived from the fraction of sentences labelled as
+        formal legal argumentation — this is more principled than the LR classifier
+        and costs nothing because the RR forward pass has already run.
+
+        Falls back to the LR classifier (AUC 0.68), and then to a vocabulary
+        heuristic, when predictions are unavailable.
         """
-        ml = get_mediation_ml_service()
-        score_a = ml.compute_privilege_score(statement_a)
-        score_b = ml.compute_privilege_score(statement_b)
+        if rr_a is not None and rr_b is not None:
+            score_a = _privilege_from_rr(rr_a)
+            score_b = _privilege_from_rr(rr_b)
+            method = "inlegalbert_rr"
+        else:
+            ml = get_mediation_ml_service()
+            score_a = ml.compute_privilege_score(statement_a)
+            score_b = ml.compute_privilege_score(statement_b)
+            method = "ml_classifier" if ml.fairness_available else "vocabulary_heuristic"
 
         diff = abs(score_a - score_b)
         threshold = self._fairness_meta.get("bias_detection_threshold", 0.12)
@@ -302,7 +336,6 @@ class MediationService:
         else:
             bias_direction = "neutral"
 
-        method = "ml_classifier" if ml.fairness_available else "vocabulary_heuristic"
         note = (
             f"[{method}] Party A linguistic privilege score: {score_a:.3f}, "
             f"Party B: {score_b:.3f}. "
@@ -324,7 +357,7 @@ class MediationService:
             note=note
         )
 
-    # ─── Layer 2b: Settlement range (LightGBM + amount extraction) ──────────────
+    # ─── Layer 2b: Settlement range (InLegalBERT outcome + amount extraction) ─────
 
     def estimate_settlement_range(
         self,
@@ -333,20 +366,39 @@ class MediationService:
         case_type: str,
         jurisdiction: str,
         year: int = 2024,
+        statement_a: str = "",
     ) -> SettlementRange:
         """
-        Estimate a fair monetary settlement range using the trained LightGBM model.
+        Estimate a fair monetary settlement range.
 
-        The model predicts P(petition accepted) for the (case_type, state, year)
-        profile and uses the extracted monetary amounts to compute a credible
-        settlement range anchored between the two parties' claimed figures.
+        Uses InLegalBERT outcome model (68% accuracy) to predict P(accepted) from
+        the actual statement text, which is more reliable than the LightGBM model
+        that had AUC ≈ 0.51 (coin flip) on the processed dataset. Falls back to the
+        LightGBM base-rate estimate when the outcome model is unavailable.
 
-        Confidence: 0.68 (ml_verdict_probability) vs 0.55 (old llm_estimate).
+        The probability is then used to anchor a monetary range between the two
+        parties' claimed figures.
         """
-        ml = get_mediation_ml_service()
-
-        # Extract state from jurisdiction string ("India/Delhi" → "Delhi")
+        ml  = get_mediation_ml_service()
         state = jurisdiction.split("/")[-1].strip() if "/" in jurisdiction else jurisdiction.strip()
+
+        p_accept_override = None
+        if statement_a:
+            try:
+                from src.services.case_outcome_predictor_service import get_predictor_service
+                outcome_svc = get_predictor_service()
+                if outcome_svc._available:
+                    formal_text = outcome_svc.compose_petition_text(
+                        statement=statement_a,
+                        relief_sought=", ".join(extraction_a.key_claims[:3]) if extraction_a.key_claims else "",
+                        role="petitioner",
+                        jurisdiction=jurisdiction,
+                        case_type=case_type,
+                    )
+                    p_accept_override = outcome_svc.predict_acceptance_probability(formal_text)
+                    logger.info("[MediationService] InLegalBERT P(accepted) = %.4f", p_accept_override)
+            except Exception as e:
+                logger.warning("[MediationService] InLegalBERT outcome skipped: %s", e)
 
         return ml.compute_settlement_range(
             case_type=case_type,
@@ -354,6 +406,7 @@ class MediationService:
             year=year,
             amounts_a=extraction_a.amounts_mentioned,
             amounts_b=extraction_b.amounts_mentioned,
+            p_accept_override=p_accept_override,
         )
 
     # ─── Layer 3: LLM reasoning (constrained by Layers 1 & 2) ────────────────
@@ -499,11 +552,7 @@ class MediationService:
         extraction_a = self.extract_party_context(statement_a, language)
         extraction_b = self.extract_party_context(statement_b, language)
 
-        # Layer 2a
-        logger.debug(f"[MediationService] Layer 2a: fairness audit")
-        fairness = self.compute_fairness_audit(statement_a, statement_b)
-
-        # Layer 2a-rr: rhetorical role structure (optional — skipped if fairness model unavailable)
+        # Layer 2a-rr: rhetorical role structure — runs FIRST so predictions feed fairness audit
         logger.debug(f"[MediationService] Layer 2a-rr: rhetorical role analysis")
         structure_a = self.analyze_statement_structure(statement_a)
         structure_b = self.analyze_statement_structure(statement_b)
@@ -512,9 +561,18 @@ class MediationService:
         if structure_b:
             logger.info("[MediationService] Party B dominant type: %s", structure_b.get("dominant_type"))
 
+        # Layer 2a: fairness audit — uses RR predictions when available (no extra model needed)
+        logger.debug(f"[MediationService] Layer 2a: fairness audit")
+        rr_a = structure_a.get("predictions") if structure_a else None
+        rr_b = structure_b.get("predictions") if structure_b else None
+        fairness = self.compute_fairness_audit(statement_a, statement_b, rr_a=rr_a, rr_b=rr_b)
+
         # Layer 2b
         logger.debug(f"[MediationService] Layer 2b: settlement range estimation")
-        settlement_range = self.estimate_settlement_range(extraction_a, extraction_b, case_type, jurisdiction, year)
+        settlement_range = self.estimate_settlement_range(
+            extraction_a, extraction_b, case_type, jurisdiction, year,
+            statement_a=statement_a,
+        )
 
         # Layer 3
         logger.debug(f"[MediationService] Layer 3: LLM mediation analysis")
@@ -544,12 +602,31 @@ class MediationService:
                 )
                 logger.info(f"[MediationService] Settlement range inferred from proposed_settlement: {ref}")
 
-        # Layer 3b: semantic precedent retrieval (InLegalBERT index)
-        logger.debug(f"[MediationService] Layer 3b: semantic precedent retrieval")
-        precedent_svc = get_precedent_service()
+        # Layer 3b: dense-first precedent retrieval, TF-IDF fallback
+        logger.debug(f"[MediationService] Layer 3b: precedent retrieval (dense → TF-IDF fallback)")
         query_text = f"{case_type} dispute: {dispute.get('case_description', '')} {extraction_a.primary_legal_issue} {extraction_b.primary_legal_issue}"
-        if precedent_svc.available:
-            raw_precedents = precedent_svc.search(query_text, case_type_filter=case_type, top_k=3)
+        raw_precedents = []
+        retrieval_method = "none"
+
+        dense_svc = get_dense_retrieval_service()
+        if dense_svc.available:
+            raw_precedents = dense_svc.search(query_text, top_k=3)
+            if raw_precedents:
+                retrieval_method = "dense_minilm"
+                logger.info("[MediationService] Dense retrieval: %d results", len(raw_precedents))
+            else:
+                logger.info("[MediationService] Dense returned 0 results — falling back to TF-IDF")
+
+        if not raw_precedents:
+            precedent_svc = get_precedent_service()
+            if precedent_svc.available:
+                raw_precedents = precedent_svc.search(query_text, case_type_filter=case_type, top_k=3)
+                retrieval_method = "tfidf_svd"
+                logger.info("[MediationService] TF-IDF retrieval: %d results", len(raw_precedents))
+            else:
+                logger.warning("[MediationService] Both dense and TF-IDF indexes unavailable")
+
+        if raw_precedents:
             enriched = _enrich_similar_precedents(raw_precedents)
             similar_precedents = []
             for i, r in enumerate(raw_precedents):
@@ -565,12 +642,11 @@ class MediationService:
                     "llm_laws_cited":   enc.get("laws_cited", []),
                     "llm_decision":     enc.get("decision"),
                 })
-            logger.info(f"[MediationService] Retrieved {len(similar_precedents)} enriched precedents via InLegalBERT")
+            logger.info("[MediationService] %d enriched precedents via %s", len(similar_precedents), retrieval_method)
         else:
             similar_precedents = []
-            logger.warning("[MediationService] Precedent index unavailable — skipping similar cases")
 
-        model_version = "inlegalbert_v1" if precedent_svc.available else "llm_only_v1"
+        model_version = f"inlegalbert_{retrieval_method}_v1" if retrieval_method != "none" else "llm_only_v1"
 
         report = MediationReport(
             dispute_id=dispute_id,
