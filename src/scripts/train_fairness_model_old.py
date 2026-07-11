@@ -2,18 +2,19 @@
 Fairness / Linguistic Privilege Classifier Training
 =====================================================
 Trains a Logistic Regression classifier on sentence-level rhetorical role
-annotations from Indian court judgments (OpenNyAI dataset).
+annotations from Indian court judgments (IL-TUR RR dataset, processed CSVs).
 
-Label scheme:
-  Privilege = 1 : ARG_PETITIONER + ARG_RESPONDENT  (formal legal argumentation)
-  Privilege = 0 : FAC + NONE                        (plain narrative / factual writing)
+Label scheme (integer labels from IL-TUR RR dataset):
+  Privilege = 1 : label 2 (Argument)              — formal legal argumentation
+  Privilege = 0 : label 0 (Facts), label 11 (None) — plain narrative / factual writing
+  Skipped        : all other labels (ambiguous privilege)
 
 The resulting model scores any free-text statement on a [0, 1] privilege scale.
 Statements with high scores use formal legal language; low scores indicate plain
 language. A large gap between the two parties triggers compensation in Layer 3.
 
 Run from project root:
-    python src/data/mediation_training/train_fairness_model.py
+    python src/scripts/train_fairness_model_old.py
 """
 
 import os
@@ -21,16 +22,25 @@ import re
 import json
 import pickle
 import numpy as np
-from collections import Counter
+import pandas as pd
 from sklearn.linear_model import LogisticRegression
 from sklearn.preprocessing import StandardScaler
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import cross_val_score
 from sklearn.metrics import classification_report, roc_auc_score
 
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DATA_PATH = os.path.join(BASE_DIR, "..", "rhetorical-role-baseline-main", "train.json")
-OUTPUT_DIR = os.path.join(BASE_DIR, "models")
+BASE_DIR  = os.path.dirname(os.path.abspath(__file__))
+PROC_DIR  = os.path.join(BASE_DIR, "..", "data", "processed")
+TRAIN_CSV = os.path.join(PROC_DIR, "fairness_train.csv")
+TEST_CSV  = os.path.join(PROC_DIR, "fairness_test.csv")
+OUTPUT_DIR = os.path.join(BASE_DIR, "..", "data", "models", "mediation")
 os.makedirs(OUTPUT_DIR, exist_ok=True)
+
+# IL-TUR RR integer label → binary privilege mapping
+# 2 = Argument  → high privilege (formal legal argumentation)
+# 0 = Facts     → low privilege  (plain factual narrative)
+# 11 = None     → low privilege  (no specific role)
+# All other labels skipped (Statute, Precedent, Ratio etc. — ambiguous)
+PRIVILEGE_MAP = {2: 1, 0: 0, 11: 0}
 
 # ─── Legal vocabulary ─────────────────────────────────────────────────────────
 
@@ -113,67 +123,58 @@ def compute_features(text: str) -> list:
 
 # ─── Main ─────────────────────────────────────────────────────────────────────
 
+def load_split(path: str) -> tuple:
+    """Load a fairness CSV split and return (X_features, y_binary) after label filtering."""
+    df = pd.read_csv(path, usecols=["text", "label"])
+    df["text"]  = df["text"].fillna("").astype(str).str[:2000]
+    df["label"] = pd.to_numeric(df["label"], errors="coerce")
+    df = df.dropna(subset=["label"])
+    df["label"] = df["label"].astype(int)
+
+    # Keep only rows whose label maps to a binary privilege value
+    df = df[df["label"].isin(PRIVILEGE_MAP)]
+    y  = df["label"].map(PRIVILEGE_MAP).values
+    X  = np.array([compute_features(t) for t in df["text"]], dtype=np.float32)
+    return X, y, df["label"].value_counts().to_dict()
+
+
 def main():
-    print(f"Loading {DATA_PATH} ...")
-    with open(DATA_PATH, "r", encoding="utf-8") as f:
-        data = json.load(f)
-    print(f"  Cases: {len(data)}")
+    for path, name in [(TRAIN_CSV, "train"), (TEST_CSV, "test")]:
+        if not os.path.exists(path):
+            raise FileNotFoundError(
+                f"Missing {name} split: {path}\n"
+                "Run src/scripts/preprocess_datasets.py first."
+            )
 
-    # Extract sentences by label
-    by_label = Counter()
-    X_data, y_data = [], []
+    print("Loading fairness_train.csv ...")
+    X_train_full, y_train_full, train_counts = load_split(TRAIN_CSV)
+    print(f"  Total kept (train): {len(y_train_full)}")
+    print(f"  Privilege=1 (Argument): {(y_train_full == 1).sum()}")
+    print(f"  Privilege=0 (Facts/None): {(y_train_full == 0).sum()}")
 
-    for case in data:
-        for ann in case.get("annotations", []):
-            for item in ann.get("result", []):
-                text   = item.get("value", {}).get("text", "").strip()
-                labels = item.get("value", {}).get("labels", [])
-                if not labels or not text:
-                    continue
-                label = labels[0]
-                by_label[label] += 1
+    print("\nLoading fairness_test.csv ...")
+    X_test, y_test, test_counts = load_split(TEST_CSV)
+    print(f"  Total kept (test): {len(y_test)}")
 
-                if label in ("ARG_PETITIONER", "ARG_RESPONDENT"):
-                    y = 1
-                elif label in ("FAC", "NONE"):
-                    y = 0
-                else:
-                    continue  # skip PREAMBLE, ANALYSIS etc. (ambiguous privilege)
-
-                X_data.append(compute_features(text))
-                y_data.append(y)
-
-    print("\nSentences per label:")
-    for label, count in by_label.most_common():
-        print(f"  {label}: {count}")
-
-    X = np.array(X_data, dtype=np.float32)
-    y = np.array(y_data, dtype=np.int32)
-    print(f"\nTraining samples: {len(X)}")
-    print(f"  Privilege=1 (ARG): {(y==1).sum()}")
-    print(f"  Privilege=0 (FAC/NONE): {(y==0).sum()}")
-
-    # Scale
+    # Scale using train statistics only
     scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(X)
+    X_train_scaled = scaler.fit_transform(X_train_full)
+    X_test_scaled  = scaler.transform(X_test)
 
-    # Cross-validation
+    # 5-fold cross-validation on train set
     clf_cv = LogisticRegression(max_iter=1000, class_weight="balanced", random_state=42, C=1.0)
-    cv_scores = cross_val_score(clf_cv, X_scaled, y, cv=5, scoring="roc_auc")
+    cv_scores = cross_val_score(clf_cv, X_train_scaled, y_train_full, cv=5, scoring="roc_auc")
     print(f"\nCross-validation AUC: {cv_scores.mean():.4f} ± {cv_scores.std():.4f}")
 
-    # Final train/test split
-    X_train, X_test, y_train, y_test = train_test_split(
-        X_scaled, y, test_size=0.2, random_state=42, stratify=y
-    )
+    # Final model trained on full train split, evaluated on held-out test split
     clf = LogisticRegression(max_iter=1000, class_weight="balanced", random_state=42, C=1.0)
-    clf.fit(X_train, y_train)
+    clf.fit(X_train_scaled, y_train_full)
 
-    y_prob = clf.predict_proba(X_test)[:, 1]
+    y_prob = clf.predict_proba(X_test_scaled)[:, 1]
     y_pred = (y_prob >= 0.5).astype(int)
     auc = roc_auc_score(y_test, y_prob)
-    print(f"Test AUC: {auc:.4f}")
-    print(classification_report(y_test, y_pred, target_names=["Low privilege (FAC/NONE)", "High privilege (ARG)"]))
+    print(f"\nTest AUC: {auc:.4f}")
+    print(classification_report(y_test, y_pred, target_names=["Low privilege (Facts/None)", "High privilege (Argument)"]))
 
     # Feature importance (logistic regression coefficients)
     print("\nFeature coefficients:")

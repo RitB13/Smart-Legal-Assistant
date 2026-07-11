@@ -160,6 +160,20 @@ class CaseOutcomePredictorService:
             logger.error("[Outcome] predict_outcome failed: %s", e, exc_info=True)
             raise
 
+    def predict_acceptance_probability(self, text: str) -> float:
+        """Return P(petition accepted) as float [0, 1]. Returns 0.25 if model unavailable."""
+        if not self._available:
+            return 0.25
+        try:
+            probs, _, _, _ = self._infer(text)
+            for i, cls in enumerate(self.le.classes_):
+                if str(cls) == "1":
+                    return round(float(probs[i]), 4)
+            return 0.25
+        except Exception as e:
+            logger.warning("[Outcome] predict_acceptance_probability failed: %s", e)
+            return 0.25
+
     def batch_predict(self, cases: List[Dict[str, Any]]) -> Dict[str, Any]:
         if not self._available:
             raise RuntimeError("Outcome model is not loaded.")
