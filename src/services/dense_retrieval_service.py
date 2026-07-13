@@ -127,6 +127,12 @@ class DenseRetrievalService:
         Returns:
             List of dicts: [{case_name, case_type, summary, similarity}]
             Empty list if the index is unavailable or query embedding fails.
+
+        Note: 91% of corpus records (jud_ipl + ildc sources) have summary='nan'
+        because the original CSV had no summary column for those sources.  Only
+        il_tur_summ (~7k records) has real summaries.  We scan a wider candidate
+        pool (top_k * 50) and return only records with usable summaries so that
+        the LLM enrichment step always gets real legal text to work with.
         """
         if not self._available:
             return []
@@ -135,23 +141,37 @@ class DenseRetrievalService:
             query_vec = self._embed_query(query)       # (384,)
             scores    = self._embeddings @ query_vec   # (N,)
 
-            top_idx = np.argsort(scores)[::-1][:top_k]
+            # Scan a wide candidate pool so we can filter out nan-summary records
+            # and still return up to top_k results with real content.
+            search_k = min(top_k * 50, len(self._corpus_meta))
+            top_idx  = np.argsort(scores)[::-1][:search_k]
+
             results = []
             for idx in top_idx:
                 sim = float(scores[idx])
                 if sim < SIMILARITY_THRESHOLD:
                     break
-                m = self._corpus_meta[idx]
+                m       = self._corpus_meta[idx]
+                summary = str(m.get("summary", "") or "").strip()
+
+                # Skip records whose summary is a placeholder — jud_ipl and ildc
+                # sources stored "nan" (pandas NaN → str) because the source CSV
+                # had no summary column for those rows.
+                if not summary or summary.lower() in ("nan", "none") or len(summary) < 50:
+                    continue
+
                 results.append({
                     "case_name":  m.get("case_name", "Unknown"),
                     "case_type":  m.get("case_type", "Court Case"),
-                    "summary":    m.get("summary",   ""),
+                    "summary":    summary,
                     "outcome":    m.get("outcome",   ""),
                     "similarity": round(sim, 4),
                 })
+                if len(results) >= top_k:
+                    break
 
             logger.debug(
-                "[Dense] Query → %d results (top_sim=%.3f)",
+                "[Dense] Query → %d results with usable summaries (top_sim=%.3f)",
                 len(results), results[0]["similarity"] if results else 0.0,
             )
             return results

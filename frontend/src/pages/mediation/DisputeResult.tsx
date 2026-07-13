@@ -229,14 +229,23 @@ export default function DisputeResult() {
           )}
 
           {/* Similar precedent cases — expandable cards, LLM-enriched like CasePredictor */}
-          {report.similar_precedents.length > 0 && (
+          {report.similar_precedents.length > 0 && (() => {
+            // Filter out corpus records that have no usable summary (jud_ipl/ildc
+            // sources stored "nan" as the summary string). A record is usable if it
+            // has an LLM-generated title OR a real summary (not "nan", length ≥ 50).
+            const usable = report.similar_precedents.filter((p: SimilarPrecedent) => {
+              const s = (p.summary || "").trim();
+              return p.llm_title || (s && s.toLowerCase() !== "nan" && s.length >= 50);
+            });
+            if (usable.length === 0) return null;
+            return (
             <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-5">
               <div className="flex items-center gap-2 mb-3">
                 <Library className="w-4 h-4 text-blue-500" />
                 <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Similar past cases</h2>
               </div>
               <div className="space-y-2">
-                {report.similar_precedents.map((p: SimilarPrecedent, i: number) => {
+                {usable.map((p: SimilarPrecedent, i: number) => {
                   const isExpanded = expandedPrecedents.has(i);
 
                   // Strip judge citation prefix so text starts at case facts
@@ -322,7 +331,8 @@ export default function DisputeResult() {
                 })}
               </div>
             </div>
-          )}
+            );
+          })()}
 
           {/* Next steps */}
           {report.next_steps.length > 0 && (
