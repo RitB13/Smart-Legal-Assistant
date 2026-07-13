@@ -20,8 +20,6 @@ export default function DisputeResult() {
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [showFullFairness, setShowFullFairness] = useState(false);
   const [expandedPrecedents, setExpandedPrecedents] = useState<Set<number>>(new Set());
-  const [rangeAnimated, setRangeAnimated] = useState(false);
-
   useEffect(() => {
     if (!id) return;
     apiFetch<DisputeResultResponse>(`/mediation/${id}/result`)
@@ -30,7 +28,6 @@ export default function DisputeResult() {
           navigate(`/mediation/${id}/room`, { replace: true });
         } else {
           setReport(data.report);
-          setTimeout(() => setRangeAnimated(true), 150);
         }
       })
       .catch(err => setError(err instanceof Error ? err.message : 'Failed to load report.'))
@@ -119,20 +116,14 @@ export default function DisputeResult() {
               {/* Range bar */}
               <div className="relative mb-6">
                 <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
-                  <div
-                    className="h-2 bg-primary/25 rounded-full transition-all duration-700 ease-out"
-                    style={{ width: rangeAnimated ? '100%' : '0%' }}
-                  />
+                  <div className="h-2 bg-primary rounded-full w-full" />
                 </div>
-                {/* Median marker with ping ring */}
+                {/* Median marker */}
                 <div
                   className="absolute top-1/2"
                   style={{ left: `${medianPct}%`, transform: 'translate(-50%, -50%)' }}
                 >
-                  <div className="relative flex items-center justify-center">
-                    <div className="absolute w-5 h-5 rounded-full bg-primary/30 animate-ping" />
-                    <div className="relative w-3 h-3 bg-primary rounded-full border-2 border-white dark:border-slate-800 shadow-sm" />
-                  </div>
+                  <div className="w-4 h-4 bg-primary rounded-full border-2 border-white dark:border-slate-800 shadow" />
                 </div>
                 {/* Range labels */}
                 <div className="flex justify-between mt-2.5">
@@ -248,39 +239,26 @@ export default function DisputeResult() {
                 {report.similar_precedents.map((p: SimilarPrecedent, i: number) => {
                   const isExpanded = expandedPrecedents.has(i);
 
-                  // Strip judge names and numbering from raw summary
+                  // Strip judge citation prefix so text starts at case facts
                   const rawSummary = (p.summary || "").trim()
                     .replace(/^[\w\s.]+,\s+J\.?\s+/i, "")
                     .replace(/^\d+\.\s+/, "")
                     .trim();
 
-                  // Filter out placeholder LLM output
-                  const isPlaceholder = (s?: string | null) =>
-                    !s || /no case details|no details provided|excerpt is empty|no analysis/i.test(s);
-                  // Filter out numeric-only raw IDs (e.g. "6712") that are not real case names
-                  const isRawId = (s?: string | null) => !s || /^\d[\d_\-]*$/.test(s.trim());
-
-                  const llmTitle = isPlaceholder(p.llm_title) ? null : p.llm_title;
-                  const llmDescription = isPlaceholder(p.llm_description) ? null : p.llm_description;
-                  const llmDecision = !p.llm_decision || /no information available|preliminary stage with no/i.test(p.llm_decision)
-                    ? null : p.llm_decision;
-
-                  // Heading: LLM title → real case_name (skip raw IDs) → first sentence of summary → fallback
-                  const realCaseName = isRawId(p.case_name) ? null : p.case_name;
-                  const heading: string = llmTitle || realCaseName || (() => {
+                  // Prefer LLM-generated title/description; fall back to sentence extraction
+                  const heading: string = p.llm_title || (() => {
                     const end = rawSummary.indexOf(". ", 40);
                     if (end > 0 && end < 220) return rawSummary.slice(0, end + 1);
                     if (rawSummary.length <= 160) return rawSummary;
                     return rawSummary.slice(0, rawSummary.lastIndexOf(" ", 160)) + "…";
                   })() || `Case ${i + 1}`;
 
-                  // Body: LLM description → rest of summary
-                  const body: string = llmDescription || (() => {
+                  const body: string = p.llm_description || (() => {
                     const end = rawSummary.indexOf(". ", 40);
                     return end > 0 && end < 220 ? rawSummary.slice(end + 2).trim() : "";
                   })();
 
-                  const hasExpandContent = !!(p.llm_laws_cited?.length || llmDecision);
+                  const hasExpandContent = !!(p.llm_laws_cited?.length || p.llm_decision);
 
                   return (
                     <div
@@ -331,10 +309,10 @@ export default function DisputeResult() {
                               </div>
                             </div>
                           )}
-                          {llmDecision && (
+                          {p.llm_decision && (
                             <div>
                               <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1">Court's Decision</p>
-                              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{llmDecision}</p>
+                              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{p.llm_decision}</p>
                             </div>
                           )}
                         </div>

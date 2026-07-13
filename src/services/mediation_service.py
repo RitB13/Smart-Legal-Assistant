@@ -48,8 +48,12 @@ def _privilege_from_rr(predictions: list) -> float:
 
 def _enrich_similar_precedents(raw_results: list) -> list:
     """
-    Call Groq once with all precedent summaries to generate a readable title,
+    Call Groq once with all precedent summaries to generate a meaningful title,
     2-3 sentence description, cited laws, and court decision for each case.
+
+    Mirrors _enrich_similar_cases in case_outcome.py exactly:
+    only the summary text is sent to the LLM — case_name is never exposed,
+    so the LLM cannot hallucinate from a bad identifier.
     Returns [] on any failure so the caller falls back gracefully.
     """
     if not raw_results:
@@ -57,47 +61,33 @@ def _enrich_similar_precedents(raw_results: list) -> list:
     try:
         case_blocks = ""
         for i, r in enumerate(raw_results):
-            case_name = (r.get("case_name") or "").strip()
             summary = (r.get("summary") or "").strip()
-            outcome = (r.get("outcome") or "").strip()
-
-            parts = []
-            if case_name:
-                parts.append(f"Case Name: {case_name}")
             if summary:
-                parts.append(f"Excerpt: {summary[:600]}")
-            if outcome:
-                parts.append(f"Outcome: {outcome[:200]}")
-
-            if parts:
-                case_blocks += f"\nCase {i + 1}:\n" + "\n".join(parts) + "\n"
+                case_blocks += f"\nCase {i + 1}:\n{summary[:800]}\n"
 
         if not case_blocks.strip():
             return []
 
         prompt = (
-            "You are a legal analyst reviewing Indian court case records.\n"
-            "Each record below may have a Case Name, an Excerpt, and/or an Outcome.\n"
-            "For each record, provide four fields:\n"
+            "You are a legal analyst reviewing Indian court case excerpts.\n"
+            "For each excerpt below, provide four fields:\n"
             "1. TITLE: A concise headline (5–10 words) naming the legal dispute "
             "(e.g. 'SARFAESI Bank Recovery — NPA Challenge', "
-            "'Tenant Eviction — Arrears and Unauthorised Subletting'). "
-            "If the Excerpt is brief, derive the title from the Case Name and Outcome.\n"
+            "'Tenant Eviction — Arrears and Unauthorised Subletting').\n"
             "2. DESCRIPTION: Exactly 2–3 complete sentences in plain English "
             "explaining what the case is about. Every sentence must end with a full stop. "
             "Do NOT use '...' or leave sentences incomplete. "
-            "Use the Case Name and Outcome to fill in context if the Excerpt is thin.\n"
+            "If the excerpt ends mid-sentence, infer a logical conclusion from context.\n"
             "3. LAWS_CITED: A JSON array of strings listing every Act, Code, Section, or Rule "
             "explicitly mentioned or clearly applicable to this case "
-            "(e.g. [\"Indian Contract Act 1872\", \"Negotiable Instruments Act 1881\"]). "
+            "(e.g. [\"SARFAESI Act 2002\", \"Companies Act 1956\", \"Code of Civil Procedure\"]). "
             "Return an empty array [] if none are identifiable.\n"
-            "4. DECISION: One complete sentence stating what the court decided or ordered. "
-            "Use the Outcome field if present. "
-            "If no outcome is available, write what the dispute was about and its current stage.\n\n"
+            "4. DECISION: One complete sentence stating what the court decided or ordered, "
+            "or what relief was granted/refused. "
+            "If the excerpt does not reveal the final outcome, write what stage the case was at.\n\n"
             "Rules:\n"
             "- Title must be specific to this case, not a generic label.\n"
             "- Do not put judge names or citation numbers in the title.\n"
-            "- NEVER write 'No Case Details Provided' or any placeholder — always produce real content.\n"
             "- Respond with ONLY valid JSON — no markdown fences, no extra text.\n\n"
             f"{case_blocks}\n"
             "Return a JSON array with one object per case in the same order:\n"
@@ -110,8 +100,8 @@ def _enrich_similar_precedents(raw_results: list) -> list:
         raw_response = get_legal_response(
             prompt,
             language="en",
-            max_tokens=1800,
-            temperature=0.2,
+            max_tokens=1200,
+            temperature=0.15,
             timeout=60,
             system_prompt=(
                 "You are a legal analyst. Respond ONLY with a valid JSON array exactly "
@@ -130,36 +120,24 @@ def _enrich_similar_precedents(raw_results: list) -> list:
                     cleaned = b
                     break
 
-        def _parse_list(text: str):
-            try:
-                r = _json.loads(text)
-                if isinstance(r, list):
-                    return r
-            except _json.JSONDecodeError:
-                pass
-            try:
-                s = text.index("[")
-                e = text.rindex("]") + 1
-                r = _json.loads(text[s:e])
-                if isinstance(r, list):
-                    return r
-            except Exception:
-                pass
-            return None
+        try:
+            result = _json.loads(cleaned)
+            if isinstance(result, list):
+                return result
+        except _json.JSONDecodeError:
+            pass
 
-        result = _parse_list(cleaned)
-        if result is None:
-            logger.warning("[MediationService] LLM precedent enrichment: could not parse JSON")
-            return []
+        try:
+            s = cleaned.index("[")
+            e = cleaned.rindex("]") + 1
+            result = _json.loads(cleaned[s:e])
+            if isinstance(result, list):
+                return result
+        except Exception:
+            pass
 
-        # Discard if ALL titles are placeholder — fall back to raw summary display
-        placeholder_pat = re.compile(r"no case details|no details provided|excerpt is empty", re.I)
-        bad_titles = sum(1 for item in result if placeholder_pat.search(str(item.get("title", ""))))
-        if bad_titles == len(result):
-            logger.warning("[MediationService] LLM returned all-placeholder titles — discarding enrichment")
-            return []
-
-        return result
+        logger.warning("[MediationService] LLM precedent enrichment: could not parse JSON")
+        return []
 
     except Exception as e:
         logger.warning("[MediationService] LLM precedent enrichment failed: %s", e)
