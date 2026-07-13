@@ -284,24 +284,26 @@ class MediationMLService:
         high_f = min(p_accept + 0.20, 0.95)
 
         if parsed_a and parsed_b:
-            # Each party's primary figure is their MAXIMUM mentioned amount:
-            #   Party A max = their total claim (e.g. Rs. 75,000 security deposit)
-            #   Party B max = their counter-offer / what they're willing to concede
-            # Using global min() here is wrong — it picks up small sub-items like
-            # a Rs. 5,000 electricity bill and drags the entire range down.
-            primary_a = max(parsed_a)   # e.g. 75,000 (tenant's claim)
-            primary_b = max(parsed_b)   # e.g. 42,000 (landlord's counter-offer)
+            primary_a = max(parsed_a)
+            primary_b = max(parsed_b)
 
-            ref_low  = min(primary_a, primary_b)   # floor  = lower of the two positions
-            ref_high = max(primary_a, primary_b)   # ceiling = higher of the two positions
-            span     = max(ref_high - ref_low, 1.0)
+            ref_low  = min(primary_a, primary_b)
+            ref_high = max(primary_a, primary_b)
+            span     = ref_high - ref_low
 
-            # P(accepted) determines where in the [ref_low, ref_high] range to land.
-            # Low P(accepted) → closer to ref_low (respondent's position).
-            # High P(accepted) → closer to ref_high (petitioner's position).
-            low_amt  = ref_low + span * low_f
-            med_amt  = ref_low + span * med_f
-            high_amt = ref_low + span * high_f
+            if span < ref_high * 0.05:
+                # Both parties cite nearly the same amount — treat as single-party
+                # so P(accepted) drives a meaningful percentage-based spread instead
+                # of sub-rupee noise from a 1-rupee minimum span.
+                ref = ref_high
+                low_amt  = ref * low_f
+                med_amt  = ref * med_f
+                high_amt = ref * high_f
+            else:
+                span = max(span, 1.0)
+                low_amt  = ref_low + span * low_f
+                med_amt  = ref_low + span * med_f
+                high_amt = ref_low + span * high_f
         else:
             # Only one party mentioned amounts — use as claimed ceiling
             ref = max(all_amounts)
