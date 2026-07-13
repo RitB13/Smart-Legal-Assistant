@@ -59,14 +59,19 @@ def _enrich_similar_precedents(raw_results: list) -> list:
     if not raw_results:
         return []
     try:
+        # Track which indices have usable summaries so we can re-align later.
+        # jud_ipl and ildc corpus records store "nan" as the summary string —
+        # sending that to the LLM produces meaningless output.
+        sent_indices: list = []
         case_blocks = ""
         for i, r in enumerate(raw_results):
             summary = (r.get("summary") or "").strip()
-            if summary:
+            if summary and summary.lower() not in ("nan", "none") and len(summary) >= 50:
                 case_blocks += f"\nCase {i + 1}:\n{summary[:800]}\n"
+                sent_indices.append(i)
 
         if not case_blocks.strip():
-            return []
+            return [{}] * len(raw_results)
 
         prompt = (
             "You are a legal analyst reviewing Indian court case excerpts.\n"
@@ -120,24 +125,31 @@ def _enrich_similar_precedents(raw_results: list) -> list:
                     cleaned = b
                     break
 
+        enriched: list = []
         try:
-            result = _json.loads(cleaned)
-            if isinstance(result, list):
-                return result
+            enriched = _json.loads(cleaned)
+            if not isinstance(enriched, list):
+                enriched = []
         except _json.JSONDecodeError:
             pass
 
-        try:
-            s = cleaned.index("[")
-            e = cleaned.rindex("]") + 1
-            result = _json.loads(cleaned[s:e])
-            if isinstance(result, list):
-                return result
-        except Exception:
-            pass
+        if not enriched:
+            try:
+                s = cleaned.index("[")
+                e = cleaned.rindex("]") + 1
+                enriched = _json.loads(cleaned[s:e])
+                if not isinstance(enriched, list):
+                    enriched = []
+            except Exception:
+                pass
 
-        logger.warning("[MediationService] LLM precedent enrichment: could not parse JSON")
-        return []
+        if not enriched:
+            logger.warning("[MediationService] LLM precedent enrichment: could not parse JSON")
+            return [{}] * len(raw_results)
+
+        # Re-align: LLM returned one entry per *sent* case; map back to raw_results positions.
+        enrichment_map = {sent_indices[j]: enriched[j] for j in range(min(len(sent_indices), len(enriched)))}
+        return [enrichment_map.get(i, {}) for i in range(len(raw_results))]
 
     except Exception as e:
         logger.warning("[MediationService] LLM precedent enrichment failed: %s", e)
