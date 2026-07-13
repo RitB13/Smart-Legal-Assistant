@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import {
   CheckCircle, XCircle, Scale, AlertTriangle, FileText,
-  Star, ChevronDown, ChevronUp, ArrowLeft, Loader2, Library, BarChart2,
+  Star, ChevronDown, ChevronUp, ArrowLeft, Loader2, Library,
 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 import Layout from '@/components/Layout';
-import type { DisputeResultResponse, MediationReport, ConflictPoint, SimilarPrecedent, StatementStructure } from '@/types/mediation';
+import type { DisputeResultResponse, MediationReport, ConflictPoint, SimilarPrecedent } from '@/types/mediation';
 
 export default function DisputeResult() {
   const { id } = useParams<{ id: string }>();
@@ -20,6 +20,7 @@ export default function DisputeResult() {
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [showFullFairness, setShowFullFairness] = useState(false);
   const [expandedPrecedents, setExpandedPrecedents] = useState<Set<number>>(new Set());
+  const [rangeAnimated, setRangeAnimated] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -29,6 +30,7 @@ export default function DisputeResult() {
           navigate(`/mediation/${id}/room`, { replace: true });
         } else {
           setReport(data.report);
+          setTimeout(() => setRangeAnimated(true), 150);
         }
       })
       .catch(err => setError(err instanceof Error ? err.message : 'Failed to load report.'))
@@ -115,18 +117,27 @@ export default function DisputeResult() {
               </div>
 
               {/* Range bar */}
-              <div className="relative mb-4">
-                <div className="h-2 bg-slate-100 rounded-full">
+              <div className="relative mb-6">
+                <div className="h-2 bg-slate-100 dark:bg-slate-700 rounded-full overflow-hidden">
                   <div
-                    className="h-2 bg-primary/20 rounded-full relative"
-                    style={{ width: '100%' }}
-                  >
-                    {/* Median marker */}
-                    <div
-                      className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-primary rounded-full shadow-sm border-2 border-white"
-                      style={{ left: `${medianPct}%`, transform: `translate(-50%, -50%)` }}
-                    />
+                    className="h-2 bg-primary/25 rounded-full transition-all duration-700 ease-out"
+                    style={{ width: rangeAnimated ? '100%' : '0%' }}
+                  />
+                </div>
+                {/* Median marker with ping ring */}
+                <div
+                  className="absolute top-1/2"
+                  style={{ left: `${medianPct}%`, transform: 'translate(-50%, -50%)' }}
+                >
+                  <div className="relative flex items-center justify-center">
+                    <div className="absolute w-5 h-5 rounded-full bg-primary/30 animate-ping" />
+                    <div className="relative w-3 h-3 bg-primary rounded-full border-2 border-white dark:border-slate-800 shadow-sm" />
                   </div>
+                </div>
+                {/* Range labels */}
+                <div className="flex justify-between mt-2.5">
+                  <span className="text-[10px] text-slate-400">Conservative</span>
+                  <span className="text-[10px] text-slate-400">Optimistic</span>
                 </div>
               </div>
 
@@ -143,38 +154,6 @@ export default function DisputeResult() {
                   <div className="text-xs text-slate-500 dark:text-slate-400 mb-1">Optimistic</div>
                   <div className="font-semibold text-slate-800 dark:text-slate-100">₹{sr.high!.toLocaleString('en-IN')}</div>
                 </div>
-              </div>
-            </div>
-          )}
-
-          {/* Statement structure (rhetorical role breakdown) */}
-          {(report.statement_structure_a || report.statement_structure_b) && (
-            <div className="bg-white dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <BarChart2 className="h-4 w-4 text-primary" />
-                <h2 className="text-sm font-semibold text-slate-700 dark:text-slate-200">Statement structure</h2>
-                <span className="text-xs text-slate-400 ml-1">— InLegalBERT rhetorical role analysis</span>
-              </div>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {[
-                  { label: 'Party A', data: report.statement_structure_a },
-                  { label: 'Party B', data: report.statement_structure_b },
-                ].map(({ label, data }) =>
-                  data ? (
-                    <div key={label} className="bg-slate-50 dark:bg-slate-800/40 rounded-lg p-4 border border-slate-100 dark:border-slate-700">
-                      <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-3">{label}</p>
-                      <div className="space-y-2 mb-3">
-                        <StructureBar label="Narrative" pct={data.groups.narrative_pct} color="bg-blue-400" />
-                        <StructureBar label="Legal argument" pct={data.groups.legal_argument_pct} color="bg-purple-500" />
-                        <StructureBar label="Legal authority" pct={data.groups.legal_authority_pct} color="bg-indigo-500" />
-                        <StructureBar label="Issue / ratio" pct={data.groups.issue_core_pct} color="bg-amber-400" />
-                        <StructureBar label="Rulings" pct={data.groups.rulings_pct} color="bg-emerald-400" />
-                      </div>
-                      <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed italic">{data.summary}</p>
-                      <p className="text-[10px] text-slate-400 dark:text-slate-500 mt-1">{data.total_sentences} sentences analysed</p>
-                    </div>
-                  ) : null
-                )}
               </div>
             </div>
           )}
@@ -269,25 +248,39 @@ export default function DisputeResult() {
                 {report.similar_precedents.map((p: SimilarPrecedent, i: number) => {
                   const isExpanded = expandedPrecedents.has(i);
 
-                  // Prefer LLM title; fall back to first sentence of summary
+                  // Strip judge names and numbering from raw summary
                   const rawSummary = (p.summary || "").trim()
                     .replace(/^[\w\s.]+,\s+J\.?\s+/i, "")
                     .replace(/^\d+\.\s+/, "")
                     .trim();
 
-                  const heading: string = p.llm_title || (() => {
+                  // Filter out placeholder LLM output
+                  const isPlaceholder = (s?: string | null) =>
+                    !s || /no case details|no details provided|excerpt is empty|no analysis/i.test(s);
+                  // Filter out numeric-only raw IDs (e.g. "6712") that are not real case names
+                  const isRawId = (s?: string | null) => !s || /^\d[\d_\-]*$/.test(s.trim());
+
+                  const llmTitle = isPlaceholder(p.llm_title) ? null : p.llm_title;
+                  const llmDescription = isPlaceholder(p.llm_description) ? null : p.llm_description;
+                  const llmDecision = !p.llm_decision || /no information available|preliminary stage with no/i.test(p.llm_decision)
+                    ? null : p.llm_decision;
+
+                  // Heading: LLM title → real case_name (skip raw IDs) → first sentence of summary → fallback
+                  const realCaseName = isRawId(p.case_name) ? null : p.case_name;
+                  const heading: string = llmTitle || realCaseName || (() => {
                     const end = rawSummary.indexOf(". ", 40);
                     if (end > 0 && end < 220) return rawSummary.slice(0, end + 1);
                     if (rawSummary.length <= 160) return rawSummary;
                     return rawSummary.slice(0, rawSummary.lastIndexOf(" ", 160)) + "…";
-                  })();
+                  })() || `Case ${i + 1}`;
 
-                  const body: string = p.llm_description || (() => {
+                  // Body: LLM description → rest of summary
+                  const body: string = llmDescription || (() => {
                     const end = rawSummary.indexOf(". ", 40);
                     return end > 0 && end < 220 ? rawSummary.slice(end + 2).trim() : "";
                   })();
 
-                  const hasExpandContent = !!(p.llm_laws_cited?.length || p.llm_decision);
+                  const hasExpandContent = !!(p.llm_laws_cited?.length || llmDecision);
 
                   return (
                     <div
@@ -338,10 +331,10 @@ export default function DisputeResult() {
                               </div>
                             </div>
                           )}
-                          {p.llm_decision && (
+                          {llmDecision && (
                             <div>
                               <p className="text-xs font-medium text-slate-400 uppercase tracking-widest mb-1">Court's Decision</p>
-                              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{p.llm_decision}</p>
+                              <p className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">{llmDecision}</p>
                             </div>
                           )}
                         </div>
@@ -401,23 +394,6 @@ export default function DisputeResult() {
         </div>
       </div>
     </Layout>
-  );
-}
-
-function StructureBar({ label, pct, color }: { label: string; pct: number; color: string }) {
-  return (
-    <div>
-      <div className="flex items-center justify-between mb-0.5">
-        <span className="text-[11px] text-slate-500 dark:text-slate-400">{label}</span>
-        <span className="text-[11px] text-slate-400 tabular-nums">{pct.toFixed(0)}%</span>
-      </div>
-      <div className="h-1.5 bg-slate-100 dark:bg-slate-700 rounded-full">
-        <div
-          className={`h-1.5 rounded-full transition-all ${color}`}
-          style={{ width: `${Math.min(pct, 100)}%` }}
-        />
-      </div>
-    </div>
   );
 }
 
